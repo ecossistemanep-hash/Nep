@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEP | Status & Atualizações</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/png" href="NEP. IMAGEM.png">
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: #020408;
+            color: #f9fafb;
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Animated Background Orbs */
+        .orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.4;
+            animation: float 8s ease-in-out infinite;
+            pointer-events: none;
+            z-index: 0;
+        }
+        .orb-1 { width: 400px; height: 400px; background: linear-gradient(135deg, #00E0FF, #0097a7); top: -100px; left: -100px; }
+        .orb-2 { width: 350px; height: 350px; background: linear-gradient(135deg, #A855F7, #7c3aed); bottom: -80px; right: -80px; animation-delay: 2s; }
+        .orb-3 { width: 250px; height: 250px; background: linear-gradient(135deg, #10B981, #059669); top: 40%; right: 5%; animation-delay: 4s; }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(20px, -30px) scale(1.05); }
+            50% { transform: translate(-10px, 20px) scale(0.95); }
+            75% { transform: translate(30px, 10px) scale(1.02); }
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+            opacity: 0.03;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .status-page {
+            position: relative;
+            z-index: 1;
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 40px 20px 60px;
+        }
+
+        /* Header */
+        .status-header {
+            text-align: center;
+            margin-bottom: 48px;
+            animation: scaleIn 0.5s ease-out;
+        }
+
+        @keyframes scaleIn {
+            from { opacity: 0; transform: scale(0.95) translateY(20px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .logo-text {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 32px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #00E0FF, #A855F7);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 2px;
+        }
+
+        .logo-sub {
+            font-size: 15px;
+            color: #9CA3AF;
+            margin-top: 6px;
+        }
+
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 20px;
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 50px;
+            margin-top: 20px;
+            font-size: 13px;
+            font-weight: 500;
+            color: #10B981;
+        }
+
+        .status-dot {
+            width: 8px; height: 8px;
+            background: #10B981;
+            border-radius: 50%;
+            animation: pulse-dot 2s infinite;
+        }
+
+        @keyframes pulse-dot {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+            50% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+        }
+
+        /* Filters */
+        .status-filters {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-bottom: 32px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 6px 16px;
+            background: rgba(19, 27, 41, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            color: #9CA3AF;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: inherit;
+        }
+
+        .filter-btn:hover { border-color: #00E0FF; color: #00E0FF; }
+
+        .filter-btn.active {
+            background: linear-gradient(135deg, rgba(0, 224, 255, 0.2), rgba(168, 85, 247, 0.2));
+            border-color: #00E0FF;
+            color: #00E0FF;
+        }
+
+        /* Timeline */
+        .timeline { position: relative; }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 20px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: linear-gradient(to bottom, #00E0FF, #A855F7, #10B981, transparent);
+        }
+
+        .timeline-item {
+            position: relative;
+            padding-left: 56px;
+            margin-bottom: 28px;
+            animation: slideIn 0.4s ease-out both;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .timeline-dot {
+            position: absolute;
+            left: 12px;
+            top: 4px;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            z-index: 1;
+        }
+
+        .timeline-dot.fix { background: #ef4444; box-shadow: 0 0 12px rgba(239, 68, 68, 0.4); }
+        .timeline-dot.feature { background: #00E0FF; box-shadow: 0 0 12px rgba(0, 224, 255, 0.4); }
+        .timeline-dot.improvement { background: #f59e0b; box-shadow: 0 0 12px rgba(245, 158, 11, 0.4); }
+        .timeline-dot.security { background: #8b5cf6; box-shadow: 0 0 12px rgba(139, 92, 246, 0.4); }
+
+        .timeline-card {
+            background: rgba(11, 17, 26, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 20px 24px;
+            transition: all 0.3s;
+        }
+
+        .timeline-card:hover {
+            border-color: rgba(0, 224, 255, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .timeline-meta {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+        }
+
+        .timeline-date {
+            font-size: 11px;
+            color: #6B7280;
+        }
+
+        .timeline-badge {
+            font-size: 10px;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .badge-fix { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+        .badge-feature { background: rgba(0, 224, 255, 0.2); color: #00E0FF; }
+        .badge-improvement { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+        .badge-security { background: rgba(139, 92, 246, 0.2); color: #a78bfa; }
+
+        .timeline-version {
+            font-size: 10px;
+            color: #6B7280;
+            background: rgba(255,255,255,0.05);
+            padding: 1px 8px;
+            border-radius: 4px;
+        }
+
+        .timeline-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #f9fafb;
+            margin-bottom: 6px;
+        }
+
+        .timeline-desc {
+            font-size: 13px;
+            color: #9CA3AF;
+            line-height: 1.6;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6B7280;
+        }
+
+        .empty-state i { font-size: 48px; margin-bottom: 16px; display: block; opacity: 0.5; }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 60px;
+            color: #6B7280;
+        }
+
+        .loading i { font-size: 32px; margin-bottom: 12px; display: block; }
+
+        /* Footer */
+        .status-footer {
+            text-align: center;
+            margin-top: 48px;
+            padding-top: 24px;
+            border-top: 1px solid rgba(255,255,255,0.05);
+            color: #4B5563;
+            font-size: 12px;
+        }
+
+        .status-footer a {
+            color: #00E0FF;
+            text-decoration: none;
+        }
+
+        @media (max-width: 600px) {
+            .status-page { padding: 24px 16px; }
+            .logo-text { font-size: 24px; }
+            .timeline::before { left: 14px; }
+            .timeline-item { padding-left: 44px; }
+            .timeline-dot { left: 6px; }
+        }
+    </style>
+
+    <!-- Firebase Compat SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyCqwJ64SjXQf_ekZhRZcF4nN_Fqhwvxi_Q",
+            authDomain: "ecossistema-nep.firebaseapp.com",
+            projectId: "ecossistema-nep",
+            storageBucket: "ecossistema-nep.firebasestorage.app",
+            messagingSenderId: "1041112586342",
+            appId: "1:1041112586342:web:0b7dc02b242cd3dbe635a7"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+    </script>
+</head>
+
+<body>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+
+    <div class="status-page">
+        <!-- Header -->
+        <div class="status-header">
+            <div class="logo-text">NEP</div>
+            <div class="logo-sub">Status & Atualizações do Sistema</div>
+            <div class="status-indicator">
+                <span class="status-dot"></span>
+                Todos os sistemas operacionais
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="status-filters">
+            <button class="filter-btn active" data-filter="all">📋 Todas</button>
+            <button class="filter-btn" data-filter="feature">🆕 Novidades</button>
+            <button class="filter-btn" data-filter="fix">🐛 Correções</button>
+            <button class="filter-btn" data-filter="improvement">⚡ Melhorias</button>
+            <button class="filter-btn" data-filter="security">🔒 Segurança</button>
+        </div>
+
+        <!-- Timeline -->
+        <div class="timeline" id="timeline">
+            <div class="loading">
+                <i class="fa-solid fa-circle-notch fa-spin"></i>
+                Carregando atualizações...
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="status-footer">
+            <p>NEP Delivery Control &copy; 2025–2026</p>
+            <p style="margin-top: 6px;">
+                <a href="/" target="_blank">Acessar Sistema</a> •
+                <a href="/public-feedback.html" target="_blank">Enviar Elogio</a>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        let allUpdates = [];
+        let activeFilter = 'all';
+
+        const typeConfig = {
+            fix: { label: 'Correção', badge: 'badge-fix', dot: 'fix', icon: '🐛' },
+            feature: { label: 'Novidade', badge: 'badge-feature', dot: 'feature', icon: '🆕' },
+            improvement: { label: 'Melhoria', badge: 'badge-improvement', dot: 'improvement', icon: '⚡' },
+            security: { label: 'Segurança', badge: 'badge-security', dot: 'security', icon: '🔒' }
+        };
+
+        // Load updates from Firestore
+        db.collection('status_updates')
+            .orderBy('createdAt', 'desc')
+            .onSnapshot(snap => {
+                allUpdates = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                renderTimeline();
+            }, err => {
+                console.error('Erro ao carregar atualizações:', err);
+                document.getElementById('timeline').innerHTML = `
+                    <div class="empty-state">
+                        <i class="fa-solid fa-exclamation-triangle"></i>
+                        <p>Erro ao carregar atualizações</p>
+                    </div>`;
+            });
+
+        // Filter buttons
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                activeFilter = btn.dataset.filter;
+                renderTimeline();
+            });
+        });
+
+        function renderTimeline() {
+            const timeline = document.getElementById('timeline');
+            const items = activeFilter === 'all'
+                ? allUpdates
+                : allUpdates.filter(u => u.type === activeFilter);
+
+            if (!items.length) {
+                timeline.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fa-solid fa-clipboard-check"></i>
+                        <p>Nenhuma atualização${activeFilter !== 'all' ? ' nesta categoria' : ' ainda'}.</p>
+                    </div>`;
+                return;
+            }
+
+            timeline.innerHTML = items.map((item, i) => {
+                const cfg = typeConfig[item.type] || typeConfig.improvement;
+                const date = item.createdAt?.toDate
+                    ? item.createdAt.toDate().toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })
+                    : item.date || '';
+
+                return `
+                    <div class="timeline-item" style="animation-delay: ${i * 0.05}s">
+                        <div class="timeline-dot ${cfg.dot}">${cfg.icon}</div>
+                        <div class="timeline-card">
+                            <div class="timeline-meta">
+                                <span class="timeline-badge ${cfg.badge}">${cfg.label}</span>
+                                ${item.version ? `<span class="timeline-version">v${item.version}</span>` : ''}
+                                <span class="timeline-date">${date}</span>
+                            </div>
+                            <div class="timeline-title">${item.title || 'Atualização'}</div>
+                            <div class="timeline-desc">${(item.description || '').replace(/\n/g, '<br>')}</div>
+                        </div>
+                    </div>`;
+            }).join('');
+        }
+    </script>
+</body>
+
+</html>

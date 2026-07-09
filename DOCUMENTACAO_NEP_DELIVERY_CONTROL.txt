@@ -1,0 +1,859 @@
+================================================================================
+          NEP DELIVERY CONTROL — DOCUMENTAÇÃO COMPLETA DO SISTEMA
+                    Versão Enterprise | Ecossistema Unificado
+================================================================================
+
+Documento gerado em: Fevereiro de 2026
+Desenvolvido por: Fernando Evangelista — Quality Coordinator & Data Science Student
+Sistema em produção em: https://ecossistema-nep.web.app
+
+================================================================================
+  ÍNDICE
+================================================================================
+
+  1.  O QUE É O NEP DELIVERY CONTROL?
+  2.  TECNOLOGIAS UTILIZADAS (A PARTE TÉCNICA, SEM COMPLICAR)
+  3.  COMO O SISTEMA FUNCIONA — ACESSO E LOGIN
+  4.  ARQUITETURA DE USUÁRIOS E HIERARQUIA
+  5.  MÓDULO 01 — DASHBOARD EXECUTIVO
+  6.  MÓDULO 02 — KANBAN (GESTÃO DE DEMANDAS)
+  7.  MÓDULO 03 — RANKING & PONTUAÇÃO (GAMIFICAÇÃO)
+  8.  MÓDULO 04 — FÓRUM MURA (CONHECIMENTO COLABORATIVO)
+  9.  MÓDULO 05 — NEURONYO (INTELIGÊNCIA ARTIFICIAL)
+  10. MÓDULO 06 — RELATÓRIOS OPERACIONAIS
+  11. MÓDULO 07 — CALENDÁRIO DE AGENDAS E TIMES
+  12. MÓDULO 08 — CONTROLE DE FÉRIAS
+  13. MÓDULO 09 — ROTINA ADM (CHECKLIST DIÁRIO)
+  14. MÓDULO 10 — AVISOS E COMUNICADOS
+  15. MÓDULO 11 — DEPOIMENTOS (NEP TESTEMUNHOS)
+  16. MÓDULO 12 — OKRs (GESTÃO DE METAS E ENTREGAS)
+  17. MÓDULO 13 — RESULTADOS OPERACIONAIS
+  18. MÓDULO 14 — FERRAMENTAS DE QUALIDADE
+  19. MÓDULO 15 — MEU PERFIL
+  20. MÓDULO 16 — PAINEL DO ADMINISTRADOR
+  21. SEGURANÇA E PROTEÇÃO DE DADOS
+  22. MULTI-TENANCY (GESTÃO DE MÚLTIPLOS CLIENTES / LOGOS)
+  23. NOTIFICAÇÕES EM TEMPO REAL
+  24. BUSCA GLOBAL (CTRL+K)
+  25. MODO OFFLINE E PWA
+  26. O QUE CADA CARGO ACESSA (CONTROLE DE ACESSO)
+
+
+================================================================================
+  1.  O QUE É O NEP DELIVERY CONTROL?
+================================================================================
+
+O NEP Delivery Control é um sistema de gestão completo, desenvolvido 100%
+internamente para o ambiente corporativo do Núcleo de Excelência em Performance
+(NEP). Pense nele como um "ERP de Qualidade", ou seja, um software que une
+em uma única tela tudo o que um time de qualidade, monitoria e performance
+precisa para trabalhar.
+
+Antes do NEP, as equipes dependiam de:
+  — Planilhas de Excel sem dono e sem histórico.
+  — Troca de demandas via WhatsApp e E-mail, sem rastreabilidade.
+  — Relatórios gerados manualmente, que levavam horas para ficar prontos.
+  — Nenhum incentivo ou reconhecimento visual pelo esforço dos colaboradores.
+
+O NEP resolve tudo isso em um único lugar, acessível de qualquer navegador,
+sem precisar instalar nada, funcionando 24 horas por dia nos 7 dias da semana.
+
+Keywords do sistema:
+  → Demandas com prazo e evidência obrigatória
+  → Gamificação (pontos, medalhas, rankings)
+  → Fórum de conhecimento
+  → Inteligência Artificial embutida
+  → Gestão de múltiplos clientes (Multi-Tenancy)
+  → Hierarquia granular de 6 níveis
+  → Notificações em tempo real
+  → Funciona como aplicativo no celular (PWA)
+
+
+================================================================================
+  2.  TECNOLOGIAS UTILIZADAS (A PARTE TÉCNICA, SEM COMPLICAR)
+================================================================================
+
+Para quem quer entender como o sistema foi construído, eis as tecnologias
+utilizadas — explicadas de forma simples:
+
+  ● HTML5 (HyperText Markup Language, versão 5)
+    → É a linguagem que define a estrutura de cada tela. Pense nisso como
+      a "planta arquitetônica" da interface: onde fica o botão, onde fica
+      a lista, onde fica a tabela.
+
+  ● CSS3 (Cascading Style Sheets, versão 3)
+    → É o que deixa o sistema bonito. Responsável pelas cores, fontes,
+      animações, sombras e efeitos visuais de todo o sistema.
+      O NEP usa variáveis CSS, o que permite alterar a identidade visual
+      inteira mudando poucas linhas de código.
+
+  ● JavaScript ES6+ (ECMAScript 2015 em diante)
+    → É o "cérebro" do sistema. Toda a lógica, os cálculos, as regras de
+      negócio, os filtros, as validações — tudo está escrito em JavaScript.
+      É a linguagem de programação que roda direto no navegador, sem precisar
+      de um servidor para executar cada ação.
+
+  ● Google Firebase (Backend as a Service — BaaS)
+    → É a "nuvem" onde os dados ficam guardados. O Firebase é uma plataforma
+      do Google que oferece:
+        - Firestore: Banco de dados em tempo real (NoSQL). Quando alguém move
+          um Card no Kanban, todos os outros usuários veem a mudança
+          instantaneamente, sem precisar dar F5.
+        - Firebase Authentication: O sistema de login seguro. Gerencia
+          usuários, senhas e sessões.
+        - Firebase Storage: Onde os arquivos e evidências ficados fazem upload.
+        - Firebase Hosting: Onde o sistema está publicado na internet.
+
+  ● Chart.js
+    → Biblioteca JavaScript especializada em gráficos. Responsável por todos
+      os gráficos do Dashboard, Relatórios e Ranking — de forma bonita
+      e interativa.
+
+  ● Google Gemini API (Inteligência Artificial)
+    → A inteligência artificial do módulo Neuronyo é alimentada pelo
+      Gemini, o modelo de IA do Google. Via API, o sistema consegue
+      enviar textos e perguntas e receber respostas inteligentes.
+
+  ● PWA (Progressive Web App)
+    → Uma tecnologia que permite que o sistema se comporte como um aplicativo
+      de celular, mesmo sendo acessado pelo navegador. O usuário pode
+      "instalar" o NEP na tela inicial do celular sem ir à Play Store.
+      Inclusive, com suporte para uso em cenários de conexão instável.
+
+  ● Supabase (banco secundário, em uso experimental)
+    → Uma alternativa open-source ao Firebase, usada para algumas análises
+      e sincronização de dados mais complexos.
+
+O projeto inteiro roda na infraestrutura do Google Cloud Platform (GCP),
+o que significa que não há servidores próprios para gerenciar, sem custo
+de DevOps, e com alta disponibilidade garantida pelo Google.
+
+
+================================================================================
+  3.  COMO O SISTEMA FUNCIONA — ACESSO E LOGIN
+================================================================================
+
+O acesso ao NEP é feito pelo endereço:
+    https://ecossistema-nep.web.app
+
+O login é realizado com e-mail e senha cadastrados pelo administrador.
+Não é possível criar uma conta por conta própria — o cadastro é
+exclusivamente feito por um administrador do sistema.
+
+Após o login, o sistema verifica as permissões do usuário e libera
+apenas os módulos correspondentes ao seu cargo.
+
+O sistema lembra a sessão do usuário por até 7 dias. Após esse período,
+ou se o usuário fizer logout, será necessário entrar novamente.
+
+Segurança no acesso:
+  — Senhas criptografadas pelo Firebase Authentication.
+  — Proteção contra ataques de força bruta.
+  — Sessão vinculada ao dispositivo e ao navegador.
+  — Auditoria de todos os logins e acessos críticos.
+
+
+================================================================================
+  4.  ARQUITETURA DE USUÁRIOS E HIERARQUIA
+================================================================================
+
+O NEP tem 6 níveis de cargos, do mais operacional ao mais estratégico:
+
+  NÍVEL 0 — ADMINISTRADOR
+    → Acesso total ao sistema. Configura usuários, módulos, logos e
+      qualquer regra de negócio. Pode ver dados de todos os clientes.
+      Existe em quantidade muito limitada (1-2 pessoas).
+
+  NÍVEL 1 — DIRETOR
+    → Acesso estratégico. Vê relatórios consolidados de todos os clientes,
+      define OKRs e tem visão gerencial ampla. Não opera o Kanban
+      diretamente.
+
+  NÍVEL 2 — SUPERINTENDENTE
+    → Visão tática. Gerencia múltiplas equipes, acompanha Kanban e
+      aprovações, tem acesso a relatórios e rankings.
+
+  NÍVEL 3 — COORDENADOR
+    → Gerencia a operação do dia a dia. Cria e distribui tarefas no Kanban,
+      faz aprovações, escreve no Fórum, acessa avisos e resultados.
+      Principal usuário da ferramenta.
+
+  NÍVEL 4 — ANALISTA
+    → Executa tarefas do Kanban, registra evidências, participa do Fórum,
+      pode usar as Ferramentas de Qualidade. Não tem acesso ao Admin.
+
+  NÍVEL 5 — MONITOR
+    → Acesso mais restrito. Basicamente pode ver o que lhe foi atribuído
+      e registrar evidências nas tarefas. Não vê informações de outros
+      usuários ou relatórios amplos.
+
+Cada cargo vê exclusivamente o que precisa ver. Não é possível
+um Monitor acessar o Painel Admin, por exemplo. Esse controle é
+automático e não pode ser burlado.
+
+
+================================================================================
+  5.  MÓDULO 01 — DASHBOARD EXECUTIVO
+================================================================================
+
+O que é:
+  O painel de controle central. A primeira tela que o usuário vê ao entrar.
+
+O que aparece nele:
+  — Quantidade de tarefas abertas, em andamento e concluídas.
+  — Gráficos de produtividade por período.
+  — Top colaboradores do mês.
+  — Avisos recentes não lidos.
+  — Indicadores de SLA (cumprimento de prazos).
+  — Visão rápida do ranking de pontos.
+
+Para Diretores e Administradores:
+  — Filtro por cliente (Logo): podem ver os dados isolados de cada empresa
+    cliente (ex: só VIVO, ou só NUBANK).
+  — Comparativo entre logos.
+  — Indicadores financeiros de performance.
+
+Como funciona:
+  Os dados são puxados em tempo real do banco de dados (Firebase Firestore).
+  Qualquer mudança feita em qualquer outro módulo aparece no Dashboard
+  automaticamente, sem precisar recarregar a página.
+
+
+================================================================================
+  6.  MÓDULO 02 — KANBAN (GESTÃO DE DEMANDAS)
+================================================================================
+
+O que é:
+  O coração operacional do sistema. Um quadro visual onde todas as demandas
+  e tarefas da equipe são organizadas por status.
+
+Colunas padrão do Kanban:
+  BACKLOG → A FAZER → EM ANDAMENTO → AGUARDANDO → ENTREGUE → VALIDADO
+
+O que cada tarefa pode ter:
+  — Título e descrição detalhada.
+  — Prioridade: Urgente / Alta / Média / Baixa.
+  — Complexidade: Simples / Moderada / Complexa.
+  — Prazo (deadline) com contagem regressiva.
+  — Responsável (quem vai executar).
+  — Visualizadores (quem pode acompanhar).
+  — Tipo de tarefa: Calibração, Monitoria, Feedback, Treinamento, etc.
+  — Logo (cliente associado).
+  — Evidência obrigatória: O sistema bloqueia a entrega se não houver
+    um arquivo anexado (PDF, imagem, print). Isso garante auditabilidade.
+
+Indicadores visuais de prazo:
+  — VERDE: Dentro do prazo.
+  — AMARELO: Prazo próximo (até 2 dias).
+  — VERMELHO: Atrasado.
+  — CINZA: Sem prazo definido.
+
+Sistema de Pontos no Kanban:
+  Cada vez que uma tarefa passa para "Validado", o sistema calcula
+  automaticamente os pontos ganhos com base em:
+    - Prioridade da tarefa (Urgente vale mais que Baixa).
+    - Complexidade (Complexa vale mais que Simples).
+    - Pontualidade: Atraso na entrega desconta pontos.
+  Esses pontos alimentam o módulo de Gamificação e Ranking.
+
+Regras de negócio importantes:
+  — Apenas o criador ou um validador designado pode mover a tarefa para
+    o status "Validado".
+  — Tarefas antigas ficam registradas como histórico — nunca são apagadas
+    automaticamente.
+  — O coordenador pode ver apenas as tarefas dos seus próprios clientes
+    (Logos), evitando acesso cruzado de informações.
+
+Filtros disponíveis:
+  — Por status, por responsável, por tipo, por logo, por prazo.
+
+
+================================================================================
+  7.  MÓDULO 03 — RANKING & PONTUAÇÃO (GAMIFICAÇÃO)
+================================================================================
+
+O que é:
+  Um sistema de reconhecimento e engajamento inspirado em jogos. Cada ação
+  positiva dentro do sistema gera pontos (XP), que fazem o colaborador
+  subir de nível e escalar o ranking da equipe.
+
+Como os pontos são ganhos:
+  — Concluir tarefas no Kanban (dentro do prazo = bônus).
+  — Responder perguntas no Fórum e ser marcado como "resposta útil".
+  — Criar posts no Fórum que recebam curtidas.
+  — Completar módulos de treinamento.
+  — Receber depoimentos positivos de colegas.
+  — Manter a pontuação alta ao longo do mês.
+
+Patentes e Níveis:
+  O colaborador começa em um nível básico e vai evoluindo conforme acumula
+  pontos. Cada faixa de pontos desbloqueia uma patente diferente — de
+  "Recruta" até patentes militares mais altas, como "Coronel", "General" etc.
+  Quando o nível sobe, o sistema exibe uma notificação de conquista.
+
+Conquistas (Achievements):
+  Além dos pontos contínuos, existem conquistas únicas que são desbloqueadas
+  por ações específicas, como:
+  — "Primeira Resposta Aprovada" — quando o usuário tem sua primeira
+    resposta marcada como correta no Fórum.
+  — "Entrega Perfeita" — completa 5 tarefas consecutivas no prazo.
+  — "Veterano" — está ativo no sistema há mais de X dias.
+
+Ranking:
+  — Ranking Geral: Todos os colaboradores visíveis para o usuário.
+  — Ranking por Logo/Cliente: Apenas colaboradores daquele cliente.
+  — Ranking Mensal e Histórico total.
+
+A visão do Ranking é filtrada pelo sistema de Logos — um colaborador
+de VIVO não vê o ranking de NUBANK, por exemplo.
+
+
+================================================================================
+  8.  MÓDULO 04 — FÓRUM MURA (CONHECIMENTO COLABORATIVO)
+================================================================================
+
+O que é:
+  Um fórum interno, estilo StackOverflow ou Reddit, onde a equipe pode
+  criar tópicos, fazer perguntas, compartilhar conhecimentos, postar
+  treinamentos e discutir temas relevantes da operação.
+
+O nome "Mura" vem da filosofia Lean, que representa um dos três
+desperdícios (Mura = variabilidade, o que o Fórum combate ao padronizar
+o conhecimento).
+
+O que dá para fazer no Fórum:
+  — Criar posts com texto rico (formatado), imagens e links.
+  — Classificar o post por categoria (Treinamento, Processo, Dúvida, Novidade).
+  — Curtir posts e comentários de colegas.
+  — Responder posts com comentários aninhados.
+  — Marcar uma resposta como "Resposta Correta" (só o autor do post pode).
+  — Postar em nome da Logo do seu cliente.
+
+Sistema de pontos integrado:
+  — Quem cria posts recebe pontos.
+  — Quem recebe curtidas recebe mais pontos.
+  — Quem tem respostas marcadas como corretas recebe bônus de XP.
+  — Quem curte (interager positivamente) também ganha pontos.
+
+O Fórum respeita o Multi-Tenancy: posts podem ser marcados para uma Logo
+específica, e colaboradores de outros clientes não os veem.
+
+
+================================================================================
+  9.  MÓDULO 05 — NEURONYO (INTELIGÊNCIA ARTIFICIAL)
+================================================================================
+
+O que é:
+  O assistente virtual integrado do sistema. É alimentado pelo Google Gemini
+  e permite que qualquer colaborador faça perguntas, peça análises ou
+  solicite geração de conteúdo sem sair do sistema.
+
+O que o Neuronyo sabe fazer:
+  — Responder dúvidas sobre processos, scripts de atendimento e qualidade.
+  — Resumir textos longos (atas de reunião, relatórios extensos).
+  — Analisar o sentimento de um texto (ex: transcrição de monitoria).
+  — Gerar sugestões de feedback para colaboradores.
+  — Ajudar a escrever um post para o Fórum.
+  — Simular diálogos de atendimento para treinamento.
+
+Como funciona:
+  O usuário digita uma pergunta em linguagem normal (não precisa
+  de comandos especiais). O Neuronyo envia essa pergunta para a API
+  do Google Gemini e exibe a resposta em segundos, direto na tela.
+
+O histórico das conversas é salvo por sessão. Ao fechar e reabrir,
+o histórico é limpo para garantir privacidade.
+
+Importante: O Neuronyo não tem acesso direto aos dados do banco do sistema.
+Ele não pode ver tarefas, nomes de usuários ou informações sigilosas.
+Ele funciona como um assistente de linguagem geral contextualizado
+para o universo de qualidade e atendimento.
+
+
+================================================================================
+  10. MÓDULO 06 — RELATÓRIOS OPERACIONAIS
+================================================================================
+
+O que é:
+  Uma central de relatórios completos, gerados automaticamente com os
+  dados do sistema, sem precisar montar planilhas manualmente.
+
+Tipos de relatórios disponíveis:
+  — Relatório de Produtividade: Quantas tarefas cada colaborador concluiu,
+    em quanto tempo e com qual qualidade.
+  — Relatório de SLA: Quantas tarefas foram entregues no prazo vs. atrasadas.
+  — Relatório de Pontuação: Detalhamento do histórico de pontos de cada usuário.
+  — Relatório de Fórum: Atividade, posts mais curtidos, colaboradores
+    mais ativos na comunidade.
+  — Relatório de Kanban: Distribuição de tarefas por tipo, por logo, por status.
+
+Exportação:
+  — Todos os relatórios podem ser exportados para Excel (.xlsx) ou PDF.
+  — A exportação inclui gráficos quando relevante.
+
+Filtros:
+  — Por período (dia, semana, mês, intervalo personalizado).
+  — Por colaborador específico.
+  — Por Logo/Cliente.
+  — Por cargo.
+
+
+================================================================================
+  11. MÓDULO 07 — CALENDÁRIO DE AGENDAS E TIMES
+================================================================================
+
+O que é:
+  Um calendário compartilhado onde a equipe visualiza e gerencia agendamentos,
+  reuniões, treinamentos e compromissos da operação.
+
+O que dá para fazer:
+  — Criar eventos com título, descrição, horário e participantes.
+  — Visualizar o calendário em modo Mês, Semana ou Dia.
+  — Link de reunião do Teams integrado diretamente no evento.
+  — Diferenciação visual por tipo de evento (reunião, treinamento, etc.).
+
+Calendário Teams:
+  Módulo específico que exibe os compromissos do Microsoft Teams
+  da equipe de forma integrada no sistema, sem precisar abrir o Teams
+  separadamente.
+
+
+================================================================================
+  12. MÓDULO 08 — CONTROLE DE FÉRIAS
+================================================================================
+
+O que é:
+  Um sistema de gestão de férias e afastamentos da equipe, integrando
+  ao calendário e ao Kanban para alertar sobre ausências.
+
+O que resolve:
+  — Visibilidade de quem está de férias agora ou nos próximos dias.
+  — Controle de conformidade com a legislação (saldo de dias).
+  — Coordenador pode aprovar ou rejeitar solicitações de férias.
+  — Ao aprovar, o sistema automaticamente bloqueia a atribuição de novas
+    tarefas no Kanban para o colaborador ausente.
+
+Filtrado por Logo — o coordenador de VIVO vê apenas as férias
+dos colaboradores da VIVO, sem misturar com outros clientes.
+
+
+================================================================================
+  13. MÓDULO 09 — ROTINA ADM (CHECKLIST DIÁRIO)
+================================================================================
+
+O que é:
+  Um módulo de rotinas automáticas e checklists diários. Cada dia,
+  o sistema cria automaticamente uma lista de tarefas operacionais fixas,
+  como "Check de Ponto", "Feedback Diário", "Monitoria do Turno" etc.
+
+Automação:
+  — As rotinas são criadas automaticamente toda madrugada (por um script
+    agendado), garantindo que nenhum dia sejam esquecidas.
+  — Se o colaborador não completar a rotina, ela fica como pendente
+    no Kanban até ser concluída ou descartada explicitamente.
+
+Personalização:
+  O administrador pode definir quais rotinas existem, para quais cargos
+  elas aparecem e em quais dias da semana são geradas.
+
+
+================================================================================
+  14. MÓDULO 10 — AVISOS E COMUNICADOS
+================================================================================
+
+O que é:
+  Um mural de comunicados internos, onde gestores publicam avisos
+  oficiais para toda a equipe ou para grupos específicos.
+
+O que dá para fazer:
+  — Criar avisos com texto, imagens e links.
+  — Definir o público-alvo (todos, ou apenas determinada Logo/cargo).
+  — Avisos urgentes aparecem com destaque visual na tela.
+  — Notificação automática para os destinatários ao publicar um aviso.
+  — Histórico de leitura: o sistema sabe quem leu e quem não leu.
+
+Diferença do Fórum:
+  Os Avisos são de mão única (gestores publicam, equipe lê). O Fórum
+  é colaborativo, onde qualquer pessoa pode criar e responder.
+
+
+================================================================================
+  15. MÓDULO 11 — DEPOIMENTOS (NEP TESTEMUNHOS)
+================================================================================
+
+O que é:
+  Um espaço para colaboradores registrarem reconhecimentos e feedbacks
+  positivos entre si — uma espécie de "mural de agradecimento" interno.
+
+Como funciona:
+  — Qualquer colaborador pode escrever um depoimento público para um colega.
+  — O depoimento fica visível no perfil do colaborador reconhecido.
+  — Quem escreve e quem recebe depoimentos ganham pontos de XP.
+  — Um depoimento notifica automaticamente o destinatário.
+
+Impacto:
+  Contribui para a cultura de reconhecimento e pertencimento dentro
+  do time, especialmente em equipes remotas ou híbridas.
+
+
+================================================================================
+  16. MÓDULO 12 — OKRs (GESTÃO DE METAS E ENTREGAS)
+================================================================================
+
+O que é:
+  O módulo estratégico do sistema. OKR é uma metodologia de gestão de metas
+  usada pelas maiores empresas do mundo (Google, Amazon, Netflix).
+  Significa "Objectives and Key Results" — Objetivos e Resultados-Chave.
+
+Na prática:
+  — O gestor define um Objetivo maior ("Reduzir o TMA em 10% no trimestre").
+  — Para cada Objetivo, define Resultados-Chave mensuráveis
+    ("Realizar 100 monitorias mensais", "Completar 5 calibrações por semana").
+  — A equipe acompanha o progresso em tempo real via barras de progresso
+    e indicadores percentuais.
+  — Ao final do período, o sistema gera automaticamente o relatório
+    de atingimento das metas.
+
+Diferença do Kanban:
+  O Kanban é operacional (tarefas do dia a dia).
+  O OKR é estratégico (metas de médio e longo prazo que as tarefas
+  do Kanban ajudam a atingir).
+
+
+================================================================================
+  17. MÓDULO 13 — RESULTADOS OPERACIONAIS
+================================================================================
+
+O que é:
+  Um painel dedicado a resultados de performance da operação, com foco
+  em indicadores da qualidade como TMA, CSAT, Resolução no Primeiro Contato,
+  Taxa de Monitoria etc.
+
+Diferença do Dashboard:
+  O Dashboard é um resumo rápido e visual.
+  Os Resultados Operacionais são mais analíticos — números precisos,
+  históricos e comparativos por período ou equipe.
+
+O que aparece:
+  — Gráfico de evolução mensal dos KPIs.
+  — Comparativo entre squads ou entre Logos.
+  — Exportação dos dados para Excel.
+
+
+================================================================================
+  18. MÓDULO 14 — FERRAMENTAS DE QUALIDADE
+================================================================================
+
+O que é:
+  Uma caixa de ferramentas com técnicas clássicas de gestão de qualidade,
+  digitalizadas e interativas, disponíveis direto no sistema.
+
+Ferramentas disponíveis:
+
+  ● PDCA (Plan-Do-Check-Act)
+    → Guia o usuário pelas 4 etapas do ciclo de melhoria contínua.
+    → Gera um relatório exportável ao final.
+
+  ● DMAIC (Define, Measure, Analyze, Improve, Control)
+    → Ferramenta para projetos Seis Sigma. Guia passo a passo cada etapa,
+      com campos de preenchimento e documentação integrada.
+
+  ● Gráfico de Ishikawa (Espinha de Peixe)
+    → Ferramenta visual para análise de causa raiz. O usuário monta o
+      diagrama interativamente e pode exportar como imagem.
+
+  ● GUT (Gravidade, Urgência, Tendência)
+    → Prioriza problemas em uma matriz. O usuário entra com os problemas
+      e os pesos, o sistema calcula automaticamente a ordem de prioridade.
+
+  ● 5 Porquês
+    → Técnica simples e eficaz de análise de causa raiz. O sistema
+      guia o usuário pelas 5 perguntas "Por quê?" e salva o resultado.
+
+  ● Gráfico de Pareto
+    → Identifica automaticamente os 20% de causas que geram 80% dos problemas.
+      Gera o gráfico e exibe a tabela de frequências.
+
+  ● Gerador de Gráficos
+    → Ferramenta livre para criar gráficos personalizados (barra, pizza, linha)
+      a partir de dados colados pelo usuário.
+
+  ● HTML Creator
+    → Ferramenta experimental que usa IA para gerar código HTML de documentos
+      e relatórios personalizados a partir de uma descrição em texto.
+
+  ● CEP Pro (Consulta de CEP)
+    → Consulta de endereço via CEP integrada, útil para processar dados
+      cadastrais de clientes rapidamente.
+
+Todas as ferramentas são salvas no histórico do usuário, podendo ser
+retomadas posteriormente.
+
+
+================================================================================
+  19. MÓDULO 15 — MEU PERFIL
+================================================================================
+
+O que é:
+  A "identidade" do colaborador dentro do sistema. Concentra tudo
+  relacionado ao indivíduo.
+
+O que o perfil mostra:
+  — Nome, foto de perfil, cargo e Logo associada.
+  — Nível atual, patente e XP acumulado.
+  — Histórico completo de pontos (de onde cada ponto veio).
+  — Conquistas desbloqueadas.
+  — Depoimentos recebidos de colegas.
+  — Tarefas concluídas ao longo do tempo.
+  — Gráfico de produtividade pessoal.
+
+O colaborador pode:
+  — Atualizar sua foto de perfil.
+  — Ver seu histórico de atividades no sistema.
+  — Acompanhar sua evolução de nível e pontuação.
+
+
+================================================================================
+  20. MÓDULO 16 — PAINEL DO ADMINISTRADOR
+================================================================================
+
+O que é:
+  A sala de controle do sistema. Apenas Administradores têm acesso.
+
+O que o Admin pode fazer:
+
+  GESTÃO DE USUÁRIOS:
+    — Criar novos usuários com e-mail, senha, cargo e Logo.
+    — Editar dados de qualquer usuário.
+    — Ativar ou desativar contas.
+    — Atribuir múltiplas Logos a um mesmo colaborador.
+    — Exportar lista completa de usuários para Excel.
+
+  GESTÃO DE LOGOS (CLIENTES):
+    — Criar, renomear ou excluir Logos (clientes).
+    — Associar usuários às Logos correspondentes.
+
+  GESTÃO DE PERMISSÕES DE MÓDULOS:
+    — Ativar ou desativar módulos por cargo. Por exemplo: desativar o
+      acesso ao Fórum para Monitores, ou desativar Ferramentas para
+      um cargo específico.
+    — As alterações entram em vigor imediatamente, sem reiniciar o sistema.
+
+  GESTÃO DE PONTOS:
+    — Ajuste manual de pontos de um usuário (para correções).
+    — Exportação do histórico de pontos completo para auditoria.
+
+  ANALYTICS DO ADMIN:
+    — Painel de Analytics com dados de uso do sistema: módulos mais acessados,
+      horários de pico, usuários mais ativos, eventos críticos.
+
+  RESET DO KANBAN:
+    — Ferramenta de limpeza do banco de dados do Kanban (usada em viradas
+      de ciclo/período, para começo de novo trimestre, por exemplo).
+
+  AUDITORIA:
+    — Log completo de ações críticas: quem criou usuário, quem aprovou
+      tarefa, quem alterou permissão e em que data/hora.
+
+
+================================================================================
+  21. SEGURANÇA E PROTEÇÃO DE DADOS
+================================================================================
+
+O NEP foi projetado com segurança em múltiplas camadas:
+
+  ● Autenticação via Firebase Auth
+    → Senhas nunca ficam armazenadas em texto puro. São criptografadas
+      com os padrões de segurança do Google.
+
+  ● Regras de Segurança do Firestore (Firestore Security Rules)
+    → O banco de dados tem regras rígidas que definem quem pode ler ou
+      escrever em cada coleção. Mesmo que alguém tente acessar diretamente
+      o banco de dados, as regras impedem o acesso não autorizado.
+    → Exemplo: Um colaborador sem permissão não consegue ler dados de
+      Logos que não são suas, mesmo tentando diretamente via console.
+
+  ● Controle de Acesso Baseado em Cargo (RBAC)
+    → Cada ação no sistema (criar tarefa, aprovar, exportar, etc.) é
+      verificada contra o cargo do usuário antes de ser executada.
+
+  ● Isolamento por Multi-Tenancy (Logos)
+    → Dados de diferentes clientes são isolados logicamente.
+      Um coordenador de uma Logo não consegue ver dados de outra.
+
+  ● Auditoria de Ações Críticas
+    → Toda ação sensível gera um registro automático (log de auditoria)
+      com o usuário, data, hora e detalhes da ação.
+
+  ● Proteção de Sessão
+    → A sessão expira automaticamente após período de inatividade.
+    → Logout remoto disponível para o Admin (pode derrubar a sessão de
+      qualquer usuário).
+
+  ● Upload de Arquivos Seguro (Firebase Storage)
+    → Arquivos de evidência são enviados para o Google Cloud Storage,
+      com URLs de acesso protegidas por token temporário.
+
+  ● HTTPS em toda a comunicação
+    → Todo tráfego entre o navegador e os servidores é criptografado.
+      Não existe comunicação não segura.
+
+
+================================================================================
+  22. MULTI-TENANCY (GESTÃO DE MÚLTIPLOS CLIENTES / LOGOS)
+================================================================================
+
+O que é Multi-Tenancy:
+  É a capacidade do sistema de atender múltiplos clientes (chamados de
+  "Logos") dentro de uma mesma instalação, com total isolamento dos dados.
+
+Por que isso importa:
+  O NEP foi desenvolvido em um contexto de BPO — onde a mesma equipe
+  pode atender múltiplos clientes (VIVO, NUBANK, HUB, etc.). Cada cliente
+  tem suas próprias tarefas, colaboradores, rankings e relatórios.
+
+Como funciona na prática:
+  — Cada usuário é associado a uma ou mais Logos.
+  — Quando um Coordenador da VIVO entra no Kanban, ele vê apenas
+    as tarefas da VIVO.
+  — Quando filtra os Responsáveis para atribuir uma tarefa, ele vê
+    apenas colaboradores da VIVO.
+  — O Ranking que ele vê contém apenas colaboradores da VIVO.
+  — O Dashboard mostra apenas dados da VIVO.
+
+Regras do Multi-Tenancy:
+  — Usuário sem Logo definida: Visível para todos (conta legada / em migração).
+  — Usuário COM Logo: Visível apenas para quem tem a mesma Logo.
+  — Admin e Diretor: Veem todos, com opção de filtrar por Logo.
+
+
+================================================================================
+  23. NOTIFICAÇÕES EM TEMPO REAL
+================================================================================
+
+O sistema tem um motor de notificações que informam o usuário sobre
+eventos importantes sem precisar que ele fique checando manualmente.
+
+Eventos que geram notificações automáticas:
+  — Uma tarefa foi atribuída a você.
+  — Sua tarefa foi aprovada/validada.
+  — Você subiu de nível na gamificação.
+  — Alguém respondeu seu post no Fórum.
+  — Um novo Aviso foi publicado para seu grupo.
+  — Você recebeu um depoimento de um colega.
+  — Você desbloqueou uma conquista.
+
+O sino (�bell) no topo do sistema mostra o número de notificações não lidas.
+Ao clicar, abre um painel dropdown com as notificações recentes.
+
+As notificações são salvas no banco de dados — mesmo que o usuário não
+esteja logado, elas ficam lá esperando quando ele entrar.
+
+
+================================================================================
+  24. BUSCA GLOBAL (CTRL+K)
+================================================================================
+
+O que é:
+  Uma busca inteligente inspirada no "Spotlight" do Mac ou na busca do Notion.
+  Permite encontrar qualquer informação do sistema em segundos.
+
+Como usar:
+  — Pressione CTRL+K (ou CMD+K no Mac) em qualquer tela.
+  — Uma barra de busca aparece no centro da tela.
+  — Digite qualquer coisa: nome de tarefa, usuário, post do Fórum, aviso.
+  — Os resultados aparecem em tempo real, categorizados por tipo.
+  — Pressione ENTER ou clique para navegar direto para o resultado.
+  — ESC fecha a busca.
+
+O que a busca encontra:
+  — Tarefas do Kanban.
+  — Posts do Fórum.
+  — Avisos.
+  — Usuários (para cargos que podem ver usuários).
+  — Agendas.
+  — Relatórios.
+
+A busca respeita as permissões do usuário — ele não vai encontrar
+tarefas ou posts de Logos que não são suas.
+
+
+================================================================================
+  25. MODO OFFLINE E PWA (APLICATIVO)
+================================================================================
+
+O NEP funciona como um PWA (Progressive Web App), o que dá a ele
+superpoderes além do navegador:
+
+  ● Instalável como App
+    → No computador ou celular, o usuário pode clicar em "Instalar" e
+      ter o NEP como um ícone na área de trabalho ou tela inicial,
+      sem passar pela loja de aplicativos.
+
+  ● Cache Inteligente
+    → Partes do sistema ficam armazenadas localmente no dispositivo.
+      Mesmo com uma queda momentânea de internet, o sistema não trava.
+
+  ● Botão de Atualização Forçada
+    → Quando o Admin sobe uma nova versão, os usuários recebem uma
+      notificação dentro do sistema com um botão para "Atualizar Agora",
+      que limpa o cache antigo e carrega a versão nova instantaneamente.
+
+  ● Compatível com todos os dispositivos
+    → O sistema é responsivo: funciona igualmente bem em telefone,
+      tablet, notebook e monitor grande.
+
+
+================================================================================
+  26. O QUE CADA CARGO ACESSA (CONTROLE DE ACESSO)
+================================================================================
+
+A tabela abaixo resume quais módulos cada cargo pode acessar por padrão.
+O Administrador pode alterar essas permissões individualmente.
+
+  MÓDULO                    | ADMIN | DIRETOR | SUPERIN | COORD | ANALISTA | MONITOR
+  --------------------------+-------+---------+---------+-------+----------+--------
+  Dashboard                 |  SIM  |   SIM   |   SIM   |  SIM  |   SIM    |   SIM
+  Kanban                    |  SIM  |   SIM   |   SIM   |  SIM  |   SIM    |  LIMIT.
+  Ranking / Gamificação     |  SIM  |   SIM   |   SIM   |  SIM  |   SIM    |   SIM
+  Fórum Mura                |  SIM  |   SIM   |   SIM   |  SIM  |   SIM    |  LIMIT.
+  Neuronyo (IA)             |  SIM  |   SIM   |   SIM   |  SIM  |   SIM    |   NÃO
+  Relatórios                |  SIM  |   SIM   |   SIM   |  SIM  |  LIMIT.  |   NÃO
+  Calendário                |  SIM  |   SIM   |   SIM   |  SIM  |   SIM    |   SIM
+  Controle de Férias        |  SIM  |   SIM   |   SIM   |  SIM  |   NÃO    |   NÃO
+  Rotina ADM                |  SIM  |   SIM   |   SIM   |  SIM  |   SIM    |   SIM
+  Avisos                    |  SIM  |   SIM   |   SIM   |  SIM  |   SIM    |   SIM
+  Depoimentos               |  SIM  |   SIM   |   SIM   |  SIM  |   SIM    |   SIM
+  OKRs                      |  SIM  |   SIM   |   SIM   |  SIM  |  LIMIT.  |   NÃO
+  Resultados Operacionais   |  SIM  |   SIM   |   SIM   |  SIM  |  LIMIT.  |   NÃO
+  Ferramentas de Qualidade  |  SIM  |   SIM   |   SIM   |  SIM  |   SIM    |   NÃO
+  Meu Perfil                |  SIM  |   SIM   |   SIM   |  SIM  |   SIM    |   SIM
+  Painel Admin              |  SIM  |   NÃO   |   NÃO   |  NÃO  |   NÃO    |   NÃO
+
+  * LIMIT. = Acesso com restrições (vê apenas o que é dele / sem permissão de criar).
+
+
+================================================================================
+  CONSIDERAÇÕES FINAIS
+================================================================================
+
+O NEP Delivery Control é um produto vivo — em evolução constante conforme
+as necessidades do time crescem. Novas funcionalidades são adicionadas
+em ciclos rápidos, e o sistema ja passou por mais de 30 versões desde
+seu lançamento.
+
+Diferenciais que fazem o NEP único em relação ao mercado:
+  — Custo: ZERO. Nenhum licenciamento pago de terceiros.
+  — Customização: 100% adaptado ao universo de qualidade de BPO.
+  — Velocidade: Deploy de nova funcionalidade em horas, não meses.
+  — Multi-Tenancy: Nenhum competidor entrega isso de forma tão integrada.
+  — Gamificação: Raramente vista em ferramentas de gestão de qualidade.
+  — IA Integrada: O Neuronyo dá superpoderes para qualquer colaborador.
+
+Para dúvidas, sugestões ou reporte de problemas:
+  → Fale com Fernando Evangelista (desenvolvedor e responsável pelo sistema).
+  → Ou use o Fórum interno do próprio NEP para registrar sua solicitação.
+
+================================================================================
+         COPYRIGHT © 2026 — NEP DELIVERY CONTROL — TODOS OS DIREITOS RESERVADOS
+================================================================================

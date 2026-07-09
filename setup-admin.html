@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEP | Setup Inicial</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        body {
+            background: #0a0f1e;
+            color: #e5e7eb;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            width: 100%;
+        }
+
+        .card {
+            background: rgba(15, 23, 41, 0.9);
+            border: 1px solid rgba(47, 111, 237, 0.3);
+            border-radius: 16px;
+            padding: 40px;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        h1 i {
+            color: #8b5cf6;
+        }
+
+        .subtitle {
+            color: #64748b;
+            margin-bottom: 30px;
+        }
+
+        .step {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+            border-left: 4px solid #2f6fed;
+        }
+
+        .step-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .step-number {
+            background: #2f6fed;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+
+        .step-content {
+            color: #8fa6c6;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .code-block {
+            background: #1e293b;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 13px;
+            margin: 10px 0;
+            overflow-x: auto;
+        }
+
+        .highlight {
+            color: #f59e0b;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .label {
+            display: block;
+            font-size: 12px;
+            color: #8fa6c6;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        .input-field {
+            width: 100%;
+            background: rgba(10, 15, 30, 0.8);
+            border: 2px solid rgba(47, 111, 237, 0.3);
+            padding: 14px;
+            border-radius: 10px;
+            color: #e5e7eb;
+            font-size: 14px;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: #2f6fed;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #2f6fed, #8b5cf6);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(47, 111, 237, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .success {
+            background: rgba(46, 204, 113, 0.2);
+            border: 1px solid rgba(46, 204, 113, 0.5);
+            padding: 16px;
+            border-radius: 10px;
+            color: #6ee7b7;
+            display: none;
+        }
+
+        .error {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.5);
+            padding: 16px;
+            border-radius: 10px;
+            color: #fca5a5;
+            display: none;
+        }
+
+        .info-box {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            padding: 16px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .info-box strong {
+            color: #60a5fa;
+        }
+
+        a {
+            color: #8b5cf6;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="card">
+            <h1><i class="fa-solid fa-wand-magic-sparkles"></i> Setup Inicial NEP</h1>
+            <p class="subtitle">Configure o usuário administrador para começar a usar o sistema.</p>
+
+            <div class="info-box">
+                <strong>📧 Admin Principal:</strong> Administrador Ecossistema NEP<br>
+                <strong>✉️ Email:</strong> ecossistemanep@gmail.com<br>
+                <strong>🆔 UID:</strong> rRo82JOE1bUYJDSQUOnwSyzHRG32
+            </div>
+
+            <div class="step">
+                <div class="step-title"><span class="step-number">1</span> Usuário no Firebase Auth</div>
+                <div class="step-content">
+                    O usuário já foi criado no projeto <strong>ecossistema-nep</strong>. Confira no
+                    <a href="https://console.firebase.google.com/project/ecossistema-nep/authentication/users"
+                        target="_blank">Firebase Console</a>:
+                    <div class="code-block">
+                        Email: <span class="highlight">ecossistemanep@gmail.com</span><br>
+                        UID: <span class="highlight">rRo82JOE1bUYJDSQUOnwSyzHRG32</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-title"><span class="step-number">2</span> Criar/corrigir documento no Firestore</div>
+                <div class="step-content">
+                    O UID já vem preenchido. Clique em "Criar Admin" — se o documento já existir,
+                    os campos que faltarem (nome, cargo ADMIN, status ATIVO) serão completados sem apagar nada:
+                    <div class="input-group" style="margin-top: 16px;">
+                        <label class="label">UID do Firebase Auth</label>
+                        <input type="text" id="admin-uid" class="input-field" value="rRo82JOE1bUYJDSQUOnwSyzHRG32"
+                            placeholder="Cole o UID aqui...">
+                    </div>
+                    <button class="btn" id="btn-create-admin">
+                        <i class="fa-solid fa-user-shield"></i> Criar Admin no Firestore
+                    </button>
+                </div>
+            </div>
+
+            <div class="success" id="success-msg">
+                <i class="fa-solid fa-check-circle"></i>
+                <strong>Sucesso!</strong> O usuário admin foi criado.
+                <a href="login.html">Ir para o login</a>
+            </div>
+
+            <div class="error" id="error-msg">
+                <i class="fa-solid fa-exclamation-circle"></i>
+                <span id="error-text">Erro ao criar admin</span>
+            </div>
+        </div>
+
+        <div class="card" style="padding: 20px; text-align: center;">
+            <p style="color: #64748b; font-size: 13px;">
+                Após configurar, acesse <a href="login.html">login.html</a> para entrar no sistema.
+            </p>
+        </div>
+    </div>
+
+    <script type="module">
+        import { setupInitialAdmin } from './js/setup-admin.js';
+
+        document.getElementById('btn-create-admin').addEventListener('click', async () => {
+            const uid = document.getElementById('admin-uid').value.trim();
+            const btn = document.getElementById('btn-create-admin');
+            const successMsg = document.getElementById('success-msg');
+            const errorMsg = document.getElementById('error-msg');
+
+            if (!uid) {
+                errorMsg.querySelector('#error-text').textContent = 'Informe o UID do Firebase Auth';
+                errorMsg.style.display = 'block';
+                successMsg.style.display = 'none';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Criando...';
+            errorMsg.style.display = 'none';
+
+            try {
+                const result = await setupInitialAdmin(uid);
+
+                if (result.exists) {
+                    successMsg.innerHTML = '<i class="fa-solid fa-info-circle"></i> <strong>Info:</strong> O usuário admin já existe. <a href="login.html">Ir para o login</a>';
+                }
+
+                successMsg.style.display = 'block';
+                btn.innerHTML = '<i class="fa-solid fa-check"></i> Criado!';
+
+            } catch (error) {
+                console.error(error);
+                errorMsg.querySelector('#error-text').textContent = error.message || 'Erro ao criar admin';
+                errorMsg.style.display = 'block';
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-user-shield"></i> Criar Admin no Firestore';
+            }
+        });
+    </script>
+</body>
+
+</html>

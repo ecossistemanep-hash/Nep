@@ -1,0 +1,211 @@
+/* Ticket Management Styles */
+.tickets-container {
+    padding: var(--space-6);
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.tickets-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-6);
+}
+
+.tickets-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--space-4);
+    margin-bottom: var(--space-6);
+}
+
+.tkt-stat-card {
+    background: var(--surface-card);
+    border: 1px solid var(--surface-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-4);
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+}
+
+.tkt-stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    background: var(--surface-hover);
+}
+
+.tkt-stat-info { display: flex; flex-direction: column; }
+.tkt-stat-value { font-size: 24px; font-weight: 700; color: var(--text-primary); }
+.tkt-stat-label { font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; }
+
+/* Tabs */
+.tkt-tabs {
+    display: flex;
+    gap: var(--space-4);
+    border-bottom: 1px solid var(--surface-border);
+    margin-bottom: var(--space-6);
+}
+
+.tkt-tab {
+    padding: var(--space-3) var(--space-6);
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text-secondary);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.tkt-tab:hover { color: var(--text-primary); }
+.tkt-tab.active {
+    color: var(--primary-400);
+    border-bottom-color: var(--primary-400);
+}
+
+/* Kanban/List View */
+.tkt-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.tkt-item {
+    background: var(--surface-card);
+    border: 1px solid var(--surface-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-4);
+    display: grid;
+    grid-template-columns: 80px 1fr 150px 150px 120px 100px;
+    align-items: center;
+    gap: var(--space-4);
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.tkt-item:hover {
+    border-color: var(--primary-500);
+    transform: translateX(4px);
+}
+
+.tkt-id {
+    font-family: monospace;
+    color: var(--text-tertiary);
+    font-weight: 600;
+}
+
+.tkt-main { display: flex; flex-direction: column; gap: 4px; }
+.tkt-title { font-weight: 600; color: var(--text-primary); }
+.tkt-desc-preview { font-size: 13px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.tkt-meta { font-size: 13px; color: var(--text-tertiary); display: flex; align-items: center; gap: 6px; }
+.tkt-meta img { width: 20px; height: 20px; border-radius: 50%; }
+
+/* Badges */
+.tkt-badge {
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    text-align: center;
+}
+
+.badge-new { background: #3b82f620; color: #3b82f6; }
+.badge-approved { background: #10b98120; color: #10b981; }
+.badge-returned { background: #f59e0b20; color: #f59e0b; }
+.badge-progress { background: #8b5cf620; color: #8b5cf6; }
+.badge-done { background: #06b6d420; color: #06b6d4; }
+.badge-closed { background: #64748b20; color: #64748b; }
+
+.prio-high { color: #ef4444; font-weight: 700; }
+.prio-medium { color: #f59e0b; }
+.prio-low { color: #22c55e; }
+
+/* Modal */
+.tkt-modal-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: var(--space-6);
+    height: 100%;
+}
+
+.tkt-details-main {
+    padding-right: var(--space-6);
+    border-right: 1px solid var(--surface-border);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+    overflow-y: auto;
+}
+
+.tkt-details-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+.tkt-timeline {
+    margin-top: var(--space-6);
+    border-top: 1px solid var(--surface-border);
+    padding-top: var(--space-4);
+}
+
+.timeline-item {
+    display: flex;
+    gap: var(--space-3);
+    margin-bottom: var(--space-4);
+}
+
+.timeline-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--surface-hover);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    flex-shrink: 0;
+}
+
+.timeline-content {
+    background: var(--surface-elevated);
+    padding: var(--space-3);
+    border-radius: var(--radius-lg);
+    flex: 1;
+}
+
+.timeline-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: var(--space-2);
+    font-size: 12px;
+    color: var(--text-tertiary);
+}
+
+.msg-bubble {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+.action-bar {
+    display: flex;
+    gap: var(--space-2);
+    margin-top: auto;
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--surface-border);
+}
+
+@media (max-width: 1024px) {
+    .tkt-modal-grid { grid-template-columns: 1fr; }
+    .tkt-details-main { padding-right: 0; border-right: none; max-height: 300px; }
+    .tkt-item { grid-template-columns: 1fr; gap: var(--space-2); }
+}

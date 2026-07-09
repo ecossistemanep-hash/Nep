@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEP | Importar Usuários</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Orbitron:wght@700&display=swap"
+        rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #020408;
+            color: #fff;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .header h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2rem;
+            background: linear-gradient(135deg, #00E0FF, #A855F7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            color: #9CA3AF;
+        }
+
+        .card {
+            background: #131B29;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .card h2 {
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+            color: #00E0FF;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .stat-card {
+            background: rgba(0, 224, 255, 0.1);
+            padding: 1rem;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .stat-card .number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #00E0FF;
+        }
+
+        .stat-card .label {
+            font-size: 0.8rem;
+            color: #9CA3AF;
+        }
+
+        .users-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+
+        .users-table th {
+            background: rgba(0, 224, 255, 0.1);
+            padding: 0.75rem;
+            text-align: left;
+            color: #00E0FF;
+            font-weight: 600;
+        }
+
+        .users-table td {
+            padding: 0.75rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .users-table tr:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        .badge-ativo {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10B981;
+        }
+
+        .badge-ferias {
+            background: rgba(251, 191, 36, 0.2);
+            color: #FBBF24;
+        }
+
+        .badge-monitor {
+            background: rgba(156, 163, 175, 0.2);
+            color: #9CA3AF;
+        }
+
+        .badge-analista {
+            background: rgba(59, 130, 246, 0.2);
+            color: #3B82F6;
+        }
+
+        .badge-coordenador {
+            background: rgba(168, 85, 247, 0.2);
+            color: #A855F7;
+        }
+
+        .badge-gerente {
+            background: rgba(239, 68, 68, 0.2);
+            color: #EF4444;
+        }
+
+        .badge-consultor {
+            background: rgba(236, 72, 153, 0.2);
+            color: #EC4899;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #00E0FF, #A855F7);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 224, 255, 0.3);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .progress-container {
+            margin-top: 1rem;
+            display: none;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00E0FF, #A855F7);
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        .progress-text {
+            text-align: center;
+            margin-top: 0.5rem;
+            font-size: 0.85rem;
+            color: #9CA3AF;
+        }
+
+        .log-container {
+            max-height: 200px;
+            overflow-y: auto;
+            background: #0a0e17;
+            border-radius: 8px;
+            padding: 1rem;
+            font-family: monospace;
+            font-size: 0.8rem;
+            margin-top: 1rem;
+        }
+
+        .log-entry {
+            padding: 0.25rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .log-success {
+            color: #10B981;
+        }
+
+        .log-error {
+            color: #EF4444;
+        }
+
+        .log-info {
+            color: #00E0FF;
+        }
+
+        .warning-box {
+            background: rgba(251, 191, 36, 0.1);
+            border: 1px solid rgba(251, 191, 36, 0.3);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            display: flex;
+            gap: 0.75rem;
+            align-items: flex-start;
+        }
+
+        .warning-box i {
+            color: #FBBF24;
+            font-size: 1.25rem;
+        }
+
+        .warning-box p {
+            color: #FBBF24;
+            font-size: 0.9rem;
+        }
+
+        .table-container {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .actions-bar {
+            display: flex;
+            gap: 1rem;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚡ Importação de Usuários</h1>
+            <p>Importe usuários em massa para o sistema NEP</p>
+        </div>
+
+        <div class="warning-box">
+            <i class="fas fa-exclamation-triangle"></i>
+            <div>
+                <p><strong>Importante:</strong> Este processo criará contas no Firebase Auth para cada usuário.</p>
+                <p>Senha padrão: <code style="background:#0a0e17;padding:2px 6px;border-radius:4px;">NEP2025@Temp</code>
+                    - Usuários devem trocar no primeiro login.</p>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2><i class="fas fa-file-csv"></i> Carregar arquivo CSV</h2>
+            <p style="color:#9CA3AF; margin-bottom:1rem;">
+                Nenhum dado pessoal fica gravado no código-fonte. Selecione um arquivo CSV com o cabeçalho:
+                <code style="background:#0a0e17;padding:2px 6px;border-radius:4px;">matricula,nome,setor,status,cargo,email</code>
+            </p>
+            <input type="file" id="csv-file-input" accept=".csv" style="color:#fff;">
+        </div>
+
+        <div class="card" id="summary-card" style="display:none;">
+            <h2><i class="fas fa-chart-bar"></i> Resumo dos Dados</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="number" id="total-users">0</div>
+                    <div class="label">Total de Usuários</div>
+                </div>
+                <div class="stat-card">
+                    <div class="number" id="nubank-count">0</div>
+                    <div class="label">Setor NUBANK</div>
+                </div>
+                <div class="stat-card">
+                    <div class="number" id="vivo-count">0</div>
+                    <div class="label">Setor VIVO</div>
+                </div>
+                <div class="stat-card">
+                    <div class="number" id="active-count">0</div>
+                    <div class="label">Ativos</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" id="table-card" style="display:none;">
+            <h2><i class="fas fa-users"></i> Lista de Usuários para Importar</h2>
+            <div class="table-container">
+                <table class="users-table" id="users-table">
+                    <thead>
+                        <tr>
+                            <th>Matrícula</th>
+                            <th>Nome</th>
+                            <th>Email</th>
+                            <th>Setor</th>
+                            <th>Status</th>
+                            <th>Cargo</th>
+                        </tr>
+                    </thead>
+                    <tbody id="users-body">
+                        <!-- Preenchido via JS após upload do CSV -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2><i class="fas fa-rocket"></i> Iniciar Importação</h2>
+            <div class="actions-bar">
+                <div>
+                    <button class="btn btn-primary" id="btn-start" onclick="startImport()" disabled>
+                        <i class="fas fa-play"></i> Iniciar Importação
+                    </button>
+                    <button class="btn btn-secondary" onclick="window.location.href='index.html'">
+                        <i class="fas fa-arrow-left"></i> Voltar ao Sistema
+                    </button>
+                </div>
+                <div id="status-text" style="color:#9CA3AF;">Carregue um arquivo CSV para habilitar a importação.</div>
+            </div>
+
+            <div class="progress-container" id="progress-container">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+                <div class="progress-text" id="progress-text">0 / 109 usuários importados</div>
+            </div>
+
+            <div class="log-container" id="log-container" style="display:none;"></div>
+        </div>
+    </div>
+
+    <!-- Firebase -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getAuth, createUserWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        import { getFirestore, doc, setDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+        // Firebase Config — mesma config do app principal (ver js/firebase-config.js)
+        const firebaseConfig = {
+            apiKey: "AIzaSyCqwJ64SjXQf_ekZhRZcF4nN_Fqhwvxi_Q",
+            authDomain: "ecossistema-nep.firebaseapp.com",
+            projectId: "ecossistema-nep",
+            storageBucket: "ecossistema-nep.firebasestorage.app",
+            messagingSenderId: "1041112586342",
+            appId: "1:1041112586342:web:0b7dc02b242cd3dbe635a7"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        const DEFAULT_PASSWORD = 'NEP2025@Temp';
+
+        // Dados carregados via upload de CSV (nenhum dado pessoal fica no código-fonte)
+        let usersData = [];
+
+        function parseCSV(text) {
+            const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+            if (lines.length < 2) return [];
+            const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+            return lines.slice(1).map(line => {
+                const values = line.split(',').map(v => v.trim());
+                const row = {};
+                headers.forEach((h, i) => { row[h] = values[i] || ''; });
+                return row;
+            }).filter(row => row.email);
+        }
+
+        document.getElementById('csv-file-input').addEventListener('change', (event) => {
+            const file = event.target.files?.[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                usersData = parseCSV(e.target.result);
+                if (usersData.length === 0) {
+                    alert('Nenhum registro válido encontrado no CSV. Confira o cabeçalho e o conteúdo do arquivo.');
+                    return;
+                }
+                document.getElementById('summary-card').style.display = 'block';
+                document.getElementById('table-card').style.display = 'block';
+                document.getElementById('btn-start').disabled = false;
+                document.getElementById('status-text').textContent = `${usersData.length} usuário(s) carregado(s) do arquivo.`;
+                renderSummary();
+                renderTable();
+            };
+            reader.readAsText(file, 'UTF-8');
+        });
+
+        function renderSummary() {
+            document.getElementById('total-users').textContent = usersData.length;
+            document.getElementById('nubank-count').textContent = usersData.filter(u => (u.setor || '').toUpperCase() === 'NUBANK').length;
+            document.getElementById('vivo-count').textContent = usersData.filter(u => (u.setor || '').toUpperCase() === 'VIVO').length;
+            document.getElementById('active-count').textContent = usersData.filter(u => mapStatus(u.status || '') === 'ATIVO').length;
+        }
+
+        // Mapear cargo do CSV para cargo do sistema
+        function mapCargo(cargoCSV) {
+            const cargo = cargoCSV.toUpperCase();
+            if (cargo.includes('GERENTE')) return 'GERENTE';
+            if (cargo.includes('COORDENADOR') || cargo.includes('SUPERVISOR')) return 'COORDENADOR';
+            if (cargo.includes('CONSULTOR')) return 'CONSULTOR';
+            if (cargo.includes('ANALISTA')) return 'ANALISTA';
+            return 'MONITOR';
+        }
+
+        // Mapear status
+        function mapStatus(statusCSV) {
+            return statusCSV.toUpperCase().includes('FÉRIAS') ? 'FERIAS' : 'ATIVO';
+        }
+
+        // Renderizar tabela
+        function renderTable() {
+            const tbody = document.getElementById('users-body');
+            tbody.innerHTML = usersData.map(u => `
+                <tr>
+                    <td>${u.matricula}</td>
+                    <td>${u.nome}</td>
+                    <td>${u.email}</td>
+                    <td>${u.setor}</td>
+                    <td><span class="badge badge-${u.status === 'ATIVO' ? 'ativo' : 'ferias'}">${u.status}</span></td>
+                    <td><span class="badge badge-${mapCargo(u.cargo).toLowerCase()}">${mapCargo(u.cargo)}</span></td>
+                </tr>
+            `).join('');
+        }
+
+        // Log
+        function addLog(message, type = 'info') {
+            const container = document.getElementById('log-container');
+            container.style.display = 'block';
+            container.innerHTML += `<div class="log-entry log-${type}">[${new Date().toLocaleTimeString()}] ${message}</div>`;
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // Importar usuários
+        window.startImport = async function () {
+            const btn = document.getElementById('btn-start');
+            const progressContainer = document.getElementById('progress-container');
+            const progressFill = document.getElementById('progress-fill');
+            const progressText = document.getElementById('progress-text');
+            const statusText = document.getElementById('status-text');
+
+            btn.disabled = true;
+            progressContainer.style.display = 'block';
+
+            let success = 0;
+            let failed = 0;
+            const total = usersData.length;
+
+            addLog(`Iniciando importação de ${total} usuários...`, 'info');
+
+            for (let i = 0; i < usersData.length; i++) {
+                const user = usersData[i];
+                const percent = Math.round(((i + 1) / total) * 100);
+                progressFill.style.width = `${percent}%`;
+                progressText.textContent = `${i + 1} / ${total} usuários processados`;
+                statusText.textContent = `Processando: ${user.nome}`;
+
+                try {
+                    // Criar no Firebase Auth
+                    const userCredential = await createUserWithEmailAndPassword(
+                        auth,
+                        user.email.toLowerCase(),
+                        DEFAULT_PASSWORD
+                    );
+
+                    // Salvar no Firestore
+                    await setDoc(doc(db, 'users', userCredential.user.uid), {
+                        nome: user.nome,
+                        email: user.email.toLowerCase(),
+                        matricula: user.matricula,
+                        setor: user.setor.trim(),
+                        cargo: mapCargo(user.cargo),
+                        status: mapStatus(user.status),
+                        primeiro_acesso: true,
+                        data_criacao: serverTimestamp(),
+                        ultimo_login: null,
+                        criado_por: 'IMPORTACAO_MASSA'
+                    });
+
+                    success++;
+                    addLog(`✓ ${user.nome} (${user.email})`, 'success');
+
+                } catch (error) {
+                    failed++;
+                    let msg = error.message;
+                    if (error.code === 'auth/email-already-in-use') {
+                        msg = 'Email já cadastrado';
+                    }
+                    addLog(`✗ ${user.nome}: ${msg}`, 'error');
+                }
+
+                // Pequeno delay para não sobrecarregar
+                await new Promise(r => setTimeout(r, 500));
+            }
+
+            statusText.textContent = `Concluído! ${success} importados, ${failed} erros`;
+            addLog(`\n=== FINALIZADO ===\nSucesso: ${success}\nErros: ${failed}`, 'info');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-check"></i> Importação Concluída';
+        };
+    </script>
+</body>
+
+</html>

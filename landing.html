@@ -1,0 +1,1436 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEP Platform — Sistema Integrado de Gestão & Qualidade</title>
+    <meta name="description"
+        content="Plataforma enterprise all-in-one: Kanban, Dashboard executivo, Ferramentas de qualidade, IA integrada e gamificação. Transforme sua operação.">
+    <link rel="icon" type="image/png" href="NEP. IMAGEM.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        /* ─── RESET & BASE ─── */
+        *,
+        *::before,
+        *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg: #050a18;
+            --bg-card: rgba(12, 20, 42, 0.7);
+            --bg-elevated: rgba(20, 30, 60, 0.5);
+            --border: rgba(99, 102, 241, 0.12);
+            --border-hover: rgba(99, 102, 241, 0.35);
+
+            --primary: #6366f1;
+            --primary-light: #818cf8;
+            --primary-glow: rgba(99, 102, 241, 0.25);
+            --accent: #06b6d4;
+            --accent-2: #a78bfa;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+
+            --text: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+
+            --radius: 16px;
+            --radius-sm: 10px;
+            --radius-full: 9999px;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            overflow-x: hidden;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        section {
+            padding: 120px 0;
+            position: relative;
+        }
+
+        /* ─── AMBIENT GLOW ─── */
+        .glow-orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(120px);
+            opacity: 0.12;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .glow-orb-1 {
+            width: 600px;
+            height: 600px;
+            background: var(--primary);
+            top: -200px;
+            left: -100px;
+        }
+
+        .glow-orb-2 {
+            width: 500px;
+            height: 500px;
+            background: var(--accent);
+            bottom: 10%;
+            right: -150px;
+        }
+
+        .glow-orb-3 {
+            width: 400px;
+            height: 400px;
+            background: var(--accent-2);
+            top: 50%;
+            left: 30%;
+        }
+
+        /* ─── GRID BACKGROUND ─── */
+        .grid-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            background-image:
+                linear-gradient(rgba(99, 102, 241, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(99, 102, 241, 0.03) 1px, transparent 1px);
+            background-size: 60px 60px;
+            pointer-events: none;
+        }
+
+        /* ─── NAVBAR ─── */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 100;
+            padding: 16px 0;
+            background: rgba(5, 10, 24, 0.75);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            transition: all 0.3s ease;
+        }
+
+        .navbar.scrolled {
+            padding: 10px 0;
+            background: rgba(5, 10, 24, 0.92);
+        }
+
+        .navbar .container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+        }
+
+        .nav-logo img {
+            height: 32px;
+        }
+
+        .nav-logo span {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            font-size: 1.25rem;
+            background: linear-gradient(135deg, var(--primary-light), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 32px;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .nav-links a:hover {
+            color: var(--text);
+        }
+
+        .nav-cta {
+            padding: 10px 24px;
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            border-radius: var(--radius-full);
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .nav-cta:hover {
+            background: var(--primary-light);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px var(--primary-glow);
+        }
+
+        .mobile-toggle {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--text);
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        /* ─── HERO ─── */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding-top: 100px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 20px;
+            border-radius: var(--radius-full);
+            background: rgba(99, 102, 241, 0.08);
+            border: 1px solid var(--border);
+            color: var(--primary-light);
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 32px;
+            letter-spacing: 0.5px;
+        }
+
+        .hero-badge .pulse {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.4;
+            }
+        }
+
+        .hero h1 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: clamp(3rem, 7vw, 5.5rem);
+            font-weight: 800;
+            line-height: 1.05;
+            margin-bottom: 24px;
+            background: linear-gradient(135deg, #fff 30%, var(--primary-light) 70%, var(--accent) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-sub {
+            font-size: clamp(1.1rem, 2.5vw, 1.35rem);
+            color: var(--text-secondary);
+            max-width: 650px;
+            margin: 0 auto 48px;
+            line-height: 1.7;
+        }
+
+        .hero-actions {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 64px;
+        }
+
+        .btn-hero {
+            padding: 16px 36px;
+            border-radius: var(--radius-full);
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            border: none;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: #fff;
+            box-shadow: 0 4px 25px var(--primary-glow);
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-light);
+            transform: translateY(-3px);
+            box-shadow: 0 12px 40px var(--primary-glow);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--text);
+            border: 1px solid var(--border-hover);
+        }
+
+        .btn-outline:hover {
+            background: rgba(99, 102, 241, 0.08);
+            border-color: var(--primary);
+        }
+
+        .hero-stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 24px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .hero-stat {
+            text-align: center;
+            padding: 20px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            transition: all 0.3s ease;
+        }
+
+        .hero-stat:hover {
+            border-color: var(--border-hover);
+            transform: translateY(-4px);
+        }
+
+        .hero-stat .num {
+            display: block;
+            font-family: 'Space Grotesk';
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary-light), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-stat .label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 4px;
+        }
+
+        /* ─── SECTION HEADERS ─── */
+        .sec-header {
+            text-align: center;
+            max-width: 700px;
+            margin: 0 auto 64px;
+        }
+
+        .sec-tag {
+            display: inline-block;
+            padding: 6px 16px;
+            border-radius: var(--radius-full);
+            background: rgba(99, 102, 241, 0.08);
+            border: 1px solid var(--border);
+            color: var(--primary-light);
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 16px;
+        }
+
+        .sec-title {
+            font-family: 'Space Grotesk';
+            font-size: clamp(2rem, 4vw, 3rem);
+            font-weight: 700;
+            margin-bottom: 16px;
+            line-height: 1.2;
+        }
+
+        .sec-desc {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            line-height: 1.7;
+        }
+
+        /* ─── PROBLEMS ─── */
+        .problems-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+
+        .problem-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 36px 28px;
+            text-align: center;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .problem-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--danger), var(--warning));
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+            transform-origin: left;
+        }
+
+        .problem-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .problem-card:hover {
+            border-color: var(--border-hover);
+            transform: translateY(-6px);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .problem-icon {
+            font-size: 2.5rem;
+            margin-bottom: 16px;
+            display: block;
+        }
+
+        .problem-card h3 {
+            font-family: 'Space Grotesk';
+            font-size: 1.15rem;
+            margin-bottom: 10px;
+        }
+
+        .problem-card p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        /* ─── FEATURES ─── */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+
+        .feature-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 36px 28px;
+            transition: all 0.4s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--gradient);
+            transform: scaleX(0);
+            transition: transform 0.3s;
+            transform-origin: left;
+        }
+
+        .feature-card:hover::after {
+            transform: scaleX(1);
+        }
+
+        .feature-card:hover {
+            transform: translateY(-6px);
+            border-color: var(--border-hover);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .feature-icon {
+            width: 52px;
+            height: 52px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            margin-bottom: 20px;
+            color: #fff;
+        }
+
+        .feature-card h3 {
+            font-family: 'Space Grotesk';
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+        }
+
+        .feature-card p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        /* ─── BENEFITS ─── */
+        .benefits-section {
+            background: linear-gradient(180deg, rgba(99, 102, 241, 0.03), transparent);
+        }
+
+        .benefits-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 24px;
+        }
+
+        .benefit-card {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 32px;
+            transition: all 0.3s ease;
+        }
+
+        .benefit-card:hover {
+            border-color: var(--border-hover);
+            transform: translateY(-4px);
+        }
+
+        .benefit-num {
+            font-family: 'Space Grotesk';
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            line-height: 1;
+            min-width: 50px;
+        }
+
+        .benefit-card h3 {
+            font-family: 'Space Grotesk';
+            font-size: 1.1rem;
+            margin-bottom: 8px;
+        }
+
+        .benefit-card p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        /* ─── TOOLS SHOWCASE ─── */
+        .tools-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+        }
+
+        .tool-item {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .tool-item:hover {
+            border-color: var(--border-hover);
+            transform: translateY(-4px);
+        }
+
+        .tool-item i {
+            font-size: 1.6rem;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .tool-item span {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        /* ─── TESTIMONIALS ─── */
+        .testimonials-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+
+        .testimonial-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 32px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .testimonial-card:hover {
+            border-color: var(--border-hover);
+            transform: translateY(-4px);
+        }
+
+        .testimonial-card .quote {
+            color: var(--primary);
+            font-size: 2rem;
+            margin-bottom: 12px;
+            line-height: 1;
+        }
+
+        .testimonial-card p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.7;
+            margin-bottom: 20px;
+            font-style: italic;
+        }
+
+        .testimonial-author {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .testimonial-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: #fff;
+            font-size: 0.9rem;
+        }
+
+        .testimonial-name {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .testimonial-role {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+
+        /* ─── COMPARISON ─── */
+        .compare-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+
+        .compare-table th,
+        .compare-table td {
+            padding: 16px 24px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .compare-table thead th {
+            background: rgba(99, 102, 241, 0.08);
+            font-family: 'Space Grotesk';
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .compare-table thead th:first-child {
+            text-align: left;
+        }
+
+        .compare-table thead th:not(:first-child) {
+            text-align: center;
+        }
+
+        .compare-table td:not(:first-child) {
+            text-align: center;
+        }
+
+        .compare-table td {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .compare-table tbody tr:hover {
+            background: rgba(99, 102, 241, 0.03);
+        }
+
+        .compare-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .check {
+            color: var(--success);
+            font-size: 1.1rem;
+        }
+
+        .cross {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            opacity: 0.4;
+        }
+
+        .nep-highlight {
+            background: rgba(99, 102, 241, 0.06);
+        }
+
+        .nep-highlight th {
+            color: var(--primary-light) !important;
+        }
+
+        /* ─── FAQ ─── */
+        .faq-list {
+            max-width: 800px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .faq-item {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .faq-item:hover {
+            border-color: var(--border-hover);
+        }
+
+        .faq-question {
+            padding: 20px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: color 0.2s;
+            user-select: none;
+        }
+
+        .faq-question:hover {
+            color: var(--primary-light);
+        }
+
+        .faq-question i {
+            transition: transform 0.3s ease;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .faq-item.open .faq-question i {
+            transform: rotate(180deg);
+            color: var(--primary-light);
+        }
+
+        .faq-answer {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease, padding 0.3s ease;
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.7;
+        }
+
+        .faq-item.open .faq-answer {
+            max-height: 300px;
+            padding: 0 24px 20px;
+        }
+
+        /* ─── CTA ─── */
+        .cta-section {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(6, 182, 212, 0.05));
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+            text-align: center;
+        }
+
+        .cta-section h2 {
+            font-family: 'Space Grotesk';
+            font-size: clamp(2rem, 4vw, 3rem);
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+
+        .cta-section p {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            margin-bottom: 40px;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* ─── FOOTER ─── */
+        .footer {
+            background: rgba(5, 10, 24, 0.95);
+            border-top: 1px solid var(--border);
+            padding: 64px 0 32px;
+        }
+
+        .footer-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: 48px;
+            margin-bottom: 48px;
+        }
+
+        .footer-brand p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            line-height: 1.6;
+            margin-top: 12px;
+        }
+
+        .footer h4 {
+            font-family: 'Space Grotesk';
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            margin-bottom: 16px;
+        }
+
+        .footer ul {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .footer ul a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.2s;
+        }
+
+        .footer ul a:hover {
+            color: var(--primary-light);
+        }
+
+        .footer-bottom {
+            border-top: 1px solid var(--border);
+            padding-top: 24px;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+
+        /* ─── ANIMATIONS ─── */
+        .reveal {
+            opacity: 0;
+            transform: translateY(40px);
+            transition: opacity 0.7s ease, transform 0.7s ease;
+        }
+
+        .reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .reveal-delay-1 {
+            transition-delay: 0.1s;
+        }
+
+        .reveal-delay-2 {
+            transition-delay: 0.2s;
+        }
+
+        .reveal-delay-3 {
+            transition-delay: 0.3s;
+        }
+
+        /* ─── RESPONSIVE ─── */
+        @media (max-width: 1024px) {
+
+            .features-grid,
+            .testimonials-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .tools-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            .footer-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            section {
+                padding: 80px 0;
+            }
+
+            .nav-links {
+                display: none;
+            }
+
+            .mobile-toggle {
+                display: block;
+            }
+
+            .hero-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .problems-grid,
+            .features-grid,
+            .benefits-grid,
+            .testimonials-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .tools-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .footer-grid {
+                grid-template-columns: 1fr;
+                gap: 32px;
+            }
+
+            .compare-wrapper {
+                overflow-x: auto;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="grid-bg"></div>
+    <div class="glow-orb glow-orb-1"></div>
+    <div class="glow-orb glow-orb-2"></div>
+    <div class="glow-orb glow-orb-3"></div>
+
+    <!-- ═══ NAVBAR ═══ -->
+    <nav class="navbar" id="navbar">
+        <div class="container">
+            <a href="#" class="nav-logo">
+                <img src="NEP. IMAGEM.png" alt="NEP">
+                <span>NEP Platform</span>
+            </a>
+            <ul class="nav-links">
+                <li><a href="#features">Funcionalidades</a></li>
+                <li><a href="#tools">Ferramentas</a></li>
+                <li><a href="#compare">Comparativo</a></li>
+                <li><a href="#faq">FAQ</a></li>
+            </ul>
+            <a href="login.html" class="nav-cta">Acessar <i class="fas fa-arrow-right" style="font-size:0.8rem"></i></a>
+            <button class="mobile-toggle" id="mobileToggle"><i class="fas fa-bars"></i></button>
+        </div>
+    </nav>
+
+    <!-- ═══ HERO ═══ -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-badge reveal"><span class="pulse"></span> Plataforma Enterprise · 100% Web</div>
+            <h1 class="reveal">Gestão inteligente<br>para equipes de alto<br>desempenho</h1>
+            <p class="hero-sub reveal">
+                Kanban com hierarquia, dashboard executivo, 15+ ferramentas de qualidade e IA integrada — tudo em uma
+                plataforma unificada e gratuita.
+            </p>
+            <div class="hero-actions reveal">
+                <a href="login.html" class="btn-hero btn-primary"><i class="fas fa-rocket"></i> Acessar o Sistema</a>
+                <a href="#features" class="btn-hero btn-outline"><i class="fas fa-play-circle"></i> Conhecer</a>
+            </div>
+            <div class="hero-stats reveal">
+                <div class="hero-stat"><span class="num">12</span><span class="label">Módulos</span></div>
+                <div class="hero-stat"><span class="num">15+</span><span class="label">Ferramentas</span></div>
+                <div class="hero-stat"><span class="num">8</span><span class="label">Níveis de Acesso</span></div>
+                <div class="hero-stat"><span class="num">R$0</span><span class="label">Custo Mensal</span></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══ PROBLEMS ═══ -->
+    <section style="background: linear-gradient(180deg, rgba(239,68,68,0.02), transparent);">
+        <div class="container">
+            <div class="sec-header reveal">
+                <span class="sec-tag">O Problema</span>
+                <h2 class="sec-title">Sua operação ainda sobrevive assim?</h2>
+                <p class="sec-desc">Fragmentação, falta de rastreabilidade e ferramentas desconectadas custam caro.</p>
+            </div>
+            <div class="problems-grid">
+                <div class="problem-card reveal">
+                    <span class="problem-icon">👁️‍🗨️</span>
+                    <h3>Invisibilidade Total</h3>
+                    <p>O gestor não sabe o status real das demandas. Informações se perdem entre e-mails, WhatsApp e
+                        planilhas.</p>
+                </div>
+                <div class="problem-card reveal reveal-delay-1">
+                    <span class="problem-icon">📊</span>
+                    <h3>Planilhas Caóticas</h3>
+                    <p>Dados críticos em Excel offline. Um delete acidental apaga meses de trabalho. Zero auditoria.</p>
+                </div>
+                <div class="problem-card reveal reveal-delay-2">
+                    <span class="problem-icon">🔀</span>
+                    <h3>Demandas Perdidas</h3>
+                    <p>Sem backlog unificado, não existe priorização real. Entregas atrasam e a qualidade despenca.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══ FEATURES ═══ -->
+    <section id="features">
+        <div class="container">
+            <div class="sec-header reveal">
+                <span class="sec-tag">Módulos</span>
+                <h2 class="sec-title">Tudo que sua equipe precisa, em um só lugar</h2>
+                <p class="sec-desc">Cada módulo foi pensado para resolver uma dor real da operação.</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card reveal" style="--gradient: linear-gradient(135deg, #3b82f6, #06b6d4)">
+                    <div class="feature-icon" style="background: linear-gradient(135deg, #3b82f6, #06b6d4)"><i
+                            class="fas fa-columns"></i></div>
+                    <h3>Kanban Inteligente</h3>
+                    <p>Board com drag-and-drop, SLA visual, evidências obrigatórias e validação hierárquica em tempo
+                        real.</p>
+                </div>
+                <div class="feature-card reveal reveal-delay-1"
+                    style="--gradient: linear-gradient(135deg, #8b5cf6, #a78bfa)">
+                    <div class="feature-icon" style="background: linear-gradient(135deg, #8b5cf6, #a78bfa)"><i
+                            class="fas fa-chart-line"></i></div>
+                    <h3>Dashboard Executivo</h3>
+                    <p>KPIs em tempo real, gráficos interativos de status, prioridade e carga de trabalho por equipe.
+                    </p>
+                </div>
+                <div class="feature-card reveal reveal-delay-2"
+                    style="--gradient: linear-gradient(135deg, #10b981, #06b6d4)">
+                    <div class="feature-icon" style="background: linear-gradient(135deg, #10b981, #06b6d4)"><i
+                            class="fas fa-trophy"></i></div>
+                    <h3>Gamificação</h3>
+                    <p>Sistema de pontos, 10 níveis de evolução, ranking competitivo e conquistas desbloqueáveis.</p>
+                </div>
+                <div class="feature-card reveal" style="--gradient: linear-gradient(135deg, #f59e0b, #ef4444)">
+                    <div class="feature-icon" style="background: linear-gradient(135deg, #f59e0b, #ef4444)"><i
+                            class="fas fa-bell"></i></div>
+                    <h3>Notificações</h3>
+                    <p>Push notifications em tempo real, hierarquia de destinatários e histórico de comunicação.</p>
+                </div>
+                <div class="feature-card reveal reveal-delay-1"
+                    style="--gradient: linear-gradient(135deg, #ec4899, #a78bfa)">
+                    <div class="feature-icon" style="background: linear-gradient(135deg, #ec4899, #a78bfa)"><i
+                            class="fas fa-robot"></i></div>
+                    <h3>IA Integrada</h3>
+                    <p>Assistente com Gemini que gera atas, fluxogramas, apresentações e código HTML automaticamente.
+                    </p>
+                </div>
+                <div class="feature-card reveal reveal-delay-2"
+                    style="--gradient: linear-gradient(135deg, #06b6d4, #3b82f6)">
+                    <div class="feature-icon" style="background: linear-gradient(135deg, #06b6d4, #3b82f6)"><i
+                            class="fas fa-shield-halved"></i></div>
+                    <h3>Admin & Permissões</h3>
+                    <p>8 níveis hierárquicos, controle granular por módulo, auditoria completa e export Excel.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══ TOOLS SHOWCASE ═══ -->
+    <section id="tools" style="background: linear-gradient(180deg, rgba(6,182,212,0.03), transparent);">
+        <div class="container">
+            <div class="sec-header reveal">
+                <span class="sec-tag">Ferramentas</span>
+                <h2 class="sec-title">Central de Ferramentas de Qualidade</h2>
+                <p class="sec-desc">15+ ferramentas profissionais integradas, prontas para uso imediato.</p>
+            </div>
+            <div class="tools-grid">
+                <div class="tool-item reveal"><i class="fas fa-project-diagram"
+                        style="color: #818cf8"></i><span>Fluxograma com IA</span></div>
+                <div class="tool-item reveal"><i class="fas fa-fish" style="color: #f59e0b"></i><span>Ishikawa</span>
+                </div>
+                <div class="tool-item reveal"><i class="fas fa-chart-bar" style="color: #10b981"></i><span>Pareto</span>
+                </div>
+                <div class="tool-item reveal"><i class="fas fa-table-cells" style="color: #ef4444"></i><span>Matriz
+                        GUT</span></div>
+                <div class="tool-item reveal"><i class="fas fa-question-circle" style="color: #06b6d4"></i><span>5
+                        Porquês</span></div>
+                <div class="tool-item reveal"><i class="fas fa-arrows-spin" style="color: #a78bfa"></i><span>PDCA</span>
+                </div>
+                <div class="tool-item reveal"><i class="fas fa-microscope" style="color: #ec4899"></i><span>DMAIC</span>
+                </div>
+                <div class="tool-item reveal"><i class="fas fa-chart-area" style="color: #14b8a6"></i><span>CEP</span>
+                </div>
+                <div class="tool-item reveal"><i class="fas fa-film" style="color: #f43f5e"></i><span>Compressor
+                        Vídeo</span></div>
+                <div class="tool-item reveal"><i class="fas fa-chart-pie" style="color: #84cc16"></i><span>Gerador
+                        Gráficos</span></div>
+                <div class="tool-item reveal"><i class="fas fa-code" style="color: #f97316"></i><span>HTML
+                        Creator</span></div>
+                <div class="tool-item reveal"><i class="fas fa-file-powerpoint" style="color: #e11d48"></i><span>Gerador
+                        PPT</span></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══ BENEFITS ═══ -->
+    <section class="benefits-section">
+        <div class="container">
+            <div class="sec-header reveal">
+                <span class="sec-tag">Benefícios</span>
+                <h2 class="sec-title">Por que equipes escolhem o NEP</h2>
+            </div>
+            <div class="benefits-grid">
+                <div class="benefit-card reveal">
+                    <span class="benefit-num">01</span>
+                    <div>
+                        <h3>Visibilidade Total</h3>
+                        <p>Todas as demandas rastreadas do início ao fim. Nenhuma tarefa se perde. Dashboard em tempo
+                            real.</p>
+                    </div>
+                </div>
+                <div class="benefit-card reveal reveal-delay-1">
+                    <span class="benefit-num">02</span>
+                    <div>
+                        <h3>Zero Custo</h3>
+                        <p>Infraestrutura Firebase com plano gratuito. Sem licenças, sem mensalidades, sem surpresas.
+                        </p>
+                    </div>
+                </div>
+                <div class="benefit-card reveal">
+                    <span class="benefit-num">03</span>
+                    <div>
+                        <h3>Engajamento Real</h3>
+                        <p>Gamificação que transforma produtividade em competição saudável. Ranking, badges e níveis.
+                        </p>
+                    </div>
+                </div>
+                <div class="benefit-card reveal reveal-delay-1">
+                    <span class="benefit-num">04</span>
+                    <div>
+                        <h3>IA como Copiloto</h3>
+                        <p>Gere atas de reunião, fluxogramas e apresentações profissionais em segundos com IA integrada.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══ TESTIMONIALS ═══ -->
+    <section>
+        <div class="container">
+            <div class="sec-header reveal">
+                <span class="sec-tag">Depoimentos</span>
+                <h2 class="sec-title">O que dizem sobre o NEP</h2>
+            </div>
+            <div class="testimonials-grid">
+                <div class="testimonial-card reveal">
+                    <div class="quote">"</div>
+                    <p>O Kanban com validação hierárquica mudou completamente nossa operação. Nenhuma demanda se perde
+                        mais.</p>
+                    <div class="testimonial-author">
+                        <div class="testimonial-avatar" style="background: linear-gradient(135deg, #3b82f6, #06b6d4)">RS
+                        </div>
+                        <div>
+                            <div class="testimonial-name">Renata S.</div>
+                            <div class="testimonial-role">Coordenadora de Qualidade</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="testimonial-card reveal reveal-delay-1">
+                    <div class="quote">"</div>
+                    <p>A gamificação engajou a equipe de forma surpreendente. O ranking virou assunto diário no time.
+                    </p>
+                    <div class="testimonial-author">
+                        <div class="testimonial-avatar" style="background: linear-gradient(135deg, #8b5cf6, #ec4899)">MC
+                        </div>
+                        <div>
+                            <div class="testimonial-name">Marcos C.</div>
+                            <div class="testimonial-role">Gerente de Operações</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="testimonial-card reveal reveal-delay-2">
+                    <div class="quote">"</div>
+                    <p>Substituímos 5 planilhas e 3 ferramentas diferentes por um sistema único. Economia de horas por
+                        semana.</p>
+                    <div class="testimonial-author">
+                        <div class="testimonial-avatar" style="background: linear-gradient(135deg, #10b981, #06b6d4)">AL
+                        </div>
+                        <div>
+                            <div class="testimonial-name">Ana L.</div>
+                            <div class="testimonial-role">Analista Sênior</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══ COMPARISON ═══ -->
+    <section id="compare" style="background: linear-gradient(180deg, rgba(99,102,241,0.03), transparent);">
+        <div class="container">
+            <div class="sec-header reveal">
+                <span class="sec-tag">Comparativo</span>
+                <h2 class="sec-title">NEP vs. Abordagem Tradicional</h2>
+            </div>
+            <div class="compare-wrapper reveal">
+                <table class="compare-table">
+                    <thead>
+                        <tr>
+                            <th>Funcionalidade</th>
+                            <th class="nep-highlight">NEP Platform</th>
+                            <th>Planilhas</th>
+                            <th>Ferramentas isoladas</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Kanban com hierarquia</td>
+                            <td class="nep-highlight"><i class="fas fa-check-circle check"></i></td>
+                            <td><i class="fas fa-times cross"></i></td>
+                            <td><i class="fas fa-minus cross"></i></td>
+                        </tr>
+                        <tr>
+                            <td>Dashboard real-time</td>
+                            <td class="nep-highlight"><i class="fas fa-check-circle check"></i></td>
+                            <td><i class="fas fa-times cross"></i></td>
+                            <td><i class="fas fa-minus cross"></i></td>
+                        </tr>
+                        <tr>
+                            <td>Gamificação integrada</td>
+                            <td class="nep-highlight"><i class="fas fa-check-circle check"></i></td>
+                            <td><i class="fas fa-times cross"></i></td>
+                            <td><i class="fas fa-times cross"></i></td>
+                        </tr>
+                        <tr>
+                            <td>15+ ferramentas de qualidade</td>
+                            <td class="nep-highlight"><i class="fas fa-check-circle check"></i></td>
+                            <td><i class="fas fa-times cross"></i></td>
+                            <td><i class="fas fa-minus cross"></i></td>
+                        </tr>
+                        <tr>
+                            <td>IA para gerar atas e fluxos</td>
+                            <td class="nep-highlight"><i class="fas fa-check-circle check"></i></td>
+                            <td><i class="fas fa-times cross"></i></td>
+                            <td><i class="fas fa-times cross"></i></td>
+                        </tr>
+                        <tr>
+                            <td>Notificações push</td>
+                            <td class="nep-highlight"><i class="fas fa-check-circle check"></i></td>
+                            <td><i class="fas fa-times cross"></i></td>
+                            <td><i class="fas fa-minus cross"></i></td>
+                        </tr>
+                        <tr>
+                            <td>Custo mensal</td>
+                            <td class="nep-highlight" style="color: var(--success); font-weight: 700;">R$ 0</td>
+                            <td style="color: var(--text-muted);">R$ 0</td>
+                            <td style="color: var(--warning);">R$ 50-500+/mês</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══ FAQ ═══ -->
+    <section id="faq">
+        <div class="container">
+            <div class="sec-header reveal">
+                <span class="sec-tag">FAQ</span>
+                <h2 class="sec-title">Perguntas Frequentes</h2>
+            </div>
+            <div class="faq-list reveal">
+                <div class="faq-item">
+                    <div class="faq-question">O NEP é gratuito mesmo? <i class="fas fa-chevron-down"></i></div>
+                    <div class="faq-answer">Sim. O NEP roda 100% na infraestrutura gratuita do Firebase e Supabase. Não
+                        há custos de licença, mensalidade ou taxas ocultas.</div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">Precisa instalar algo? <i class="fas fa-chevron-down"></i></div>
+                    <div class="faq-answer">Não. O NEP é 100% web e funciona em qualquer navegador moderno (Chrome,
+                        Edge, Firefox, Safari). Também funciona como PWA no celular.</div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">Quantos usuários posso ter? <i class="fas fa-chevron-down"></i></div>
+                    <div class="faq-answer">Sem limite definido. A plataforma suporta equipes de qualquer tamanho, com 8
+                        níveis hierárquicos configuráveis.</div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">Os dados ficam seguros? <i class="fas fa-chevron-down"></i></div>
+                    <div class="faq-answer">Totalmente. Os dados são armazenados no Google Cloud (Firebase) e Supabase
+                        (PostgreSQL), com criptografia em trânsito e em repouso. Regras de segurança granulares
+                        controlam o acesso.</div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">Como funciona a IA integrada? <i class="fas fa-chevron-down"></i></div>
+                    <div class="faq-answer">O NEP utiliza o Google Gemini 2.5 Flash para gerar atas de reunião,
+                        fluxogramas, apresentações e código HTML. Tudo diretamente dentro da plataforma, sem precisar de
+                        ferramentas externas.</div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">Posso personalizar os módulos? <i class="fas fa-chevron-down"></i></div>
+                    <div class="faq-answer">Sim. Através do painel administrativo, você pode ativar/desativar módulos,
+                        configurar permissões por cargo e personalizar a experiência de cada nível hierárquico.</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══ CTA ═══ -->
+    <section class="cta-section">
+        <div class="container">
+            <h2 class="reveal">Pronto para transformar sua operação?</h2>
+            <p class="reveal">Comece agora. Sem cartão. Sem burocracia.</p>
+            <div class="reveal">
+                <a href="login.html" class="btn-hero btn-primary" style="font-size: 1.1rem; padding: 18px 48px;">
+                    <i class="fas fa-rocket"></i> Começar Agora — Grátis
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══ FOOTER ═══ -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <a href="#" class="nav-logo" style="margin-bottom: 4px">
+                        <img src="NEP. IMAGEM.png" alt="NEP" style="height:28px">
+                        <span>NEP Platform</span>
+                    </a>
+                    <p>Sistema integrado de gestão e qualidade. Desenvolvido para equipes que buscam excelência
+                        operacional.</p>
+                </div>
+                <div>
+                    <h4>Plataforma</h4>
+                    <ul>
+                        <li><a href="#features">Funcionalidades</a></li>
+                        <li><a href="#tools">Ferramentas</a></li>
+                        <li><a href="#compare">Comparativo</a></li>
+                        <li><a href="#faq">FAQ</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4>Módulos</h4>
+                    <ul>
+                        <li><a href="#">Kanban</a></li>
+                        <li><a href="#">Dashboard</a></li>
+                        <li><a href="#">Gamificação</a></li>
+                        <li><a href="#">Governança</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4>Recursos</h4>
+                    <ul>
+                        <li><a href="status.html">Status do Sistema</a></li>
+                        <li><a href="public-feedback.html">Feedback</a></li>
+                        <li><a href="#">Documentação</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© 2024-2026 NEP Platform. Todos os direitos reservados.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Scroll reveal
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); } });
+        }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+        document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+        // Navbar scroll
+        window.addEventListener('scroll', () => {
+            document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 60);
+        });
+
+        // FAQ accordion
+        document.querySelectorAll('.faq-question').forEach(q => {
+            q.addEventListener('click', () => {
+                const item = q.parentElement;
+                const wasOpen = item.classList.contains('open');
+                document.querySelectorAll('.faq-item.open').forEach(i => i.classList.remove('open'));
+                if (!wasOpen) item.classList.add('open');
+            });
+        });
+
+        // Mobile toggle
+        document.getElementById('mobileToggle')?.addEventListener('click', () => {
+            const links = document.querySelector('.nav-links');
+            links.style.display = links.style.display === 'flex' ? 'none' : 'flex';
+            links.style.flexDirection = 'column';
+            links.style.position = 'absolute';
+            links.style.top = '100%';
+            links.style.left = '0';
+            links.style.right = '0';
+            links.style.background = 'rgba(5,10,24,0.95)';
+            links.style.padding = '20px';
+            links.style.gap = '16px';
+            links.style.borderBottom = '1px solid var(--border)';
+        });
+    </script>
+</body>
+
+</html>

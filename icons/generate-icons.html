@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>NEP Icon Generator - Azul Petróleo</title>
+    <style>
+        body {
+            font-family: 'Inter', Arial, sans-serif;
+            padding: 30px;
+            background: #0f172a;
+            color: white;
+        }
+
+        h1 {
+            color: #0e7490;
+            margin-bottom: 10px;
+        }
+
+        p {
+            color: #94a3b8;
+            margin-bottom: 30px;
+        }
+
+        .icons-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .icon-preview {
+            background: #1e293b;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        canvas {
+            border-radius: 16px;
+            margin-bottom: 10px;
+        }
+
+        .size {
+            color: #64748b;
+            font-size: 12px;
+            margin-bottom: 8px;
+        }
+
+        a {
+            display: inline-block;
+            background: #0e7490;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        a:hover {
+            background: #0891b2;
+            transform: translateY(-2px);
+        }
+
+        .download-all {
+            display: inline-block;
+            background: linear-gradient(135deg, #0e7490, #0891b2);
+            color: white;
+            padding: 14px 28px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 30px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🎨 NEP Icon Generator</h1>
+    <p>Ícones com "NEP" em Azul Petróleo - Clique para baixar cada um</p>
+
+    <div class="icons-grid" id="icons"></div>
+
+    <script>
+        const sizes = [72, 96, 128, 144, 152, 192, 384, 512];
+        const iconsContainer = document.getElementById('icons');
+
+        // Azul Petróleo colors
+        const primaryColor = '#0e7490';  // Cyan-700
+        const secondaryColor = '#0891b2'; // Cyan-600
+        const darkColor = '#164e63';      // Cyan-900
+
+        function drawIcon(canvas, size) {
+            const ctx = canvas.getContext('2d');
+            canvas.width = size;
+            canvas.height = size;
+
+            // Background gradient - Azul Petróleo
+            const gradient = ctx.createLinearGradient(0, 0, size, size);
+            gradient.addColorStop(0, primaryColor);
+            gradient.addColorStop(1, darkColor);
+
+            // Rounded rectangle
+            const radius = size * 0.18;
+            ctx.beginPath();
+            ctx.moveTo(radius, 0);
+            ctx.lineTo(size - radius, 0);
+            ctx.quadraticCurveTo(size, 0, size, radius);
+            ctx.lineTo(size, size - radius);
+            ctx.quadraticCurveTo(size, size, size - radius, size);
+            ctx.lineTo(radius, size);
+            ctx.quadraticCurveTo(0, size, 0, size - radius);
+            ctx.lineTo(0, radius);
+            ctx.quadraticCurveTo(0, 0, radius, 0);
+            ctx.closePath();
+            ctx.fillStyle = gradient;
+            ctx.fill();
+
+            // Subtle inner glow
+            const innerGradient = ctx.createRadialGradient(
+                size * 0.3, size * 0.3, 0,
+                size * 0.5, size * 0.5, size * 0.7
+            );
+            innerGradient.addColorStop(0, 'rgba(255, 255, 255, 0.1)');
+            innerGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+            ctx.fillStyle = innerGradient;
+            ctx.fill();
+
+            // Text "NEP"
+            ctx.fillStyle = 'white';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            // Adjust font size based on icon size
+            const fontSize = size * 0.32;
+            ctx.font = `bold ${fontSize}px 'Inter', Arial, sans-serif`;
+
+            // Add text shadow for depth
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+            ctx.shadowBlur = size * 0.02;
+            ctx.shadowOffsetY = size * 0.01;
+
+            ctx.fillText('NEP', size / 2, size / 2 + size * 0.02);
+
+            // Reset shadow
+            ctx.shadowColor = 'transparent';
+            ctx.shadowBlur = 0;
+            ctx.shadowOffsetY = 0;
+        }
+
+        sizes.forEach(size => {
+            const div = document.createElement('div');
+            div.className = 'icon-preview';
+
+            const canvas = document.createElement('canvas');
+            drawIcon(canvas, size);
+
+            // Scale down large canvases for display
+            const displaySize = Math.min(size, 150);
+            canvas.style.width = displaySize + 'px';
+            canvas.style.height = displaySize + 'px';
+
+            const label = document.createElement('div');
+            label.className = 'size';
+            label.textContent = `${size} × ${size} px`;
+
+            const link = document.createElement('a');
+            link.textContent = `⬇️ Baixar`;
+            link.href = canvas.toDataURL('image/png');
+            link.download = `icon-${size}x${size}.png`;
+
+            div.appendChild(canvas);
+            div.appendChild(label);
+            div.appendChild(link);
+            iconsContainer.appendChild(div);
+        });
+
+        // Badge icon (smaller, circular)
+        const badgeDiv = document.createElement('div');
+        badgeDiv.className = 'icon-preview';
+
+        const badgeCanvas = document.createElement('canvas');
+        badgeCanvas.width = 72;
+        badgeCanvas.height = 72;
+        const bctx = badgeCanvas.getContext('2d');
+
+        // Circular badge
+        bctx.beginPath();
+        bctx.arc(36, 36, 36, 0, Math.PI * 2);
+        const badgeGradient = bctx.createLinearGradient(0, 0, 72, 72);
+        badgeGradient.addColorStop(0, primaryColor);
+        badgeGradient.addColorStop(1, darkColor);
+        bctx.fillStyle = badgeGradient;
+        bctx.fill();
+
+        bctx.fillStyle = 'white';
+        bctx.font = 'bold 22px Inter, Arial';
+        bctx.textAlign = 'center';
+        bctx.textBaseline = 'middle';
+        bctx.fillText('NEP', 36, 38);
+
+        badgeCanvas.style.width = '72px';
+        badgeCanvas.style.height = '72px';
+
+        const badgeLabel = document.createElement('div');
+        badgeLabel.className = 'size';
+        badgeLabel.textContent = 'Badge 72 × 72 px';
+
+        const badgeLink = document.createElement('a');
+        badgeLink.textContent = '⬇️ Baixar';
+        badgeLink.href = badgeCanvas.toDataURL('image/png');
+        badgeLink.download = 'badge-72x72.png';
+
+        badgeDiv.appendChild(badgeCanvas);
+        badgeDiv.appendChild(badgeLabel);
+        badgeDiv.appendChild(badgeLink);
+        iconsContainer.appendChild(badgeDiv);
+
+        console.log('✅ Icons generated! Click to download.');
+    </script>
+</body>
+
+</html>

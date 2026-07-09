@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEP Kanban | System Overview</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Space+Grotesk:wght@300;400;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+            --primary: #6366f1;
+            --primary-glow: rgba(99, 102, 241, 0.4);
+            --accent: #ec4899;
+            --text-main: #f8fafc;
+            --text-sec: #94a3b8;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: 'Outfit', sans-serif;
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        /* Ambient Background */
+        .ambient-light {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: -1;
+            background:
+                radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.15) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(236, 72, 153, 0.1) 0%, transparent 40%);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* Hero Section */
+        header {
+            min-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 40px 0;
+            position: relative;
+        }
+
+        h1 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #fff 0%, #94a3b8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 24px;
+            letter-spacing: -2px;
+            animation: fadeInUp 1s ease-out;
+        }
+
+        .subtitle {
+            font-size: 1.5rem;
+            color: var(--text-sec);
+            max-width: 700px;
+            margin-bottom: 48px;
+            animation: fadeInUp 1s ease-out 0.2s backwards;
+        }
+
+        .scroll-indicator {
+            position: absolute;
+            bottom: 40px;
+            animation: bounce 2s infinite;
+            opacity: 0.5;
+        }
+
+        /* Sections */
+        section {
+            padding: 100px 0;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .section-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 3rem;
+            margin-bottom: 60px;
+            text-align: center;
+        }
+
+        .section-title span {
+            color: var(--primary);
+        }
+
+        /* Hierarchy Cards */
+        .hierarchy-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+        }
+
+        .role-card {
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 32px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .role-card:hover {
+            transform: translateY(-10px);
+            border-color: var(--primary);
+            box-shadow: 0 20px 40px -10px var(--primary-glow);
+        }
+
+        .role-level {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 4rem;
+            font-weight: 800;
+            opacity: 0.1;
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        .role-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: var(--primary);
+        }
+
+        .role-desc {
+            color: var(--text-sec);
+            font-size: 0.95rem;
+        }
+
+        /* Workflow Steps */
+        .workflow {
+            display: flex;
+            justify-content: space-between;
+            position: relative;
+            margin-top: 60px;
+        }
+
+        .workflow::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, var(--bg-card), var(--primary), var(--bg-card));
+            z-index: -1;
+            transform: translateY(-50%);
+        }
+
+        .step {
+            background: var(--bg-dark);
+            border: 2px solid var(--bg-card);
+            width: 180px;
+            padding: 20px;
+            border-radius: 16px;
+            text-align: center;
+            transition: 0.3s;
+        }
+
+        .step:hover {
+            border-color: var(--accent);
+            transform: scale(1.05);
+        }
+
+        .step-icon {
+            font-size: 2rem;
+            margin-bottom: 16px;
+            color: var(--text-main);
+        }
+
+        .step h3 {
+            margin-bottom: 8px;
+            font-size: 1.1rem;
+        }
+
+        .step p {
+            font-size: 0.8rem;
+            color: var(--text-sec);
+        }
+
+        /* Gamification */
+        .gamification-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 40px;
+            background: var(--bg-card);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .gamification-table th,
+        .gamification-table td {
+            padding: 20px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .gamification-table th {
+            background: rgba(0, 0, 0, 0.2);
+            font-family: 'Space Grotesk';
+            color: var(--primary);
+        }
+
+        .badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .badge.bg-low {
+            background: rgba(16, 185, 129, 0.2);
+            color: #34d399;
+        }
+
+        .badge.bg-med {
+            background: rgba(59, 130, 246, 0.2);
+            color: #60a5fa;
+        }
+
+        .badge.bg-high {
+            background: rgba(245, 158, 11, 0.2);
+            color: #fbbf24;
+        }
+
+        .badge.bg-urg {
+            background: rgba(239, 68, 68, 0.2);
+            color: #f87171;
+        }
+
+        /* Notifications Showcase */
+        .notif-showcase {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            border-radius: 24px;
+            padding: 40px;
+            display: flex;
+            align-items: center;
+            gap: 40px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .notif-phone {
+            width: 300px;
+            background: black;
+            border-radius: 30px;
+            padding: 12px;
+            border: 4px solid #334155;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .notif-item {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(5px);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+        }
+
+        .notif-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes bounce {
+
+            0%,
+            20%,
+            50%,
+            80%,
+            100% {
+                transform: translateY(0);
+            }
+
+            40% {
+                transform: translateY(-10px);
+            }
+
+            60% {
+                transform: translateY(-5px);
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 3rem;
+            }
+
+            .workflow {
+                flex-direction: column;
+                gap: 20px;
+            }
+
+            .workflow::before {
+                height: 100%;
+                width: 2px;
+                top: 0;
+                left: 50%;
+                transform: translateX(-50%);
+            }
+
+            .notif-showcase {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="ambient-light"></div>
+
+    <header>
+        <div class="container">
+            <h1>NEP Kanban<br><span style="font-weight: 300; font-size: 0.6em; color: var(--primary);">Delivery Control
+                    System</span></h1>
+            <p class="subtitle">Uma plataforma hierárquica e gamificada para gestão de alta performance. Controle total,
+                visibilidade inteligente e recompensas por produtividade.</p>
+            <div class="scroll-indicator">
+                <i class="fa-solid fa-chevron-down" style="font-size: 24px;"></i>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hierarchy Section -->
+    <section>
+        <div class="container">
+            <h2 class="section-title">Estrutura <span>Hierárquica</span></h2>
+            <div class="hierarchy-grid">
+                <div class="role-card">
+                    <span class="role-level">6</span>
+                    <div class="role-title">Admin</div>
+                    <p class="role-desc">Controle absoluto do sistema. Vê todas as tarefas, edita prazos, valida
+                        entregas de qualquer nível e gerencia usuários.</p>
+                </div>
+                <div class="role-card">
+                    <span class="role-level">5</span>
+                    <div class="role-title">Superintendente</div>
+                    <p class="role-desc">Visão estratégica macro. Vê tarefas de todos os níveis abaixo (4 a 0). Focado
+                        em resultados e KPIs.</p>
+                </div>
+                <div class="role-card">
+                    <span class="role-level">4</span>
+                    <div class="role-title">Gerente</div>
+                    <p class="role-desc">Liderança tática. Supervisiona Consultores, Coordenadores e Analistas. Valida
+                        entregas da sua equipe.</p>
+                </div>
+                <div class="role-card">
+                    <span class="role-level">3-0</span>
+                    <div class="role-title">Operacional</div>
+                    <p class="role-desc">Consultor (3), Coordenador (2), Analista (1), Monitor (0). Focados em execução.
+                        Veem suas tarefas e de pares de nível igual ou inferior.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Workflow Section -->
+    <section>
+        <div class="container">
+            <h2 class="section-title">Fluxo de <span>Trabalho</span></h2>
+            <div class="workflow">
+                <div class="step">
+                    <div class="step-icon"><i class="fa-solid fa-list-check"></i></div>
+                    <h3>1. Backlog</h3>
+                    <p>Tarefa atribuída. Responsável deve dar o "Aceite" (Acknowledge).</p>
+                </div>
+                <div class="step">
+                    <div class="step-icon" style="color: var(--warning);"><i class="fa-solid fa-bolt"></i></div>
+                    <h3>2. Execução</h3>
+                    <p>Mão na massa. O timer está rodando e o prazo contando.</p>
+                </div>
+                <div class="step">
+                    <div class="step-icon" style="color: var(--success);"><i class="fa-solid fa-check"></i></div>
+                    <h3>3. Entrega</h3>
+                    <p>Conclusão com evidências (links/arquivos). Vai para validação.</p>
+                </div>
+                <div class="step">
+                    <div class="step-icon"><i class="fa-solid fa-magnifying-glass"></i></div>
+                    <h3>4. Validação</h3>
+                    <p>Criador/Admin revisa. Se aprovado: XP garantido. Se não: ajustes.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Gamification Section -->
+    <section style="background: rgba(0,0,0,0.2);">
+        <div class="container">
+            <h2 class="section-title">Gamificação & <span>Pontos</span></h2>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px;">
+                <div>
+                    <h3>Como ganhar XP?</h3>
+                    <p style="color: var(--text-sec); margin-bottom: 20px;">Cada tarefa vale pontos baseados na
+                        prioridade, multiplicados pela complexidade.</p>
+                    <table class="gamification-table">
+                        <thead>
+                            <tr>
+                                <th>Prioridade</th>
+                                <th>Pontos Base</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="badge bg-low">Baixa</span></td>
+                                <td>5 XP</td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge bg-med">Média</span></td>
+                                <td>10 XP</td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge bg-high">Alta</span></td>
+                                <td>15 XP</td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge bg-urg">Urgente</span></td>
+                                <td>25 XP</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div>
+                    <h3>Penalidades</h3>
+                    <p style="color: var(--text-sec); margin-bottom: 20px;">Entregas fora do prazo sofrem descontos
+                        severos no XP final.</p>
+                    <table class="gamification-table">
+                        <thead>
+                            <tr>
+                                <th>Atraso</th>
+                                <th>Penalidade</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>1 Dia</td>
+                                <td style="color: var(--warning);">-5 XP</td>
+                            </tr>
+                            <tr>
+                                <td>2 Dias</td>
+                                <td style="color: var(--danger);">-10 XP</td>
+                            </tr>
+                            <tr>
+                                <td>3+ Dias</td>
+                                <td style="color: var(--danger);">-15 XP</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Notifications Section -->
+    <section>
+        <div class="container">
+            <h2 class="section-title">Sistema de <span>Alertas</span></h2>
+            <div class="notif-showcase">
+                <div style="flex: 1;">
+                    <h3>Você sempre no controle.</h3>
+                    <p style="color: var(--text-sec); margin-bottom: 24px;">Novo sistema de notificações garante que
+                        nada passe despercebido.</p>
+                    <ul style="list-style: none; display: flex; flex-direction: column; gap: 16px;">
+                        <li style="display: flex; align-items: center; gap: 12px;">
+                            <i class="fa-solid fa-bell" style="color: var(--primary);"></i>
+                            <span><strong>Atribuição:</strong> Saiba na hora quando uma tarefa cai pra você.</span>
+                        </li>
+                        <li style="display: flex; align-items: center; gap: 12px;">
+                            <i class="fa-solid fa-rotate" style="color: var(--accent);"></i>
+                            <span><strong>Status:</strong> Alerta se alguém mover sua demanda.</span>
+                        </li>
+                        <li style="display: flex; align-items: center; gap: 12px;">
+                            <i class="fa-solid fa-trophy" style="color: var(--warning);"></i>
+                            <span><strong>Conquistas:</strong> Notificação imediata de Level Up.</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="notif-phone">
+                    <div style="color: white; font-size: 12px; text-align: center; margin-bottom: 15px;">12:00</div>
+                    <div class="notif-item">
+                        <div class="notif-icon"><i class="fa-solid fa-clipboard-check"></i></div>
+                        <div>
+                            <div style="font-size: 12px; font-weight: 700;">Nova Atribuição</div>
+                            <div style="font-size: 10px; opacity: 0.8;">Admin atribuiu "Relatório Q3" para você.</div>
+                        </div>
+                    </div>
+                    <div class="notif-item">
+                        <div class="notif-icon" style="background: var(--accent);"><i class="fa-solid fa-rotate"></i>
+                        </div>
+                        <div>
+                            <div style="font-size: 12px; font-weight: 700;">Status Atualizado</div>
+                            <div style="font-size: 10px; opacity: 0.8;">"Landing Page" foi movida para Execução.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer style="text-align: center; padding: 40px; color: var(--text-sec); font-size: 0.9rem;">
+        <p>&copy; 2024 Ecossistema NEP. All rights reserved.</p>
+    </footer>
+
+    <script>
+        // Simple reveal on scroll
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        });
+
+        document.querySelectorAll('.role-card, .step, .gamification-table').forEach((el) => {
+            el.style.opacity = '0';
+            el.style.transform = 'translateY(20px)';
+            el.style.transition = 'all 0.6s ease-out';
+            observer.observe(el);
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEP | Acesso Seguro</title>
+
+    <link rel="icon" type="image/svg+xml"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎯</text></svg>">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@500;700;900&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+
+    <style>
+        :root {
+            --bg-deep: #0a0f1e;
+            --bg-darker: #050a14;
+            --primary: #2f6fed;
+            --primary-dark: #1c4ed8;
+            --accent: #8b5cf6;
+            --accent-light: #a78bfa;
+            --glass: rgba(15, 23, 41, 0.85);
+            --border: rgba(47, 111, 237, 0.2);
+            --border-light: rgba(47, 111, 237, 0.4);
+            --text-primary: #e5e7eb;
+            --text-sec: #8fa6c6;
+            --text-muted: #64748b;
+            --error: #e5533d;
+            --success: #2ecc71;
+            --warning: #f2b705;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--bg-deep) 0%, var(--bg-darker) 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            color: var(--text-primary);
+            position: relative;
+        }
+
+        #particles-js {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(ellipse at top, #0d1a2d 0%, #0a0f1e 50%, #020510 100%);
+            z-index: 1;
+        }
+
+        .login-container {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            max-width: 480px;
+            padding: 20px;
+        }
+
+        .login-card {
+            padding: 50px 45px;
+            background: var(--glass);
+            backdrop-filter: blur(24px) saturate(180%);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            box-shadow: 0 0 80px rgba(47, 111, 237, 0.1), 0 25px 100px rgba(0, 0, 0, 0.5);
+            animation: floatIn 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes floatIn {
+            from {
+                opacity: 0;
+                transform: translateY(40px) scale(0.95);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .brand {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .brand-logo {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            box-shadow: 0 10px 40px rgba(47, 111, 237, 0.3);
+            animation: glow 3s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from {
+                box-shadow: 0 10px 40px rgba(47, 111, 237, 0.3);
+            }
+
+            to {
+                box-shadow: 0 10px 60px rgba(139, 92, 246, 0.4);
+            }
+        }
+
+        .brand h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 42px;
+            font-weight: 900;
+            background: linear-gradient(135deg, #ffffff 0%, var(--primary) 50%, var(--accent) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .brand p {
+            color: var(--primary);
+            font-size: 11px;
+            letter-spacing: 4px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .label {
+            display: block;
+            font-size: 11px;
+            color: var(--text-sec);
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 1.2px;
+        }
+
+        .field-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-field {
+            width: 100%;
+            background: rgba(10, 15, 30, 0.6);
+            border: 2px solid var(--border);
+            padding: 16px 18px;
+            padding-right: 50px;
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 14px;
+            font-weight: 500;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        .input-field::placeholder {
+            color: var(--text-muted);
+            opacity: 0.6;
+        }
+
+        .input-field:hover {
+            border-color: var(--border-light);
+            background: rgba(10, 15, 30, 0.8);
+        }
+
+        .input-field:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(47, 111, 237, 0.15);
+        }
+
+        .field-icon {
+            position: absolute;
+            right: 18px;
+            color: var(--text-muted);
+            font-size: 14px;
+            pointer-events: none;
+        }
+
+        .field-icon.clickable {
+            cursor: pointer;
+            pointer-events: all;
+        }
+
+        .field-icon.clickable:hover {
+            color: var(--primary);
+            transform: scale(1.15);
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            border: none;
+            border-radius: 12px;
+            color: #fff;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            font-size: 14px;
+            letter-spacing: 2px;
+            cursor: pointer;
+            margin-top: 10px;
+            box-shadow: 0 10px 30px rgba(47, 111, 237, 0.3);
+            text-transform: uppercase;
+            transition: all 0.3s;
+        }
+
+        .btn-submit:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(139, 92, 246, 0.4);
+        }
+
+        .btn-submit:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .forgot-password {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .forgot-password a {
+            color: var(--accent-light);
+            font-size: 13px;
+            text-decoration: none;
+        }
+
+        .forgot-password a:hover {
+            text-decoration: underline;
+        }
+
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+            text-align: center;
+            font-size: 10px;
+            color: var(--text-muted);
+            font-family: 'Courier New', monospace;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .footer i {
+            color: var(--success);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .error-toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(30px);
+            background: rgba(229, 83, 61, 0.15);
+            border: 2px solid rgba(229, 83, 61, 0.5);
+            color: #fca5a5;
+            padding: 14px 24px;
+            border-radius: 30px;
+            font-size: 13px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.4s;
+            backdrop-filter: blur(12px);
+            z-index: 100;
+            white-space: nowrap;
+        }
+
+        .error-toast.visible {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .success-toast {
+            background: rgba(46, 204, 113, 0.15);
+            border-color: rgba(46, 204, 113, 0.5);
+            color: #6ee7b7;
+        }
+
+        .shake {
+            animation: shake 0.4s ease-in-out;
+        }
+
+        @keyframes shake {
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            20% {
+                transform: translateX(-8px);
+            }
+
+            40% {
+                transform: translateX(8px);
+            }
+
+            60% {
+                transform: translateX(-5px);
+            }
+
+            80% {
+                transform: translateX(5px);
+            }
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-box {
+            background: var(--glass);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 420px;
+            width: 90%;
+            backdrop-filter: blur(20px);
+        }
+
+        .modal-box h3 {
+            font-size: 20px;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .modal-box p {
+            color: var(--text-sec);
+            font-size: 14px;
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .modal-box .input-group {
+            margin-bottom: 16px;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .modal-actions button {
+            flex: 1;
+        }
+
+        .btn-secondary {
+            background: rgba(100, 116, 139, 0.3);
+            border: 1px solid rgba(100, 116, 139, 0.5);
+        }
+
+        @media (max-width: 768px) {
+            .login-container {
+                padding: 16px;
+            }
+
+            .login-card {
+                padding: 35px 25px;
+            }
+
+            .brand h1 {
+                font-size: 32px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="particles-js"></div>
+
+    <div class="login-container">
+        <div class="login-card" id="login-card">
+            <div class="brand">
+                <h1>NEP</h1>
+                <p>Delivery Control</p>
+            </div>
+
+            <form id="login-form">
+                <div class="input-group">
+                    <label class="label">Email Corporativo</label>
+                    <div class="field-wrapper">
+                        <input type="email" id="login-email" class="input-field" placeholder="seu.email@empresa.com"
+                            autocomplete="email" required>
+                        <i class="fa-solid fa-envelope field-icon"></i>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label class="label">Senha</label>
+                    <div class="field-wrapper">
+                        <input type="password" id="login-password" class="input-field" placeholder="••••••••"
+                            autocomplete="current-password" required>
+                        <i class="fa-solid fa-eye field-icon clickable" id="toggle-password"></i>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-submit" id="btn-login">
+                    <i class="fa-solid fa-right-to-bracket"></i>
+                    <span>ACESSAR PLATAFORMA</span>
+                </button>
+            </form>
+
+            <div class="forgot-password">
+                <a href="#" id="forgot-password-link">Esqueci minha senha</a>
+            </div>
+
+            <div class="footer">
+                <i class="fa-solid fa-shield-halved"></i>
+                NEP SECURE v4.0 | FIREBASE AUTH
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Reset Senha -->
+    <div class="modal-overlay" id="modal-reset">
+        <div class="modal-box">
+            <h3>🔑 Recuperar Senha</h3>
+            <p>Informe seu email para receber o link de recuperação.</p>
+            <div class="input-group">
+                <div class="field-wrapper">
+                    <input type="email" id="reset-email" class="input-field" placeholder="seu.email@empresa.com">
+                    <i class="fa-solid fa-envelope field-icon"></i>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-submit btn-secondary" id="btn-cancel-reset">Cancelar</button>
+                <button class="btn-submit" id="btn-send-reset">Enviar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Trocar Senha (Primeiro Acesso) -->
+    <div class="modal-overlay" id="modal-change-password">
+        <div class="modal-box">
+            <h3>🔐 Troca de Senha Obrigatória</h3>
+            <p>Por segurança, você deve criar uma nova senha no primeiro acesso.</p>
+            <div class="input-group">
+                <label class="label">Senha Atual</label>
+                <div class="field-wrapper">
+                    <input type="password" id="current-password" class="input-field" placeholder="Senha atual">
+                    <i class="fa-solid fa-lock field-icon"></i>
+                </div>
+            </div>
+            <div class="input-group">
+                <label class="label">Nova Senha</label>
+                <div class="field-wrapper">
+                    <input type="password" id="new-password" class="input-field" placeholder="Mínimo 6 caracteres">
+                    <i class="fa-solid fa-key field-icon"></i>
+                </div>
+            </div>
+            <div class="input-group">
+                <label class="label">Confirmar Nova Senha</label>
+                <div class="field-wrapper">
+                    <input type="password" id="confirm-password" class="input-field"
+                        placeholder="Confirme a nova senha">
+                    <i class="fa-solid fa-check field-icon"></i>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-submit" id="btn-change-password">Alterar Senha</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="error-toast">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <span id="toast-text">Mensagem</span>
+    </div>
+
+    <script type="module">
+        import {
+            auth,
+            db,
+            signInWithEmailAndPassword,
+            sendPasswordResetEmail,
+            updatePassword,
+            EmailAuthProvider,
+            reauthenticateWithCredential,
+            doc,
+            getDoc,
+            updateDoc,
+            serverTimestamp
+        } from './js/firebase-config.js';
+
+        // Particles
+        particlesJS("particles-js", {
+            particles: {
+                number: { value: 60, density: { enable: true, value_area: 800 } },
+                color: { value: "#2f6fed" },
+                shape: { type: "circle" },
+                opacity: { value: 0.3, random: true },
+                size: { value: 3, random: true },
+                line_linked: { enable: true, distance: 150, color: "#2f6fed", opacity: 0.2, width: 1 },
+                move: { enable: true, speed: 1.5, direction: "none", random: true, out_mode: "out" }
+            },
+            interactivity: {
+                detect_on: "canvas",
+                events: { onhover: { enable: true, mode: "grab" }, onclick: { enable: true, mode: "push" } }
+            }
+        });
+
+        // Toast
+        function showToast(message, type = 'error') {
+            const toast = document.getElementById('toast');
+            const icon = toast.querySelector('i');
+            toast.querySelector('#toast-text').textContent = message;
+            toast.className = type === 'success' ? 'error-toast success-toast visible' : 'error-toast visible';
+            icon.className = type === 'success' ? 'fa-solid fa-check-circle' : 'fa-solid fa-triangle-exclamation';
+            if (type === 'error') {
+                document.getElementById('login-card').classList.add('shake');
+                setTimeout(() => document.getElementById('login-card').classList.remove('shake'), 400);
+            }
+            setTimeout(() => toast.classList.remove('visible'), 3500);
+        }
+
+        // Toggle Password
+        document.getElementById('toggle-password').addEventListener('click', () => {
+            const input = document.getElementById('login-password');
+            const icon = document.getElementById('toggle-password');
+            input.type = input.type === 'password' ? 'text' : 'password';
+            icon.classList.toggle('fa-eye');
+            icon.classList.toggle('fa-eye-slash');
+        });
+
+        // Login Form
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value.trim();
+            const password = document.getElementById('login-password').value;
+            const btn = document.getElementById('btn-login');
+
+            if (!email || !password) {
+                showToast('Preencha email e senha');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> AUTENTICANDO...';
+
+            try {
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+
+                // Buscar dados do usuário no Firestore
+                const userDoc = await getDoc(doc(db, 'users', user.uid));
+
+                if (!userDoc.exists()) {
+                    showToast('Usuário não cadastrado no sistema. Contate o administrador.');
+                    await auth.signOut();
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> ACESSAR PLATAFORMA';
+                    return;
+                }
+
+                const userData = userDoc.data();
+
+                if (userData.status !== 'ATIVO') {
+                    showToast('Sua conta está desativada. Contate o administrador.');
+                    await auth.signOut();
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> ACESSAR PLATAFORMA';
+                    return;
+                }
+
+                // Atualizar último login
+                await updateDoc(doc(db, 'users', user.uid), { ultimo_login: serverTimestamp() });
+
+                // Salvar sessão local
+                const roleConfig = {
+                    'ADMIN': { level: 99, label: 'ADMINISTRADOR' },
+                    'SUPERINTENDENTE': { level: 5, label: 'SUPERINTENDENTE' },
+                    'GERENTE': { level: 4, label: 'GERENTE' },
+                    'CONSULTOR': { level: 3, label: 'CONSULTOR' },
+                    'COORDENADOR': { level: 2, label: 'COORDENADOR' },
+                    'ANALISTA': { level: 1, label: 'ANALISTA' },
+                    'MONITOR': { level: 0, label: 'MONITOR' }
+                };
+
+                localStorage.setItem('nep_logged_in', 'true');
+                localStorage.setItem('nep_user_name', userData.nome);
+                localStorage.setItem('nep_user_email', userData.email);
+                localStorage.setItem('nep_user_role_key', userData.cargo.toLowerCase());
+                localStorage.setItem('nep_user_level', roleConfig[userData.cargo]?.level || 0);
+                localStorage.setItem('nep_user_label', roleConfig[userData.cargo]?.label || userData.cargo);
+                localStorage.setItem('nep_is_admin', userData.cargo === 'ADMIN' ? 'true' : 'false');
+                localStorage.setItem('nep_user_uid', user.uid);
+
+                // Verificar primeiro acesso
+                if (userData.primeiro_acesso === true) {
+                    window.currentUserCredentials = { email, password };
+                    document.getElementById('modal-change-password').classList.add('active');
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> ACESSAR PLATAFORMA';
+                    return;
+                }
+
+                showToast('Bem-vindo ao NEP!', 'success');
+                btn.innerHTML = '<i class="fa-solid fa-check"></i> SUCESSO!';
+                btn.style.background = 'linear-gradient(135deg, #2ecc71, #27ae60)';
+
+                setTimeout(() => { window.location.href = 'index.html'; }, 1000);
+
+            } catch (error) {
+                console.error('Login error:', error);
+                let msg = 'Erro ao fazer login';
+                if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+                    msg = 'Email ou senha incorretos';
+                } else if (error.code === 'auth/too-many-requests') {
+                    msg = 'Muitas tentativas. Aguarde alguns minutos.';
+                }
+                showToast(msg);
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> ACESSAR PLATAFORMA';
+            }
+        });
+
+        // Forgot Password
+        document.getElementById('forgot-password-link').addEventListener('click', (e) => {
+            e.preventDefault();
+            document.getElementById('modal-reset').classList.add('active');
+        });
+
+        document.getElementById('btn-cancel-reset').addEventListener('click', () => {
+            document.getElementById('modal-reset').classList.remove('active');
+        });
+
+        document.getElementById('btn-send-reset').addEventListener('click', async () => {
+            const email = document.getElementById('reset-email').value.trim();
+            if (!email) {
+                showToast('Informe seu email');
+                return;
+            }
+
+            try {
+                await sendPasswordResetEmail(auth, email);
+                showToast('Email de recuperação enviado!', 'success');
+                document.getElementById('modal-reset').classList.remove('active');
+            } catch (error) {
+                showToast('Erro ao enviar email de recuperação');
+            }
+        });
+
+        // Change Password (First Access)
+        document.getElementById('btn-change-password').addEventListener('click', async () => {
+            const currentPass = document.getElementById('current-password').value;
+            const newPass = document.getElementById('new-password').value;
+            const confirmPass = document.getElementById('confirm-password').value;
+
+            if (!currentPass || !newPass || !confirmPass) {
+                showToast('Preencha todos os campos');
+                return;
+            }
+
+            if (newPass !== confirmPass) {
+                showToast('As senhas não conferem');
+                return;
+            }
+
+            if (newPass.length < 6) {
+                showToast('A nova senha deve ter pelo menos 6 caracteres');
+                return;
+            }
+
+            const btn = document.getElementById('btn-change-password');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Alterando...';
+
+            try {
+                const user = auth.currentUser;
+                const credential = EmailAuthProvider.credential(user.email, currentPass);
+                await reauthenticateWithCredential(user, credential);
+                await updatePassword(user, newPass);
+                await updateDoc(doc(db, 'users', user.uid), { primeiro_acesso: false });
+
+                showToast('Senha alterada com sucesso!', 'success');
+                document.getElementById('modal-change-password').classList.remove('active');
+
+                setTimeout(() => { window.location.href = 'index.html'; }, 1000);
+
+            } catch (error) {
+                console.error('Change password error:', error);
+                let msg = 'Erro ao alterar senha';
+                if (error.code === 'auth/wrong-password') msg = 'Senha atual incorreta';
+                showToast(msg);
+                btn.disabled = false;
+                btn.innerHTML = 'Alterar Senha';
+            }
+        });
+
+        // Check if already logged in
+        auth.onAuthStateChanged((user) => {
+            if (user && localStorage.getItem('nep_logged_in') === 'true') {
+                // Verificar se não é primeiro acesso antes de redirecionar
+                getDoc(doc(db, 'users', user.uid)).then(docSnap => {
+                    if (docSnap.exists() && docSnap.data().primeiro_acesso !== true) {
+                        window.location.href = 'index.html';
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+
+</html>

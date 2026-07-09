@@ -1,0 +1,1262 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title>NEP Estatística Avançada</title>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box
+        }
+
+        :root {
+            --bg: #06080f;
+            --s1: #0d1321;
+            --s2: #141c2e;
+            --s3: #1b2540;
+            --brd: #222e48;
+            --tx: #e8ecf4;
+            --tx2: #8694b2;
+            --tx3: #5b6a8a;
+            --ac: #7c5df5;
+            --ac2: #9b7dff;
+            --g: #10b981;
+            --r: #ef4444;
+            --y: #f59e0b;
+            --b: #3b82f6;
+            --radius: 14px
+        }
+
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--tx);
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased
+        }
+
+        .app {
+            max-width: 1140px;
+            margin: 0 auto;
+            padding: 24px 20px 60px
+        }
+
+        /* === HEADER === */
+        .hdr {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 8px
+        }
+
+        .hdr-icon {
+            width: 52px;
+            height: 52px;
+            background: linear-gradient(135deg, #7c5df5, #4f46e5);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: #fff;
+            flex-shrink: 0
+        }
+
+        .hdr h1 {
+            font-size: 26px;
+            font-weight: 800;
+            letter-spacing: -.5px
+        }
+
+        .hdr-sub {
+            font-size: 13px;
+            color: var(--tx2);
+            margin-bottom: 28px;
+            padding-left: 68px
+        }
+
+        /* === UPLOAD === */
+        .upload {
+            border: 2px dashed var(--brd);
+            border-radius: var(--radius);
+            padding: 48px 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: .3s;
+            background: var(--s1);
+            position: relative
+        }
+
+        .upload:hover,
+        .upload.over {
+            border-color: var(--ac);
+            background: rgba(124, 93, 245, .04)
+        }
+
+        .upload i.icon {
+            font-size: 42px;
+            color: var(--ac);
+            margin-bottom: 14px;
+            display: block
+        }
+
+        .upload .main-txt {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 4px
+        }
+
+        .upload .sub-txt {
+            font-size: 12px;
+            color: var(--tx3)
+        }
+
+        .upload input {
+            display: none
+        }
+
+        .upload.loaded {
+            border-style: solid;
+            border-color: var(--g);
+            padding: 20px 24px
+        }
+
+        .upload.loaded .file-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-align: left
+        }
+
+        .upload.loaded .file-icon {
+            width: 40px;
+            height: 40px;
+            background: rgba(16, 185, 129, .12);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--g);
+            font-size: 18px
+        }
+
+        .upload.loaded .file-name {
+            font-weight: 600;
+            font-size: 14px
+        }
+
+        .upload.loaded .file-meta {
+            font-size: 12px;
+            color: var(--tx2)
+        }
+
+        /* === ONBOARDING === */
+        .onboard {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 14px;
+            margin: 24px 0
+        }
+
+        .onboard-step {
+            background: var(--s1);
+            border: 1px solid var(--brd);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center
+        }
+
+        .onboard-num {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--ac), #4f46e5);
+            border-radius: 50%;
+            color: #fff;
+            font-weight: 800;
+            font-size: 14px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 10px
+        }
+
+        .onboard-step h4 {
+            font-size: 13px;
+            margin-bottom: 4px
+        }
+
+        .onboard-step p {
+            font-size: 11px;
+            color: var(--tx3);
+            line-height: 1.4
+        }
+
+        @media(max-width:640px) {
+            .onboard {
+                grid-template-columns: 1fr
+            }
+        }
+
+        /* === CONFIG === */
+        .cfg {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+            padding: 16px 20px;
+            background: var(--s1);
+            border: 1px solid var(--brd);
+            border-radius: var(--radius);
+            margin-bottom: 20px
+        }
+
+        .cfg-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--tx2)
+        }
+
+        .cfg select {
+            padding: 8px 12px;
+            background: var(--s2);
+            border: 1px solid var(--brd);
+            border-radius: 8px;
+            color: var(--tx);
+            font-size: 13px;
+            font-family: inherit
+        }
+
+        .cfg select:focus {
+            outline: none;
+            border-color: var(--ac)
+        }
+
+        .cfg-dir {
+            display: flex;
+            gap: 4px
+        }
+
+        .cfg-dir label {
+            padding: 7px 14px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            border: 1px solid var(--brd);
+            color: var(--tx3);
+            transition: .2s
+        }
+
+        .cfg-dir input {
+            display: none
+        }
+
+        .cfg-dir label:has(input:checked) {
+            background: rgba(124, 93, 245, .15);
+            color: var(--ac);
+            border-color: rgba(124, 93, 245, .4)
+        }
+
+        .btn {
+            padding: 9px 18px;
+            border: none;
+            border-radius: 9px;
+            font-weight: 700;
+            font-size: 13px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: .2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px
+        }
+
+        .btn-go {
+            background: linear-gradient(135deg, var(--ac), #4f46e5);
+            color: #fff
+        }
+
+        .btn-go:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 14px rgba(124, 93, 245, .35)
+        }
+
+        .btn-out {
+            background: var(--s2);
+            color: var(--tx);
+            border: 1px solid var(--brd)
+        }
+
+        .cfg-spacer {
+            flex: 1
+        }
+
+        .col-type {
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-weight: 600
+        }
+
+        .col-type.pct {
+            background: rgba(245, 158, 11, .12);
+            color: var(--y)
+        }
+
+        .col-type.dec {
+            background: rgba(59, 130, 246, .12);
+            color: var(--b)
+        }
+
+        .col-type.int {
+            background: rgba(16, 185, 129, .12);
+            color: var(--g)
+        }
+
+        /* === INSIGHTS HERO === */
+        .insights-hero {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 20px
+        }
+
+        @media(max-width:700px) {
+            .insights-hero {
+                grid-template-columns: repeat(2, 1fr)
+            }
+        }
+
+        .ih {
+            background: var(--s1);
+            border: 1px solid var(--brd);
+            border-radius: 12px;
+            padding: 16px;
+            position: relative;
+            overflow: hidden
+        }
+
+        .ih::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px
+        }
+
+        .ih.ih-purple::before {
+            background: var(--ac)
+        }
+
+        .ih.ih-green::before {
+            background: var(--g)
+        }
+
+        .ih.ih-blue::before {
+            background: var(--b)
+        }
+
+        .ih.ih-orange::before {
+            background: var(--y)
+        }
+
+        .ih-val {
+            font-size: 24px;
+            font-weight: 800;
+            margin-bottom: 2px
+        }
+
+        .ih-label {
+            font-size: 11px;
+            color: var(--tx3);
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            font-weight: 600
+        }
+
+        /* === TABS === */
+        .tabs {
+            display: flex;
+            gap: 3px;
+            margin-bottom: 16px;
+            overflow-x: auto;
+            padding: 4px;
+            background: var(--s1);
+            border-radius: 12px;
+            border: 1px solid var(--brd)
+        }
+
+        .tab {
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            color: var(--tx3);
+            transition: .2s;
+            border: none;
+            background: none
+        }
+
+        .tab:hover {
+            color: var(--tx2)
+        }
+
+        .tab.on {
+            background: rgba(124, 93, 245, .15);
+            color: var(--ac)
+        }
+
+        .sec {
+            display: none
+        }
+
+        .sec.on {
+            display: block
+        }
+
+        /* === CARDS === */
+        .g2 {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 14px;
+            margin-bottom: 16px
+        }
+
+        .c {
+            background: var(--s1);
+            border: 1px solid var(--brd);
+            border-radius: var(--radius);
+            overflow: hidden
+        }
+
+        .c-head {
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--brd);
+            font-size: 13px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--tx)
+        }
+
+        .c-body {
+            padding: 16px 18px
+        }
+
+        .m {
+            display: flex;
+            justify-content: space-between;
+            padding: 7px 0;
+            font-size: 13px;
+            border-bottom: 1px solid rgba(255, 255, 255, .03)
+        }
+
+        .m:last-child {
+            border: none
+        }
+
+        .m .l {
+            color: var(--tx2)
+        }
+
+        .m .v {
+            font-weight: 700;
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 12px
+        }
+
+        .vg {
+            color: var(--g)
+        }
+
+        .vr {
+            color: var(--r)
+        }
+
+        .vy {
+            color: var(--y)
+        }
+
+        .vb {
+            color: var(--b)
+        }
+
+        .vp {
+            color: var(--ac2)
+        }
+
+        /* === INSIGHT PILLS === */
+        .insight {
+            margin-top: 14px;
+            padding: 12px 14px;
+            border-radius: 10px;
+            font-size: 12px;
+            line-height: 1.5;
+            display: flex;
+            gap: 8px
+        }
+
+        .insight i {
+            flex-shrink: 0;
+            margin-top: 2px
+        }
+
+        .insight.tip {
+            background: rgba(16, 185, 129, .06);
+            border: 1px solid rgba(16, 185, 129, .15);
+            color: var(--g)
+        }
+
+        .insight.warn {
+            background: rgba(245, 158, 11, .06);
+            border: 1px solid rgba(245, 158, 11, .15);
+            color: var(--y)
+        }
+
+        .insight.crit {
+            background: rgba(239, 68, 68, .06);
+            border: 1px solid rgba(239, 68, 68, .15);
+            color: var(--r)
+        }
+
+        .insight.info {
+            background: rgba(124, 93, 245, .06);
+            border: 1px solid rgba(124, 93, 245, .15);
+            color: var(--ac2)
+        }
+
+        /* === CHART === */
+        .chart-c {
+            background: var(--s1);
+            border: 1px solid var(--brd);
+            border-radius: var(--radius);
+            padding: 18px;
+            margin-bottom: 16px
+        }
+
+        .chart-c h3 {
+            font-size: 14px;
+            font-weight: 700;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px
+        }
+
+        /* === TABLE === */
+        .tw {
+            overflow-x: auto
+        }
+
+        table.tb {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px
+        }
+
+        table.tb th {
+            padding: 9px 12px;
+            text-align: left;
+            color: var(--tx3);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 10px;
+            letter-spacing: .5px;
+            border-bottom: 1px solid var(--brd);
+            background: var(--s2)
+        }
+
+        table.tb td {
+            padding: 8px 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, .03)
+        }
+
+        table.tb tr:hover {
+            background: rgba(124, 93, 245, .03)
+        }
+
+        .badge {
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 700
+        }
+
+        .badge-r {
+            background: rgba(239, 68, 68, .12);
+            color: #ef4444
+        }
+
+        .badge-y {
+            background: rgba(245, 158, 11, .12);
+            color: #f59e0b
+        }
+
+        .badge-g {
+            background: rgba(16, 185, 129, .12);
+            color: #10b981
+        }
+
+        .badge-b {
+            background: rgba(59, 130, 246, .12);
+            color: #3b82f6
+        }
+
+        .empty {
+            text-align: center;
+            padding: 60px;
+            color: var(--tx3)
+        }
+
+        .empty i {
+            font-size: 40px;
+            margin-bottom: 12px;
+            display: block;
+            opacity: .4
+        }
+
+        #results {
+            display: none
+        }
+
+        .loader {
+            display: none;
+            text-align: center;
+            padding: 40px
+        }
+
+        .loader.on {
+            display: block
+        }
+
+        .spin {
+            width: 36px;
+            height: 36px;
+            border: 3px solid var(--brd);
+            border-top-color: var(--ac);
+            border-radius: 50%;
+            animation: sp .7s linear infinite;
+            margin: 0 auto 10px
+        }
+
+        @keyframes sp {
+            to {
+                transform: rotate(360deg)
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app">
+        <div class="hdr">
+            <div class="hdr-icon"><i class="fa-solid fa-square-root-variable"></i></div>
+            <h1>Estatística Avançada</h1>
+        </div>
+        <p class="hdr-sub">Faça upload da sua base Excel e receba análises estatísticas completas com insights
+            automáticos</p>
+
+        <div class="upload" id="dz">
+            <i class="fa-solid fa-cloud-arrow-up icon"></i>
+            <p class="main-txt">Arraste seu arquivo Excel aqui</p>
+            <p class="sub-txt">Aceita .xlsx, .xls e .csv — Reconhece números inteiros, decimais e percentuais</p>
+            <input type="file" id="fi" accept=".xlsx,.xls,.csv">
+        </div>
+
+        <div class="onboard" id="onboard">
+            <div class="onboard-step">
+                <div class="onboard-num">1</div>
+                <h4>Upload da base</h4>
+                <p>Arraste ou selecione sua planilha Excel com os dados</p>
+            </div>
+            <div class="onboard-step">
+                <div class="onboard-num">2</div>
+                <h4>Selecione a coluna</h4>
+                <p>Escolha qual indicador analisar e se maior ou menor é melhor</p>
+            </div>
+            <div class="onboard-step">
+                <div class="onboard-num">3</div>
+                <h4>Insights automáticos</h4>
+                <p>Receba análise completa com gráficos, alertas e diagnósticos</p>
+            </div>
+        </div>
+
+        <div id="results">
+            <div class="cfg" id="cfgBar">
+                <span class="cfg-label">Coluna:</span>
+                <select id="colSel"></select>
+                <span id="colTypeBadge"></span>
+                <span class="cfg-label" style="margin-left:8px">Quartil:</span>
+                <div class="cfg-dir">
+                    <label><input type="radio" name="qd" value="h" checked>📈 Maior = Melhor</label>
+                    <label><input type="radio" name="qd" value="l">📉 Menor = Melhor</label>
+                </div>
+                <span class="cfg-spacer"></span>
+                <button class="btn btn-go" onclick="run()"><i class="fa-solid fa-bolt"></i> Analisar</button>
+                <button class="btn btn-out" onclick="exportTxt()"><i class="fa-solid fa-download"></i></button>
+            </div>
+
+            <div id="heroArea"></div>
+            <div class="tabs" id="tabBar"></div>
+            <div id="sections"></div>
+        </div>
+        <div class="loader" id="ld">
+            <div class="spin"></div>
+            <p style="color:var(--tx3);font-size:13px">Processando análise...</p>
+        </div>
+    </div>
+
+    <script>
+        let raw = [], hds = [], numCols = [], colMeta = {}, curCol = '';
+        const TABS = [
+            { id: 'painel', ic: 'fa-table-columns', lb: 'Painel Geral' },
+            { id: 'resumo', ic: 'fa-gauge-high', lb: 'Resumo & Insights' },
+            { id: 'classif', ic: 'fa-users-rectangle', lb: 'Classificação' },
+            { id: 'central', ic: 'fa-chart-simple', lb: 'Tendência Central' },
+            { id: 'dispersao', ic: 'fa-arrows-left-right-to-line', lb: 'Dispersão' },
+            { id: 'quartis', ic: 'fa-layer-group', lb: 'Quartis & Percentis' },
+            { id: 'dist', ic: 'fa-chart-area', lb: 'Distribuição' },
+            { id: 'temporal', ic: 'fa-timeline', lb: 'Série Temporal' },
+            { id: 'anomalias', ic: 'fa-triangle-exclamation', lb: 'Anomalias' },
+            { id: 'correl', ic: 'fa-arrows-split-up-and-left', lb: 'Correlação' },
+            { id: 'ranking', ic: 'fa-ranking-star', lb: 'Ranking' },
+            { id: 'dados', ic: 'fa-table-cells', lb: 'Dados' }
+        ];
+
+        // Detectar nome amigável para a 1a coluna não-numérica (nome pessoa/agente)
+        function getNameCol() {
+            return hds.find(h => {
+                const vals = raw.map(r => r[h]).filter(v => v !== '' && v !== null);
+                if (!vals.length) return false;
+                return vals.every(v => isNaN(parseFloat(v)));
+            }) || null;
+        }
+
+        // Contexto operacional por nome de coluna
+        function getColContext(col) {
+            const u = col.toUpperCase();
+            if (u.includes('TMA') || u.includes('AHT')) return { area: 'Tempo de Atendimento', tip: 'TMA alto pode indicar chamadas complexas ou falta de treinamento. Compare com FCR para ver se o tempo maior gera resolução.' };
+            if (u.includes('TME')) return { area: 'Tempo de Espera', tip: 'TME alto impacta diretamente a satisfação do cliente e a taxa de abandono.' };
+            if (u.includes('NPS')) return { area: 'Satisfação', tip: 'NPS é um indicador de lealdade. Valores abaixo de 50% indicam mais detratores que promotores.' };
+            if (u.includes('RECHAMADA') || u.includes('CALLBACK')) return { area: 'Rechamada', tip: 'Alta rechamada indica que o problema não foi resolvido na primeira interação. Investigue causa raiz.' };
+            if (u.includes('FCR') || u.includes('RESOLUT')) return { area: 'Resolução', tip: 'FCR/Resolutividade alta = eficiência. Compare com TMA para encontrar o equilíbrio ideal.' };
+            if (u.includes('ABANDON') || u.includes('DESIST')) return { area: 'Abandono', tip: 'Taxa de abandono reflete capacidade de atendimento. Reduza TME para diminuir abandonos.' };
+            if (u.includes('SLA') || u.includes('NIVEL_SERV')) return { area: 'Nível de Serviço', tip: 'SLA abaixo da meta exige análise de dimensionamento e aderência à escala.' };
+            if (u.includes('ATEND') && !u.includes('TEMPO')) return { area: 'Volume', tip: 'Volume de atendimentos impacta todas as métricas. Avalie sazonalidade e dimensionamento.' };
+            if (u.includes('NOTA') || u.includes('SCORE') || u.includes('QUALID')) return { area: 'Qualidade', tip: 'Score de qualidade reflete aderência ao processo. Compare com resultados para validar efetividade.' };
+            if (u.includes('PRODUT') || u.includes('EFIC')) return { area: 'Produtividade', tip: 'Produtividade não deve ser avaliada isoladamente. Cruze com qualidade para evitar trade-offs.' };
+            if (u.includes('HUMAN')) return { area: 'Humanização', tip: 'TX Humano mede empatia e personalização. Correlacione com NPS para validar impacto.' };
+            return null;
+        }
+
+        // === UPLOAD ===
+        const dz = document.getElementById('dz'), fi = document.getElementById('fi');
+        dz.onclick = () => fi.click();
+        dz.ondragover = e => { e.preventDefault(); dz.classList.add('over') };
+        dz.ondragleave = () => dz.classList.remove('over');
+        dz.ondrop = e => { e.preventDefault(); dz.classList.remove('over'); if (e.dataTransfer.files[0]) load(e.dataTransfer.files[0]) };
+        fi.onchange = e => { if (e.target.files[0]) load(e.target.files[0]) };
+
+        // === PARSE NUMBER (handles %, comma, BR format) ===
+        function parseNum(v) {
+            if (v === null || v === undefined || v === '') return NaN;
+            if (typeof v === 'number') return v;
+            let s = String(v).trim();
+            const hasPctSign = s.includes('%');
+            s = s.replace('%', '').replace(/\s/g, '').replace('R$', '').replace('r$', '');
+            // BR format: 1.234,56 -> 1234.56
+            if (s.includes(',') && s.includes('.')) {
+                if (s.lastIndexOf(',') > s.lastIndexOf('.')) s = s.replace(/\./g, '').replace(',', '.');
+                else s = s.replace(/,/g, '');
+            } else if (s.includes(',')) s = s.replace(',', '.');
+            const n = parseFloat(s);
+            if (isNaN(n)) return NaN;
+            // Se tinha % explícito, converte: 25,52% -> 0.2552
+            return hasPctSign ? n / 100 : n;
+        }
+
+        function detectColType(col) {
+            const vals = raw.map(r => r[col]).filter(v => v !== null && v !== undefined && v !== '');
+            if (!vals.length) return 'int';
+            let hasPctSign = 0, between01 = 0, isInt = 0, isDec = 0, total = 0;
+            vals.forEach(v => {
+                const s = String(v).trim();
+                const n = parseNum(v);
+                if (isNaN(n)) return;
+                total++;
+                if (s.includes('%')) { hasPctSign++; return; }
+                // Checa se o valor numérico raw (sem %) está entre 0 e 1
+                if (typeof v === 'number' || !s.includes('%')) {
+                    if (n >= 0 && n <= 1) between01++;
+                }
+                if (Number.isInteger(v) || (typeof v === 'string' && /^-?\d+$/.test(s))) isInt++;
+                else isDec++;
+            });
+            // Se tem símbolo % -> pct
+            if (hasPctSign > total * 0.3) return 'pct';
+            // Se >70% dos valores estão entre 0 e 1 E não são inteiros puros (0 ou 1) -> provavelmente taxa/pct
+            const pureBinary = vals.filter(v => { const n = parseNum(v); return n === 0 || n === 1; }).length;
+            if (total > 0 && between01 / total > 0.7 && pureBinary / total < 0.9) return 'pct';
+            // Se nome da coluna indica taxa
+            const colUp = col.toUpperCase();
+            if ((colUp.startsWith('TX_') || colUp.startsWith('TAXA_') || colUp.includes('_RATE') || colUp === 'NPS' || colUp === 'FCR' || colUp === 'SLA') && between01 / total > 0.5) return 'pct';
+            if (isDec > isInt) return 'dec';
+            return 'int';
+        }
+
+        function getVals(col) { return raw.map(r => parseNum(r[col])).filter(v => !isNaN(v)) }
+
+        // === FORMATAÇÃO BR ===
+        // pct: 0.2552 -> "25,52%"   int: 500 -> "500"   dec: 4.6 -> "4,60"
+        function fmtVal(v, type) {
+            if (v === null || v === undefined || isNaN(v)) return '—';
+            if (type === 'pct') {
+                const p = v * 100;
+                return p.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%';
+            }
+            if (type === 'int') {
+                return Math.round(v).toLocaleString('pt-BR');
+            }
+            // dec
+            return v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+        function fmt(v) {
+            if (isNaN(v) || v === null || v === undefined) return '—';
+            return v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+        }
+        function pct(v) { return isNaN(v) ? '—' : (v * 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%'; }
+
+        function load(file) {
+            document.getElementById('ld').classList.add('on');
+            const r = new FileReader();
+            r.onload = e => {
+                try {
+                    const wb = XLSX.read(e.target.result, { type: 'array' });
+                    const ws = wb.Sheets[wb.SheetNames[0]];
+                    raw = XLSX.utils.sheet_to_json(ws, { defval: '' });
+                    if (!raw.length) return alert('Planilha vazia');
+                    hds = Object.keys(raw[0]);
+                    colMeta = {};
+                    numCols = hds.filter(h => { const vals = raw.map(r => parseNum(r[h])).filter(v => !isNaN(v)); if (vals.length >= 2) { colMeta[h] = { type: detectColType(h), count: vals.length }; return true } return false });
+                    if (!numCols.length) return alert('Sem colunas numéricas');
+                    const sel = document.getElementById('colSel');
+                    sel.innerHTML = numCols.map(c => `<option value="${c}">${c}</option>`).join('');
+                    sel.onchange = () => updateColBadge();
+                    updateColBadge();
+                    dz.className = 'upload loaded';
+                    dz.innerHTML = `<div class="file-info"><div class="file-icon"><i class="fa-solid fa-file-excel"></i></div><div><div class="file-name">${file.name}</div><div class="file-meta">${raw.length} linhas · ${hds.length} colunas · ${numCols.length} numéricas</div></div></div>`;
+                    dz.onclick = () => fi.click();
+                    document.getElementById('onboard').style.display = 'none';
+                    document.getElementById('results').style.display = 'block';
+                    buildTabs(); run();
+                } catch (err) { alert('Erro: ' + err.message) }
+                document.getElementById('ld').classList.remove('on');
+            };
+            r.readAsArrayBuffer(file);
+        }
+
+        function updateColBadge() {
+            const col = document.getElementById('colSel').value;
+            const meta = colMeta[col];
+            if (!meta) return;
+            const labels = { pct: 'Percentual', dec: 'Decimal', 'int': 'Inteiro' };
+            document.getElementById('colTypeBadge').innerHTML = `<span class="col-type ${meta.type}">${labels[meta.type]} · ${meta.count} valores</span>`;
+        }
+
+        function buildTabs() {
+            const bar = document.getElementById('tabBar');
+            bar.innerHTML = TABS.map((t, i) => `<div class="tab ${i === 0 ? 'on' : ''}" data-t="${t.id}"><i class="fa-solid ${t.ic}"></i> ${t.lb}</div>`).join('');
+            document.getElementById('sections').innerHTML = TABS.map((t, i) => `<div class="sec ${i === 0 ? 'on' : ''}" id="s-${t.id}"></div>`).join('');
+            bar.querySelectorAll('.tab').forEach(t => { t.onclick = () => { bar.querySelectorAll('.tab').forEach(x => x.classList.remove('on')); document.querySelectorAll('.sec').forEach(x => x.classList.remove('on')); t.classList.add('on'); document.getElementById('s-' + t.dataset.t).classList.add('on') } });
+        }
+
+        // === MATH ===
+        const S = a => [...a].sort((x, y) => x - y), sum = a => a.reduce((s, v) => s + v, 0), avg = a => a.length ? sum(a) / a.length : 0;
+        function med(a) { const s = S(a), m = Math.floor(s.length / 2); return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2 }
+        function mode(a) { const f = {}; a.forEach(v => { const k = v.toFixed(6); f[k] = (f[k] || 0) + 1 }); const mx = Math.max(...Object.values(f)); const r = Object.entries(f).filter(([, c]) => c === mx).map(([v]) => parseFloat(v)); return r.length === a.length ? null : r }
+        function vari(a) { const m = avg(a); return a.reduce((s, v) => s + (v - m) ** 2, 0) / (a.length - 1) }
+        function sd(a) { return Math.sqrt(vari(a)) }
+        function Q(a, q) { const s = S(a), p = (s.length - 1) * q, b = Math.floor(p); return s[b] + (s[b + 1] !== undefined ? (s[b + 1] - s[b]) * (p - b) : 0) }
+        function skew(a) { const m = avg(a), s = sd(a), n = a.length; return s ? (n / ((n - 1) * (n - 2))) * a.reduce((ac, v) => ac + ((v - m) / s) ** 3, 0) : 0 }
+        function kurt(a) { const m = avg(a), s = sd(a), n = a.length; if (!s || n < 4) return 0; return (n * (n + 1)) / ((n - 1) * (n - 2) * (n - 3)) * a.reduce((ac, v) => ac + ((v - m) / s) ** 4, 0) - (3 * (n - 1) ** 2) / ((n - 2) * (n - 3)) }
+        function pearson(x, y) { const n = Math.min(x.length, y.length), mx = avg(x.slice(0, n)), my = avg(y.slice(0, n)); let nm = 0, dx = 0, dy = 0; for (let i = 0; i < n; i++) { const a = x[i] - mx, b = y[i] - my; nm += a * b; dx += a * a; dy += b * b } return dx && dy ? nm / Math.sqrt(dx * dy) : 0 }
+        function trimMean(a, p = .1) { const s = S(a), c = Math.floor(s.length * p); return avg(s.slice(c, s.length - c)) }
+        function geoMean(a) { const p = a.filter(v => v > 0); return p.length ? Math.pow(p.reduce((r, v) => r * v, 1), 1 / p.length) : 0 }
+        function harMean(a) { const p = a.filter(v => v > 0); return p.length ? p.length / p.reduce((s, v) => s + 1 / v, 0) : 0 }
+        function movAvg(a, w) { const r = []; for (let i = 0; i < a.length; i++) { const st = Math.max(0, i - w + 1); r.push(avg(a.slice(st, i + 1))) } return r }
+        function linReg(x, y) { const n = Math.min(x.length, y.length), mx = avg(x.slice(0, n)), my = avg(y.slice(0, n)); let nm = 0, dn = 0; for (let i = 0; i < n; i++) { nm += (x[i] - mx) * (y[i] - my); dn += (x[i] - mx) ** 2 } const sl = dn ? nm / dn : 0; return { slope: sl, intercept: my - sl * mx, r: pearson(x, y) } }
+        function M(l, v, c = '') { return `<div class="m"><span class="l">${l}</span><span class="v ${c}">${v}</span></div>` }
+        function insightHTML(type, icon, text) { return `<div class="insight ${type}"><i class="fa-solid ${icon}"></i><span>${text}</span></div>` }
+
+        // === MAIN ===
+        function run() {
+            curCol = document.getElementById('colSel').value;
+            const v = getVals(curCol), t = colMeta[curCol]?.type || 'dec';
+            if (v.length < 2) return;
+            const hb = document.querySelector('input[name="qd"]:checked').value === 'h';
+            const F = x => fmtVal(x, t);
+            const m = avg(v), md = med(v), s = sd(v), cv = m ? Math.abs(s / m) : 0;
+            const mn = Math.min(...v), mx = Math.max(...v), q1 = Q(v, .25), q3 = Q(v, .75), iqr = q3 - q1;
+
+            // Hero KPIs
+            document.getElementById('heroArea').innerHTML = `<div class="insights-hero">
+    <div class="ih ih-purple"><div class="ih-val">${F(m)}</div><div class="ih-label">Média</div></div>
+    <div class="ih ih-blue"><div class="ih-val">${F(md)}</div><div class="ih-label">Mediana</div></div>
+    <div class="ih ih-orange"><div class="ih-val">${F(s)}</div><div class="ih-label">Desvio Padrão</div></div>
+    <div class="ih ih-green"><div class="ih-val">${(cv * 100).toFixed(1)}%</div><div class="ih-label">Coef. Variação</div></div>
+  </div>`;
+
+            renderPainel();
+            renderResumo(v, t, hb, F);
+            renderClassif(v, t, hb, F);
+            renderCentral(v, t, F);
+            renderDispersao(v, t, F, m, s, cv, iqr);
+            renderQuartis(v, t, hb, F, q1, q3, iqr);
+            renderDist(v, t, F);
+            renderTemporal(v, t, F);
+            renderAnomalias(v, t, F, m, s, q1, q3, iqr);
+            renderCorrel(t);
+            renderRanking(v, t, hb, F);
+            renderDados();
+        }
+
+        // === PAINEL GERAL (todas as colunas) ===
+        function renderPainel() {
+            let html = '<div class="c"><div class="c-head"><i class="fa-solid fa-table-columns" style="color:var(--ac)"></i> Visão Geral — Todas as Colunas Numéricas</div>';
+            html += '<div class="tw"><table class="tb"><thead><tr><th>Coluna</th><th>Tipo</th><th>N</th><th>Média</th><th>Mediana</th><th>Desvio</th><th>CV</th><th>Min</th><th>Max</th><th>Status</th></tr></thead><tbody>';
+            numCols.forEach(col => {
+                const v = getVals(col), t = colMeta[col].type, F = x => fmtVal(x, t);
+                if (v.length < 2) return;
+                const m = avg(v), md = med(v), s = sd(v), cv = m ? Math.abs(s / m) : 0;
+                const cvBadge = cv > .3 ? '<span class="badge badge-r">Instável</span>' : cv > .15 ? '<span class="badge badge-y">Atenção</span>' : '<span class="badge badge-g">Estável</span>';
+                const ctx = getColContext(col);
+                const area = ctx ? `<br><span style="font-size:10px;color:var(--tx3)">${ctx.area}</span>` : '';
+                const typeLabels = { pct: '<span class="col-type pct">%</span>', dec: '<span class="col-type dec">Dec</span>', 'int': '<span class="col-type int">Int</span>' };
+                html += `<tr style="cursor:pointer" onclick="document.getElementById('colSel').value='${col}';run()">`;
+                html += `<td style="font-weight:600">${col}${area}</td><td>${typeLabels[t]}</td><td>${v.length}</td>`;
+                html += `<td style="font-weight:700">${F(m)}</td><td>${F(md)}</td><td>${F(s)}</td>`;
+                html += `<td style="font-weight:700;${cv > .3 ? 'color:var(--r)' : cv > .15 ? 'color:var(--y)' : 'color:var(--g)'}">${(cv * 100).toFixed(1)}%</td>`;
+                html += `<td>${F(Math.min(...v))}</td><td>${F(Math.max(...v))}</td><td>${cvBadge}</td></tr>`;
+            });
+            html += '</tbody></table></div></div>';
+            html += insightHTML('tip', 'fa-hand-pointer', 'Clique em qualquer linha para analisar aquela coluna em detalhe.');
+            document.getElementById('s-painel').innerHTML = html;
+        }
+
+        // === CLASSIFICAÇÃO INDIVIDUAL ===
+        function renderClassif(v, t, hb, F) {
+            const nameCol = getNameCol();
+            const q1 = Q(v, .25), q2 = Q(v, .5), q3 = Q(v, .75);
+            // Q1=Top (melhores), Q4=Crítico (piores) — SEMPRE
+            function getQuartil(val) {
+                if (hb) {
+                    // Maior=Melhor: valores altos = Q1 Top
+                    if (val >= q3) return { q: 'Q1', lb: 'Top', cls: 'badge-g', icon: '🟢' };
+                    if (val >= q2) return { q: 'Q2', lb: 'Bom', cls: 'badge-b', icon: '🔵' };
+                    if (val >= q1) return { q: 'Q3', lb: 'Atenção', cls: 'badge-y', icon: '🟡' };
+                    return { q: 'Q4', lb: 'Crítico', cls: 'badge-r', icon: '🔴' };
+                } else {
+                    // Menor=Melhor: valores baixos = Q1 Top
+                    if (val <= q1) return { q: 'Q1', lb: 'Top', cls: 'badge-g', icon: '🟢' };
+                    if (val <= q2) return { q: 'Q2', lb: 'Bom', cls: 'badge-b', icon: '🔵' };
+                    if (val <= q3) return { q: 'Q3', lb: 'Atenção', cls: 'badge-y', icon: '🟡' };
+                    return { q: 'Q4', lb: 'Crítico', cls: 'badge-r', icon: '🔴' };
+                }
+            }
+            const rows = raw.map((r, i) => {
+                const val = parseNum(r[curCol]);
+                if (isNaN(val)) return null;
+                const qi = getQuartil(val);
+                const name = nameCol ? r[nameCol] : `Registro ${i + 1}`;
+                return { name, val, qi, idx: i };
+            }).filter(Boolean).sort((a, b) => hb ? b.val - a.val : a.val - b.val);
+
+            const counts = { Top: 0, Bom: 0, 'Atenção': 0, 'Crítico': 0 };
+            rows.forEach(r => counts[r.qi.lb]++);
+
+            let html = `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px">`;
+            html += `<div class="ih ih-green"><div class="ih-val">${counts.Top}</div><div class="ih-label">🟢 Q1 — Top</div></div>`;
+            html += `<div class="ih ih-blue"><div class="ih-val">${counts.Bom}</div><div class="ih-label">🔵 Q2 — Bom</div></div>`;
+            html += `<div class="ih ih-orange"><div class="ih-val">${counts['Atenção']}</div><div class="ih-label">🟡 Q3 — Atenção</div></div>`;
+            html += `<div class="ih" style="border-left:3px solid var(--r)"><div class="ih-val">${counts['Crítico']}</div><div class="ih-label">🔴 Q4 — Crítico</div></div>`;
+            html += '</div>';
+
+            html += `<div class="c"><div class="c-head"><i class="fa-solid fa-users-rectangle" style="color:var(--ac)"></i> Classificação Individual — ${curCol} (${hb ? 'Maior=Melhor' : 'Menor=Melhor'})</div>`;
+            html += '<div class="tw"><table class="tb"><thead><tr><th>#</th>';
+            html += `<th>${nameCol || 'Registro'}</th><th>${curCol}</th><th>Quartil</th><th>Classificação</th></tr></thead><tbody>`;
+            rows.forEach((r, i) => {
+                html += `<tr><td style="font-weight:700">${i + 1}</td><td style="font-weight:600">${r.name}</td>`;
+                html += `<td style="font-weight:700">${F(r.val)}</td>`;
+                html += `<td><span class="badge ${r.qi.cls}">${r.qi.q}</span></td>`;
+                html += `<td>${r.qi.icon} ${r.qi.lb}</td></tr>`;
+            });
+            html += '</tbody></table></div></div>';
+            html += insightHTML('tip', 'fa-lightbulb', `<strong>${counts['Crítico']}</strong> ${nameCol ? 'pessoas' : 'registros'} em zona crítica precisam de ação imediata. <strong>${counts.Top}</strong> estão no quartil top — use como referência de boas práticas.`);
+            document.getElementById('s-classif').innerHTML = html;
+        }
+
+        // === RESUMO ===
+        function renderResumo(v, t, hb, F) {
+            const m = avg(v), md = med(v), s = sd(v), cv = m ? Math.abs(s / m) : 0, sk = skew(v), q1 = Q(v, .25), q3 = Q(v, .75);
+            const ctx = getColContext(curCol);
+            let ins = [];
+
+            // Insight operacional contextual
+            if (ctx) ins.push(insightHTML('info', 'fa-bullseye', `<strong>Área: ${ctx.area}</strong> — ${ctx.tip}`));
+
+            if (cv > .3) ins.push(insightHTML('crit', 'fa-circle-exclamation', `<strong>Alta volatilidade (CV=${(cv * 100).toFixed(1)}%)</strong> — O indicador é muito instável. ${ctx ? 'Investigue quais ' + getNameCol() + 's estão puxando a dispersão.' : 'Considere segmentar por grupo para entender a causa.'}`));
+            else if (cv > .15) ins.push(insightHTML('warn', 'fa-triangle-exclamation', `<strong>Volatilidade moderada (CV=${(cv * 100).toFixed(1)}%)</strong> — Há variação relevante entre os registros.`));
+            else ins.push(insightHTML('tip', 'fa-circle-check', `<strong>Baixa volatilidade (CV=${(cv * 100).toFixed(1)}%)</strong> — O indicador é estável e previsível.`));
+
+            const diff = (m - md) / Math.abs(m || 1);
+            if (Math.abs(diff) > .1) ins.push(insightHTML('warn', 'fa-arrows-left-right', `<strong>Média ≠ Mediana</strong> — Diferença de ${(Math.abs(diff) * 100).toFixed(1)}%. ${m > md ? 'Outliers altos inflam a média.' : 'Outliers baixos puxam a média.'} A mediana (${F(md)}) é referência mais confiável.`));
+
+            if (Math.abs(sk) > .5) ins.push(insightHTML('info', 'fa-chart-area', `<strong>Distribuição assimétrica</strong> — ${sk > 0 ? 'Concentração em valores baixos com poucos muito altos.' : 'Concentração em valores altos com poucos muito baixos.'}`));
+
+            const zOut = v.filter(x => Math.abs((x - m) / s) > 2).length;
+            if (zOut > 0) ins.push(insightHTML(zOut / v.length > .1 ? 'crit' : 'warn', 'fa-bolt', `<strong>${zOut} outlier${zOut > 1 ? 's' : ''}</strong> (${(zOut / v.length * 100).toFixed(1)}%) — Veja a aba Anomalias para identificar quais.`));
+
+            const lr = linReg(v.map((_, i) => i), v);
+            if (Math.abs(lr.r) > .5) ins.push(insightHTML('info', 'fa-arrow-trend-' + (lr.slope > 0 ? 'up' : 'down'), `<strong>Tendência ${lr.slope > 0 ? 'de alta' : 'de queda'}</strong> ao longo do período (R=${fmt(lr.r)}).`));
+
+            // Ação recomendada
+            const action = cv > .3 ? 'Segmente os dados e identifique os grupos com maior dispersão.' : zOut > 0 ? 'Analise os outliers na aba Anomalias e verifique se são erros ou casos especiais.' : 'O indicador está saudável. Mantenha o monitoramento regular.';
+            ins.push(insightHTML('tip', 'fa-clipboard-check', `<strong>Próximo passo recomendado:</strong> ${action}`));
+
+            document.getElementById('s-resumo').innerHTML = `
+    <div class="c"><div class="c-head"><i class="fa-solid fa-lightbulb" style="color:var(--y)"></i> Diagnóstico — ${curCol}</div>
+    <div class="c-body">${ins.join('')}
+    <div class="insight info" style="margin-top:16px"><i class="fa-solid fa-database"></i><span><strong>${v.length}</strong> registros · Tipo: <strong>${{ pct: 'Percentual', dec: 'Decimal', 'int': 'Inteiro' }[t]}</strong> · Coluna: <strong>${curCol}</strong></span></div>
+    </div></div>`;
+        }
+
+        // === CENTRAL ===
+        function renderCentral(v, t, F) {
+            const m = avg(v), md = med(v), mo = mode(v), tm = trimMean(v), gm = geoMean(v), hm = harMean(v);
+            document.getElementById('s-central').innerHTML = `<div class="g2">
+    <div class="c"><div class="c-head"><i class="fa-solid fa-chart-simple" style="color:var(--ac)"></i> Medidas de Centro</div><div class="c-body">
+      ${M('Média Aritmética', F(m), 'vp')}${M('Mediana', F(md), 'vb')}${M('Moda', mo ? mo.map(x => F(x)).join(', ') : 'Amodal')}
+      ${M('Média Aparada (10%)', F(tm))}${M('Média Geométrica', F(gm))}${M('Média Harmônica', F(hm))}
+      ${insightHTML('info', 'fa-circle-info', 'A <strong>média</strong> é sensível a outliers. A <strong>mediana</strong> é mais robusta. Compare ambas para avaliar a simetria dos dados.')}
+    </div></div>
+    <div class="c"><div class="c-head"><i class="fa-solid fa-scale-balanced" style="color:var(--b)"></i> Quando usar cada uma</div><div class="c-body">
+      ${M('Dados simétricos', 'Use a média', 'vg')}${M('Com outliers', 'Use a mediana', 'vy')}
+      ${M('Taxas de crescimento', 'Use geométrica', 'vb')}${M('Velocidades/taxas', 'Use harmônica', 'vp')}
+      ${insightHTML('tip', 'fa-lightbulb', 'Para indicadores de qualidade com outliers, a <strong>mediana</strong> ou <strong>média aparada</strong> são melhores referências.')}
+    </div></div>
+  </div>`;
+        }
+
+        // === DISPERSÃO ===
+        function renderDispersao(v, t, F, m, s, cv, iqr) {
+            const mad = avg(v.map(x => Math.abs(x - m))), se = s / Math.sqrt(v.length);
+            const cvC = cv > .3 ? 'vr' : cv > .15 ? 'vy' : 'vg';
+            document.getElementById('s-dispersao').innerHTML = `<div class="g2">
+    <div class="c"><div class="c-head"><i class="fa-solid fa-arrows-left-right-to-line" style="color:var(--y)"></i> Volatilidade</div><div class="c-body">
+      ${M('Amplitude', F(Math.max(...v) - Math.min(...v)))}${M('Variância', fmt(vari(v)))}
+      ${M('Desvio Padrão', F(s), 'vp')}${M('Coef. Variação', pct(cv), cvC)}
+      ${M('IQR', F(iqr))}${M('MAD', F(mad))}${M('Erro Padrão', F(se))}
+      ${cv > .3 ? insightHTML('crit', 'fa-circle-exclamation', 'CV acima de 30%! O processo é <strong>altamente instável</strong>. Ação corretiva necessária.') : cv > .15 ? insightHTML('warn', 'fa-triangle-exclamation', 'CV entre 15-30%. Volatilidade <strong>moderada</strong>, monitore regularmente.') : insightHTML('tip', 'fa-circle-check', 'CV abaixo de 15%. O processo é <strong>estável e previsível</strong>.')}
+    </div></div>
+    <div class="c"><div class="c-head"><i class="fa-solid fa-chart-bar" style="color:var(--g)"></i> Regra Empírica (68-95-99.7)</div><div class="c-body">
+      ${M('68% dos dados', `${F(m - s)} a ${F(m + s)}`)}${M('95% dos dados', `${F(m - 2 * s)} a ${F(m + 2 * s)}`)}${M('99.7% dos dados', `${F(m - 3 * s)} a ${F(m + 3 * s)}`)}
+      ${insightHTML('info', 'fa-circle-info', 'Se os dados forem normais, 95% ficarão dentro de ±2 desvios da média. Valores fora são potenciais outliers.')}
+    </div></div>
+  </div>`;
+        }
+
+        // === QUARTIS ===
+        function renderQuartis(v, t, hb, F, q1, q3, iqr) {
+            const pcts = [5, 10, 25, 50, 75, 90, 95].map(p => ({ p, v: Q(v, p / 100) }));
+            // Q1=Top (melhores), Q4=Crítico (piores)
+            const labels = ['Q1 🟢 Top', 'Q2 � Bom', 'Q3 � Atenção', 'Q4 🔴 Crítico'];
+            const sv = S(v), q2 = Q(v, .5);
+            // Se maior=melhor: Q1=acima Q3, Q4=abaixo Q1 | Se menor=melhor: Q1=abaixo Q1, Q4=acima Q3
+            const gs = hb
+                ? [sv.filter(x => x > q3), sv.filter(x => x > q2 && x <= q3), sv.filter(x => x > q1 && x <= q2), sv.filter(x => x <= q1)]
+                : [sv.filter(x => x <= q1), sv.filter(x => x > q1 && x <= q2), sv.filter(x => x > q2 && x <= q3), sv.filter(x => x > q3)];
+
+            let html = `<div class="g2"><div class="c"><div class="c-head"><i class="fa-solid fa-layer-group" style="color:var(--ac)"></i> Quartis (${hb ? 'Maior=Melhor' : 'Menor=Melhor'}) — Q1=Top, Q4=Crítico</div><div class="c-body">
+    ${M('Q1 🟢 Top', hb ? 'Acima de ' + F(q3) : 'Abaixo de ' + F(q1), 'vg')}
+    ${M('Q2 🔵 Bom', hb ? F(q2) + ' a ' + F(q3) : F(q1) + ' a ' + F(q2), 'vb')}
+    ${M('Q3 🟡 Atenção', hb ? F(q1) + ' a ' + F(q2) : F(q2) + ' a ' + F(q3), 'vy')}
+    ${M('Q4 🔴 Crítico', hb ? 'Abaixo de ' + F(q1) : 'Acima de ' + F(q3), 'vr')}
+    ${M('IQR', F(iqr))}${M('Limite Outlier Inferior', F(q1 - 1.5 * iqr))}${M('Limite Outlier Superior', F(q3 + 1.5 * iqr))}
+    ${insightHTML('info', 'fa-circle-info', '<strong>Q1</strong> são os melhores resultados. <strong>Q4</strong> precisam de ação imediata.')}
+  </div></div>
+  <div class="c"><div class="c-head"><i class="fa-solid fa-percentage" style="color:var(--b)"></i> Percentis</div><div class="c-body">
+    ${pcts.map(p => M(`P${p.p}`, F(p.v))).join('')}
+  </div></div></div>`;
+            html += `<div class="chart-c"><h3><i class="fa-solid fa-chart-bar" style="color:var(--ac)"></i> Distribuição por Quartil</h3><canvas id="cQ" height="180"></canvas></div>`;
+            document.getElementById('s-quartis').innerHTML = html;
+            setTimeout(() => {
+                const c = document.getElementById('cQ'); if (!c) return;
+                const colors = ['rgba(16,185,129,.5)', 'rgba(59,130,246,.5)', 'rgba(245,158,11,.5)', 'rgba(239,68,68,.5)'];
+                new Chart(c, { type: 'bar', data: { labels, datasets: [{ data: gs.map(g => g.length), backgroundColor: colors, borderRadius: 6 }] }, options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { grid: { color: 'rgba(255,255,255,.04)' }, ticks: { color: '#5b6a8a' } }, x: { grid: { display: false }, ticks: { color: '#8694b2' } } } } });
+            }, 80);
+        }
+
+        // === DISTRIBUIÇÃO ===
+        function renderDist(v, t, F) {
+            const sk = skew(v), kt = kurt(v);
+            const skL = Math.abs(sk) < .5 ? 'Simétrica' : sk > 0 ? 'Assimétrica positiva (cauda direita)' : 'Assimétrica negativa (cauda esquerda)';
+            const ktL = Math.abs(kt) < .5 ? 'Mesocúrtica (normal)' : kt > 0 ? 'Leptocúrtica (caudas pesadas)' : 'Platicúrtica (caudas leves)';
+            let html = `<div class="g2"><div class="c"><div class="c-head"><i class="fa-solid fa-chart-area" style="color:var(--b)"></i> Forma</div><div class="c-body">
+    ${M('Assimetria (Skewness)', fmt(sk), Math.abs(sk) > .5 ? 'vy' : 'vg')}
+    ${M('Curtose (Kurtosis)', fmt(kt), Math.abs(kt) > .5 ? 'vy' : 'vg')}
+    ${M('Classificação', skL)}${M('Tipo Curtose', ktL)}
+    ${insightHTML('info', 'fa-circle-info', 'Skewness ≈ 0 → simétrica. Kurtosis ≈ 0 → normal. Valores altos indicam caudas pesadas (mais outliers).')}
+  </div></div></div>`;
+            html += `<div class="chart-c"><h3><i class="fa-solid fa-chart-column" style="color:var(--ac)"></i> Histograma</h3><canvas id="cH" height="200"></canvas></div>`;
+            document.getElementById('s-dist').innerHTML = html;
+            setTimeout(() => {
+                const ctx = document.getElementById('cH'); if (!ctx) return;
+                const sv = S(v), bins = Math.min(Math.ceil(Math.sqrt(v.length)), 30), mn = sv[0], mx = sv[sv.length - 1], w = (mx - mn) / bins || 1;
+                const counts = Array(bins).fill(0), labs = [];
+                for (let i = 0; i < bins; i++) { const lo = mn + i * w, hi = lo + w; labs.push(fmtVal(lo, t)); v.forEach(x => { if (x >= lo && (i === bins - 1 ? x <= hi : x < hi)) counts[i]++ }) }
+                new Chart(ctx, { type: 'bar', data: { labels: labs, datasets: [{ data: counts, backgroundColor: 'rgba(124,93,245,.45)', borderColor: '#7c5df5', borderWidth: 1, borderRadius: 3 }] }, options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { grid: { color: 'rgba(255,255,255,.04)' }, ticks: { color: '#5b6a8a' } }, x: { grid: { display: false }, ticks: { color: '#5b6a8a', maxRotation: 45, font: { size: 10 } } } } } });
+            }, 80);
+        }
+
+        // === TEMPORAL ===
+        function renderTemporal(v, t, F) {
+            const lr = linReg(v.map((_, i) => i), v);
+            let html = `<div class="g2"><div class="c"><div class="c-head"><i class="fa-solid fa-timeline" style="color:var(--g)"></i> Tendência</div><div class="c-body">
+    ${M('Inclinação', fmt(lr.slope), lr.slope > 0 ? 'vg' : 'vr')}${M('R', fmt(lr.r))}
+    ${M('Direção', lr.slope > 0 ? '↑ Crescente' : '↓ Decrescente', lr.slope > 0 ? 'vg' : 'vr')}
+    ${M('Primeiro', F(v[0]))}${M('Último', F(v[v.length - 1]))}${M('Variação', pct(v[0] ? ((v[v.length - 1] - v[0]) / Math.abs(v[0])) : 0))}
+    ${Math.abs(lr.r) > .6 ? insightHTML('info', 'fa-arrow-trend-' + (lr.slope > 0 ? 'up' : 'down'), `Tendência <strong>${lr.slope > 0 ? 'de crescimento' : 'de queda'}</strong> significativa (R=${fmt(lr.r)}).`) : insightHTML('tip', 'fa-minus', 'Sem tendência forte. Os dados oscilam sem direção clara.')}
+  </div></div></div>`;
+            html += `<div class="chart-c"><h3><i class="fa-solid fa-chart-line" style="color:var(--g)"></i> Série + Médias Móveis</h3><canvas id="cT" height="220"></canvas></div>`;
+            document.getElementById('s-temporal').innerHTML = html;
+            setTimeout(() => {
+                const ctx = document.getElementById('cT'); if (!ctx) return;
+                const ma3 = movAvg(v, 3), ma7 = movAvg(v, 7), labs = v.map((_, i) => i + 1);
+                new Chart(ctx, {
+                    type: 'line', data: {
+                        labels: labs, datasets: [
+                            { label: 'Dados', data: v, borderColor: '#7c5df5', backgroundColor: 'rgba(124,93,245,.08)', fill: true, tension: .3, pointRadius: v.length > 50 ? 0 : 2, borderWidth: 2 },
+                            { label: 'MM3', data: ma3, borderColor: '#f59e0b', borderWidth: 1.5, pointRadius: 0, borderDash: [4, 3] },
+                            { label: 'MM7', data: ma7, borderColor: '#10b981', borderWidth: 1.5, pointRadius: 0, borderDash: [6, 4] },
+                            { label: 'Tendência', data: v.map((_, i) => lr.slope * i + lr.intercept), borderColor: '#ef4444', borderWidth: 1, pointRadius: 0, borderDash: [2, 2] }
+                        ]
+                    }, options: { responsive: true, plugins: { legend: { labels: { color: '#8694b2', font: { size: 11 } } } }, scales: { y: { grid: { color: 'rgba(255,255,255,.04)' }, ticks: { color: '#5b6a8a' } }, x: { grid: { display: false }, ticks: { color: '#5b6a8a', maxTicksLimit: 15 } } } }
+                });
+            }, 80);
+        }
+
+        // === ANOMALIAS ===
+        function renderAnomalias(v, t, F, m, s, q1, q3, iqr) {
+            const zOut = v.map((x, i) => ({ i, v: x, z: (x - m) / s })).filter(x => Math.abs(x.z) > 2).sort((a, b) => Math.abs(b.z) - Math.abs(a.z));
+            const iqrOut = v.map((x, i) => ({ i, v: x })).filter(x => x.v < q1 - 1.5 * iqr || x.v > q3 + 1.5 * iqr);
+            document.getElementById('s-anomalias').innerHTML = `<div class="g2">
+    <div class="c"><div class="c-head"><i class="fa-solid fa-bolt" style="color:var(--r)"></i> Outliers Z-Score (|z|>2)</div><div class="c-body">
+      ${M('Total', `${zOut.length} de ${v.length} (${(zOut.length / v.length * 100).toFixed(1)}%)`, zOut.length ? 'vr' : 'vg')}
+      ${zOut.slice(0, 8).map(o => M(`Linha ${o.i + 1}`, `${F(o.v)} <span class="badge badge-r">z=${o.z.toFixed(1)}</span>`)).join('')}
+      ${zOut.length ? insightHTML('warn', 'fa-triangle-exclamation', `${zOut.length} valor${zOut.length > 1 ? 'es' : ''} fora de 2 desvios. Investigue se são erros ou situações excepcionais.`) : insightHTML('tip', 'fa-check', 'Nenhum outlier extremo detectado.')}
+    </div></div>
+    <div class="c"><div class="c-head"><i class="fa-solid fa-filter-circle-xmark" style="color:var(--y)"></i> Outliers IQR</div><div class="c-body">
+      ${M('Total', `${iqrOut.length}`, iqrOut.length ? 'vy' : 'vg')}
+      ${M('Limite Inferior', F(q1 - 1.5 * iqr))}${M('Limite Superior', F(q3 + 1.5 * iqr))}
+      ${iqrOut.slice(0, 8).map(o => M(`Linha ${o.i + 1}`, F(o.v), 'vr')).join('')}
+    </div></div>
+  </div>`;
+        }
+
+        // === CORRELAÇÃO ===
+        function renderCorrel() {
+            if (numCols.length < 2) { document.getElementById('s-correl').innerHTML = '<div class="c"><div class="c-body"><p style="color:var(--tx3)">Necessário 2+ colunas numéricas para correlação.</p></div></div>'; return }
+            const cols = numCols.slice(0, 8);
+            // Matriz
+            let html = '<div class="c"><div class="c-head"><i class="fa-solid fa-arrows-split-up-and-left" style="color:var(--b)"></i> Matriz de Correlação (Pearson)</div><div class="tw"><table class="tb"><thead><tr><th></th>';
+            cols.forEach(c => html += `<th style="font-size:10px">${c.length > 12 ? c.substring(0, 12) + '…' : c}</th>`);
+            html += '</tr></thead><tbody>';
+            const pairs = [];
+            cols.forEach(c1 => {
+                html += `<tr><td style="font-weight:700;font-size:11px">${c1.length > 12 ? c1.substring(0, 12) + '…' : c1}</td>`;
+                cols.forEach(c2 => {
+                    const r = pearson(getVals(c1), getVals(c2));
+                    const abs = Math.abs(r);
+                    if (c1 !== c2 && abs > .4) pairs.push({ a: c1, b: c2, r });
+                    const bg = c1 === c2 ? 'var(--s2)' : abs > .7 ? 'rgba(239,68,68,.1)' : abs > .4 ? 'rgba(245,158,11,.06)' : 'transparent';
+                    const cl = abs > .7 ? 'vr' : abs > .4 ? 'vy' : '';
+                    html += `<td style="background:${bg};text-align:center;font-weight:700;font-size:11px" class="${cl}">${c1 === c2 ? '1' : r.toFixed(3)}</td>`;
+                });
+                html += '</tr>';
+            });
+            html += '</tbody></table></div></div>';
+
+            // Pares fortes
+            const uniquePairs = [];
+            const seen = new Set();
+            pairs.sort((a, b) => Math.abs(b.r) - Math.abs(a.r)).forEach(p => {
+                const key = [p.a, p.b].sort().join('|');
+                if (!seen.has(key)) { seen.add(key); uniquePairs.push(p); }
+            });
+            if (uniquePairs.length) {
+                html += '<div class="c" style="margin-top:14px"><div class="c-head"><i class="fa-solid fa-link" style="color:var(--y)"></i> Relações Relevantes Encontradas</div><div class="c-body">';
+                uniquePairs.slice(0, 6).forEach(p => {
+                    const abs = Math.abs(p.r);
+                    const dir = p.r > 0 ? 'positiva (ambos sobem juntos)' : 'negativa (quando um sobe, outro desce)';
+                    const strength = abs > .7 ? 'forte' : 'moderada';
+                    html += insightHTML(abs > .7 ? 'warn' : 'info', abs > .7 ? 'fa-link' : 'fa-link-slash',
+                        `<strong>${p.a} × ${p.b}</strong> — Correlação ${strength} ${dir} (r=${p.r.toFixed(3)}).`);
+                });
+                html += '</div></div>';
+            }
+            html += insightHTML('info', 'fa-circle-info', 'Correlação <strong>não é causalidade</strong>. Valores altos indicam relação, mas é preciso investigar o mecanismo real.');
+            document.getElementById('s-correl').innerHTML = html;
+        }
+
+        // === RANKING ===
+        function renderRanking(v, t, hb, F) {
+            const nameCol = getNameCol();
+            const ranked = v.map((x, i) => ({ i, v: x, name: nameCol ? raw[i][nameCol] : `Registro ${i + 1}` })).sort((a, b) => hb ? b.v - a.v : a.v - b.v);
+            document.getElementById('s-ranking').innerHTML = `<div class="c"><div class="c-head"><i class="fa-solid fa-ranking-star" style="color:var(--y)"></i> Top 15 ${hb ? '(Maiores = Melhores)' : '(Menores = Melhores)'}</div>
+    <div class="tw"><table class="tb"><thead><tr><th>#</th><th>${nameCol || 'Registro'}</th><th>${curCol}</th><th>Percentil</th></tr></thead><tbody>
+    ${ranked.slice(0, 15).map((r, i) => {
+                const pctl = ((hb ? v.filter(x => x <= r.v).length : v.filter(x => x >= r.v).length) / v.length * 100).toFixed(0);
+                const bc = i < 3 ? 'badge-g' : pctl > 75 ? 'badge-b' : 'badge-y';
+                return `<tr><td style="font-weight:800">${i + 1}º</td><td style="font-weight:600">${r.name}</td><td style="font-weight:700">${F(r.v)}</td><td><span class="badge ${bc}">P${pctl}</span></td></tr>`
+            }).join('')}
+    </tbody></table></div></div>
+    ${insightHTML('tip', 'fa-lightbulb', `Os <strong>Top 3</strong> podem ser referência de boas práticas. Os <strong>últimos</strong> devem receber atenção prioritária.`)}`;
+        }
+
+        // === DADOS ===
+        function renderDados() {
+            const mx = 100;
+            let html = `<div class="c"><div class="c-head"><i class="fa-solid fa-table-cells" style="color:var(--tx3)"></i> Primeiras ${Math.min(raw.length, mx)} linhas</div><div class="tw"><table class="tb"><thead><tr>`;
+            hds.forEach(h => html += `<th>${h}</th>`);
+            html += '</tr></thead><tbody>';
+            raw.slice(0, mx).forEach(r => { html += '<tr>'; hds.forEach(h => html += `<td>${r[h] !== undefined ? r[h] : ''}</td>`); html += '</tr>' });
+            html += '</tbody></table></div></div>';
+            document.getElementById('s-dados').innerHTML = html;
+        }
+
+        // === EXPORT ===
+        function exportTxt() {
+            const v = getVals(curCol), t = colMeta[curCol]?.type, F = x => fmtVal(x, t), m = avg(v), s = sd(v), cv = m ? Math.abs(s / m) : 0;
+            let o = `NEP ESTATÍSTICA AVANÇADA\n${'='.repeat(50)}\nColuna: ${curCol} (${t})\nData: ${new Date().toLocaleString('pt-BR')}\nRegistros: ${v.length}\n\n`;
+            o += `TENDÊNCIA CENTRAL\n  Média: ${F(m)}\n  Mediana: ${F(med(v))}\n  Moda: ${mode(v) || 'Amodal'}\n\n`;
+            o += `DISPERSÃO\n  Desvio Padrão: ${F(s)}\n  CV: ${pct(cv)}\n  IQR: ${F(Q(v, .75) - Q(v, .25))}\n\n`;
+            o += `QUARTIS\n  Q1: ${F(Q(v, .25))}\n  Q2: ${F(Q(v, .5))}\n  Q3: ${F(Q(v, .75))}\n`;
+            const b = new Blob([o], { type: 'text/plain;charset=utf-8' });
+            const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = `estatistica_${curCol}_${Date.now()}.txt`; a.click();
+        }
+    </script>
+</body>
+
+</html>

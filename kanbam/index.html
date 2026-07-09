@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NEP DELIVERY CONTROL</title>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <!-- BACKGROUND CANVAS -->
+  <canvas id="binary-rain"></canvas>
+
+  <!-- APP LAYOUT -->
+  <div class="app-layout">
+    
+    <!-- ===================================
+         SIDEBAR
+    ==================================== -->
+    <aside class="sidebar">
+      <div class="brand-area">
+        <h1>NEP</h1>
+        <span>DELIVERY CONTROL</span>
+      </div>
+
+      <button class="btn-primary" id="btn-new-task">
+        <i class="fa-solid fa-plus"></i>
+        NOVA DEMANDA
+      </button>
+
+      <nav class="nav-menu">
+        <p class="menu-label">Navegação</p>
+
+        <!-- 🔥 BADGE DE NOTIFICAÇÃO -->
+        <button class="nav-btn active" id="btn-view-kanban" style="position: relative;">
+          <i class="fa-solid fa-table-columns"></i> Kanban
+          <span id="notification-badge">0</span>
+        </button>
+
+        <button class="nav-btn" id="btn-view-dash">
+          <i class="fa-solid fa-chart-line"></i> Dashboard BI
+        </button>
+
+        <button class="nav-btn" id="btn-view-check">
+          <i class="fa-solid fa-list-check"></i> Rotina ADM
+        </button>
+
+        <div class="separator"></div>
+
+        <p class="menu-label">Filtros</p>
+
+        <div class="select-container">
+          <label for="filter-unit">Unidade</label>
+          <select id="filter-unit">
+            <option value="all">Todas</option>
+          </select>
+        </div>
+
+        <div class="select-container">
+          <label for="filter-segment">Segmento</label>
+          <select id="filter-segment">
+            <option value="all">Todos</option>
+          </select>
+        </div>
+
+        <div class="select-container">
+          <label for="filter-requester">Solicitante</label>
+          <select id="filter-requester">
+            <option value="all">Todos</option>
+          </select>
+        </div>
+
+        <div class="select-container">
+          <label for="filter-owner">Responsável</label>
+          <select id="filter-owner">
+            <option value="all">Todos</option>
+          </select>
+        </div>
+
+        <div class="separator"></div>
+
+        <button class="nav-btn" id="btn-toggle-archive">
+          <i class="fa-solid fa-box-archive"></i>
+          <span id="txt-archive">Ver Arquivados</span>
+        </button>
+      </nav>
+
+      <div class="user-footer">
+        <div class="footer-btns">
+          <button class="theme-btn" id="btn-theme-toggle">
+            <i class="fa-solid fa-sun"></i>
+          </button>
+          <button class="theme-btn" id="btn-logout">
+            <i class="fa-solid fa-right-from-bracket"></i>
+          </button>
+        </div>
+        <div class="user-details">
+          <span class="u-name" id="user-name-display">USUÁRIO</span>
+          <span class="u-role" id="user-role-display">CARGO</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ===================================
+         MAIN VIEW
+    ==================================== -->
+    <main class="main-view">
+      
+      <!-- TOP BAR -->
+      <div class="top-bar">
+        <div class="bar-left">
+          <h2>DELIVERY CONTROL</h2>
+          <p class="breadcrumbs">SISTEMA DE GESTÃO DE DEMANDAS</p>
+        </div>
+        <div class="bar-right">
+          <div class="system-status">
+            <span class="blink-dot"></span>
+            ONLINE
+          </div>
+          <button class="btn-mini" id="btn-export-csv">
+            <i class="fa-solid fa-download"></i>
+            EXPORTAR CSV
+          </button>
+          <button class="logout-top-btn" id="btn-logout-top" title="Sair">
+            <i class="fa-solid fa-power-off"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- CONTENT AREA -->
+      <div id="content-area">
+
+        <!-- ===================================
+             VIEW: KANBAN
+        ==================================== -->
+        <section class="view-section active" id="view-kanban">
+          <div class="kanban-board">
+            
+            <!-- COLUNA BACKLOG -->
+            <div class="board-col" data-status="backlog">
+              <div class="col-header border-blue">
+                <span class="col-name">Backlog</span>
+                <span class="col-count" id="count-backlog">0</span>
+              </div>
+              <div class="track" id="track-backlog"></div>
+            </div>
+
+            <!-- COLUNA EXECUÇÃO -->
+            <div class="board-col" data-status="doing">
+              <div class="col-header border-yellow">
+                <span class="col-name">Execução</span>
+                <span class="col-count" id="count-doing">0</span>
+              </div>
+              <div class="track" id="track-doing"></div>
+            </div>
+
+            <!-- COLUNA BLOCK -->
+            <div class="board-col" data-status="pending">
+              <div class="col-header border-red">
+                <span class="col-name">Block</span>
+                <span class="col-count" id="count-pending">0</span>
+              </div>
+              <div class="track" id="track-pending"></div>
+            </div>
+
+            <!-- COLUNA ENTREGUE -->
+            <div class="board-col" data-status="done">
+              <div class="col-header border-green">
+                <span class="col-name">Entregue</span>
+                <span class="col-count" id="count-done">0</span>
+              </div>
+              <div class="track" id="track-done"></div>
+            </div>
+
+          </div>
+
+          <!-- ARCHIVE DROP ZONE -->
+          <div class="archive-zone" id="archive-drop-zone">
+            <i class="fa-solid fa-box-archive"></i>
+            <span>ARQUIVAR</span>
+          </div>
+        </section>
+
+        <!-- ===================================
+             VIEW: DASHBOARD
+        ==================================== -->
+        <section class="view-section hidden" id="view-dashboard">
+          <div class="dash-grid">
+            
+            <div class="dash-card">
+              <h3>Status das Demandas</h3>
+              <div class="chart-box">
+                <canvas id="chart-status"></canvas>
+              </div>
+            </div>
+
+            <div class="dash-card">
+              <h3>Demandas por Solicitante</h3>
+              <div class="chart-box">
+                <canvas id="chart-requester"></canvas>
+              </div>
+            </div>
+
+            <div class="dash-card">
+              <h3>Demandas por Unidade</h3>
+              <div class="chart-box">
+                <canvas id="chart-segment"></canvas>
+              </div>
+            </div>
+
+            <div class="dash-card">
+              <h3>Lead Time (Dias)</h3>
+              <div class="chart-box">
+                <canvas id="chart-leadtime"></canvas>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- ===================================
+             VIEW: CHECKLIST (ROTINA ADM)
+        ==================================== -->
+        <section class="view-section hidden" id="view-checklist">
+          <div class="checklist-container">
+            
+            <div class="checklist-header">
+              <div>
+                <h3>ROTINA ADMINISTRATIVA</h3>
+                <p id="checklist-date">Data: --/--/----</p>
+              </div>
+              <div class="progress-wrapper">
+                <div class="progress-bar-bg">
+                  <div class="progress-bar-fill" id="progress-fill"></div>
+                </div>
+                <span id="progress-text">0%</span>
+              </div>
+            </div>
+
+            <div class="checklist-add">
+              <input 
+                type="text" 
+                id="new-adm-task" 
+                placeholder="Digite uma nova tarefa..." 
+                autocomplete="off"
+              />
+              <button id="btn-add-adm">
+                <i class="fa-solid fa-plus"></i>
+                ADICIONAR
+              </button>
+            </div>
+
+            <div class="checklist-items" id="checklist-items"></div>
+
+          </div>
+        </section>
+
+      </div>
+    </main>
+
+  </div>
+
+  <!-- ===================================
+       MODAL: CREATE / EDIT TASK
+  ==================================== -->
+  <div class="modal-backdrop hidden" id="modal-overlay">
+    <div class="modal-window">
+      
+      <div class="modal-top">
+        <h3>NOVA DEMANDA</h3>
+        <i class="fa-solid fa-times close-btn" id="btn-close-modal"></i>
+      </div>
+
+      <div class="modal-tabs">
+        <button class="tab-btn active" data-tab="tab-cadastro">
+          <i class="fa-solid fa-pen"></i> Cadastrar
+        </button>
+        <button class="tab-btn" data-tab="tab-historico">
+          <i class="fa-solid fa-clock-rotate-left"></i> Histórico
+        </button>
+      </div>
+
+      <!-- TAB: CADASTRO -->
+      <div class="tab-content active" id="tab-cadastro">
+        <form id="task-form">
+          
+          <div class="input-block">
+            <label>Título / Objetivo</label>
+            <input type="text" id="task-title" placeholder="Ex: Desenvolver dashboard..." required />
+          </div>
+
+          <div class="row">
+            <div class="input-block half">
+              <label>Solicitante</label>
+              <input type="text" id="task-requester" placeholder="Nome do solicitante" required />
+            </div>
+            <div class="input-block half">
+              <label>Unidade</label>
+              <select id="task-unit" required>
+                <option value="" disabled selected>Selecione...</option>
+                <option value="Comercial">Comercial</option>
+                <option value="Operações">Operações</option>
+                <option value="Financeiro">Financeiro</option>
+                <option value="TI">TI</option>
+                <option value="RH">RH</option>
+                <option value="Marketing">Marketing</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="input-block half">
+              <label>Segmento</label>
+              <input type="text" id="task-segment" placeholder="Ex: Desenvolvimento" required />
+            </div>
+            <div class="input-block half">
+              <label>Prazo</label>
+              <input type="date" id="task-deadline" required />
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="input-block half">
+              <label>Cargo Responsável</label>
+              <select id="task-owner-role" required>
+                <option value="" selected>Selecione...</option>
+              </select>
+            </div>
+            <div class="input-block half">
+              <label>Nome Responsável</label>
+              <input type="text" id="task-owner" placeholder="Nome do responsável" required />
+            </div>
+          </div>
+
+          <div class="input-block">
+            <label>Descrição Completa</label>
+            <textarea id="task-desc" rows="4" placeholder="Descreva os detalhes da demanda..." required></textarea>
+          </div>
+
+          <div class="input-block">
+            <label>Prioridade</label>
+            <div class="priority-selector">
+              <button type="button" class="p-btn" data-val="Urgente">Urgente</button>
+              <button type="button" class="p-btn" data-val="Alto">Alto</button>
+              <button type="button" class="p-btn" data-val="Médio">Médio</button>
+              <button type="button" class="p-btn selected" data-val="Baixo">Baixo</button>
+            </div>
+          </div>
+
+          <div class="input-block">
+            <label>Complexidade</label>
+            <div class="complexity-selector">
+              <button type="button" class="c-btn" data-val="Alta">Alta</button>
+              <button type="button" class="c-btn" data-val="Média">Média</button>
+              <button type="button" class="c-btn selected" data-val="Baixa">Baixa</button>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-primary full-width">
+            <i class="fa-solid fa-check"></i>
+            SALVAR DEMANDA
+          </button>
+
+        </form>
+      </div>
+
+      <!-- TAB: HISTÓRICO -->
+      <div class="tab-content" id="tab-historico">
+        <div class="audit-list" id="audit-log">
+          <p>Novo registro</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===================================
+       MODAL: DELIVERY (ENTREGA)
+  ==================================== -->
+  <div class="modal-backdrop hidden" id="modal-delivery">
+    <div class="modal-window">
+      
+      <div class="modal-top">
+        <h3>REGISTRAR ENTREGA</h3>
+        <i class="fa-solid fa-times close-btn" id="btn-close-delivery"></i>
+      </div>
+
+      <div style="padding: 30px;">
+        
+        <div class="input-block">
+          <label>Descreva o que foi feito</label>
+          <textarea 
+            id="delivery-evidence" 
+            rows="6" 
+            placeholder="Descreva detalhadamente o que foi realizado, resultados obtidos, etc..."
+            required
+          ></textarea>
+        </div>
+
+        <div class="input-block">
+          <label>Link de evidência (opcional)</label>
+          <input 
+            type="text" 
+            id="delivery-link" 
+            placeholder="Ex: https://drive.google.com/..." 
+          />
+        </div>
+
+        <button class="btn-primary full-width" id="btn-confirm-delivery">
+          <i class="fa-solid fa-paper-plane"></i>
+          ENVIAR PARA APROVAÇÃO
+        </button>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===================================
+       MODAL: REVIEW (VALIDAÇÃO)
+  ==================================== -->
+  <div class="modal-backdrop hidden" id="modal-review">
+    <div class="modal-window">
+      
+      <div class="modal-top">
+        <h3>REVISAR ENTREGA</h3>
+        <i class="fa-solid fa-times close-btn" id="btn-close-review"></i>
+      </div>
+
+      <div class="review-content" style="padding: 30px;">
+        
+        <label>Descrição do Executor</label>
+        <div class="evidence-box" id="review-text">
+          Carregando...
+        </div>
+
+        <label>Link de Evidência</label>
+        <div class="evidence-box" id="review-link">
+          Nenhum link informado.
+        </div>
+
+        <div class="review-actions">
+          <button class="btn-primary" id="btn-approve-review" style="flex: 1;">
+            <i class="fa-solid fa-check-double"></i>
+            APROVAR / VALIDAR
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===================================
+       CONTEXT MENU
+  ==================================== -->
+  <div class="context-menu hidden" id="context-menu">
+    <div class="ctx-item" id="ctx-edit">
+      <i class="fa-solid fa-pen"></i>
+      Editar
+    </div>
+    <div class="ctx-item" id="ctx-archive">
+      <i class="fa-solid fa-box-archive"></i>
+      Arquivar
+    </div>
+    <div class="ctx-divider"></div>
+    <div class="ctx-item ctx-danger" id="ctx-delete">
+      <i class="fa-solid fa-trash"></i>
+      Excluir
+    </div>
+  </div>
+
+  <!-- ===================================
+       TOAST CONTAINER
+  ==================================== -->
+  <div id="toast-container"></div>
+
+  <!-- ===================================
+       SCRIPTS
+  ==================================== -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+  
+  <script type="module" src="script.js"></script>
+
+  <!-- BINARY RAIN BACKGROUND -->
+  <script>
+    const canvas = document.getElementById('binary-rain');
+    const ctx = canvas.getContext('2d');
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const chars = '01';
+    const fontSize = 14;
+    const columns = canvas.width / fontSize;
+    const drops = Array(Math.floor(columns)).fill(1);
+
+    function draw() {
+      ctx.fillStyle = 'rgba(10, 15, 30, 0.05)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = 'rgba(47, 111, 237, 0.5)';
+      ctx.font = `${fontSize}px monospace`;
+
+      drops.forEach((y, i) => {
+        const text = chars[Math.floor(Math.random() * chars.length)];
+        const x = i * fontSize;
+        ctx.fillText(text, x, y * fontSize);
+
+        if (y * fontSize > canvas.height && Math.random() > 0.975) {
+          drops[i] = 0;
+        }
+        drops[i]++;
+      });
+    }
+
+    setInterval(draw, 50);
+
+    window.addEventListener('resize', () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    });
+  </script>
+
+  <!-- LOGOUT TOP BTN -->
+  <script>
+    document.getElementById('btn-logout-top')?.addEventListener('click', () => {
+      if (!confirm('Sair do sistema?')) return;
+      localStorage.removeItem('nep_user_role_key');
+      localStorage.removeItem('nep_user_role');
+      localStorage.removeItem('nep_user_name');
+      window.location.href = 'login.html';
+    });
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ecossistema NEP | Deep Dive Technical Presentation</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@500;700;900&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --primary: #38bdf8;
+            --primary-dark: #0284c7;
+            --secondary: #8b5cf6;
+            --secondary-dark: #7c3aed;
+            --accent: #f59e0b;
+            --success: #10b981;
+            --danger: #ef4444;
+            --bg-dark: #020617;
+            --bg-panel: rgba(15, 23, 42, 0.6);
+            --border: rgba(255, 255, 255, 0.1);
+            --glass: rgba(15, 23, 42, 0.7);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-dark);
+            color: #f8fafc;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        /* Fancy Background */
+        .bg-animated {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+            background: linear-gradient(to bottom right, #020617, #0f172a);
+        }
+
+        .grid-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background-image: linear-gradient(var(--border) 1px, transparent 1px),
+                linear-gradient(90deg, var(--border) 1px, transparent 1px);
+            background-size: 50px 50px;
+            opacity: 0.1;
+            transform: perspective(100vh) rotateX(60deg) scale(2);
+            transform-origin: top center;
+            animation: gridMove 20s linear infinite;
+        }
+
+        @keyframes gridMove {
+            0% {
+                transform: perspective(100vh) rotateX(60deg) scale(2) translateY(0);
+            }
+
+            100% {
+                transform: perspective(100vh) rotateX(60deg) scale(2) translateY(50px);
+            }
+        }
+
+        /* Slides Layout */
+        .slides-wrapper {
+            display: flex;
+            transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+            height: 100vh;
+            width: 1200vw;
+            /* 12 Slides */
+        }
+
+        .slide {
+            width: 100vw;
+            height: 100vh;
+            padding: 40px 80px;
+            position: relative;
+            overflow-y: auto;
+        }
+
+        /* Typography & Components */
+        .header-tag {
+            font-family: 'Orbitron';
+            color: var(--primary);
+            font-size: 0.9rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        .header-title {
+            font-family: 'Orbitron';
+            font-size: 3.5rem;
+            background: linear-gradient(90deg, #fff, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 30px;
+            line-height: 1.1;
+        }
+
+        .glass-box {
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            transition: 0.3s;
+        }
+
+        .glass-box:hover {
+            border-color: var(--primary);
+            transform: translateY(-5px);
+        }
+
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .kpi-card {
+            text-align: center;
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            border: 1px solid transparent;
+        }
+
+        .kpi-card:hover {
+            background: rgba(56, 189, 248, 0.1);
+            border-color: var(--primary);
+        }
+
+        .kpi-num {
+            font-family: 'Orbitron';
+            font-size: 3rem;
+            color: var(--primary);
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .kpi-label {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+        }
+
+        .tech-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 15px;
+        }
+
+        .tech-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            color: #cbd5e1;
+        }
+
+        .tech-item i {
+            color: var(--primary);
+        }
+
+        .module-layout {
+            display: grid;
+            grid-template-columns: 1fr 1.2fr;
+            gap: 40px;
+            height: 80%;
+        }
+
+        .module-info {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .module-preview {
+            background: #000;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .dummy-ui {
+            font-family: 'Orbitron';
+            font-size: 1.5rem;
+            color: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Navigation */
+        .controls {
+            position: fixed;
+            bottom: 30px;
+            right: 40px;
+            display: flex;
+            gap: 10px;
+            z-index: 100;
+        }
+
+        .btn-nav {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 1px solid var(--border);
+            background: rgba(0, 0, 0, 0.5);
+            color: #fff;
+            cursor: pointer;
+            transition: 0.2s;
+            font-size: 1.2rem;
+        }
+
+        .btn-nav:hover {
+            background: var(--primary);
+            border-color: var(--primary);
+        }
+
+        .progress-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            height: 4px;
+            background: var(--primary);
+            width: 0%;
+            z-index: 101;
+            transition: width 0.5s;
+        }
+
+        ul.feature-list {
+            list-style: none;
+            margin-top: 20px;
+        }
+
+        ul.feature-list li {
+            margin-bottom: 12px;
+            display: flex;
+            gap: 12px;
+            color: #94a3b8;
+            font-size: 1.1rem;
+        }
+
+        ul.feature-list li i {
+            color: var(--success);
+            margin-top: 4px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="bg-animated"></div>
+    <div class="grid-overlay"></div>
+    <div class="progress-bar" id="progress"></div>
+
+    <div class="slides-wrapper" id="slider">
+
+        <!-- 1. CAPA -->
+        <div class="slide"
+            style="display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;">
+            <span class="header-tag" style="font-size: 1.2rem; margin-bottom: 20px;">Relatório Técnico &
+                Executivo</span>
+            <div
+                style="font-family: 'Orbitron'; font-size: 6rem; line-height: 1; margin-bottom: 20px; background: linear-gradient(135deg, #fff 30%, #38bdf8 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                ECOSSISTEMA NEP</div>
+            <p style="font-size: 1.5rem; color: #94a3b8; max-width: 800px;">
+                Governança Operacional • Inteligência Artificial • Engajamento Gamificado
+            </p>
+            <div style="margin-top: 50px; display: flex; gap: 20px;">
+                <div class="glass-box" style="padding: 15px 30px;">
+                    <i class="fa-solid fa-code"></i> &nbsp; v2.5.0 Stable
+                </div>
+                <div class="glass-box" style="padding: 15px 30px;">
+                    <i class="fa-solid fa-server"></i> &nbsp; Serverless Arch
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. MACRO ARQUITETURA -->
+        <div class="slide">
+            <span class="header-tag">Arquitetura de Dados</span>
+            <h2 class="header-title">Hybrid Cloud Core</h2>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 30px; margin-top: 50px;">
+                <!-- Frontend -->
+                <div class="glass-box">
+                    <h3 style="color: var(--primary); margin-bottom: 15px;"><i class="fa-brands fa-chrome"></i> Frontend
+                        PWA</h3>
+                    <p style="color: #cbd5e1; font-size: 0.95rem; line-height: 1.6;">
+                        Single Page Application (SPA) construída com <strong>Vanilla JS Module Pattern</strong> para
+                        performance máxima.
+                        Zero frameworks pesados (React/Angular) para load time &lt; 500ms. Build tool: <strong>Vite
+                            (Rollup)</strong> c/ target ESNext.
+                    </p>
+                </div>
+                <!-- Realtime -->
+                <div class="glass-box">
+                    <h3 style="color: var(--accent); margin-bottom: 15px;"><i class="fa-solid fa-bolt"></i> Realtime
+                        (Hot)</h3>
+                    <p style="color: #cbd5e1; font-size: 0.95rem; line-height: 1.6;">
+                        <strong>Firebase Firestore</strong> para dados quentes: Chat, Notificações, Status de Tarefas e
+                        Presença Online.
+                        Sincronização em milissegundos via WebSockets nativos do SDK v9.
+                    </p>
+                </div>
+                <!-- Análise -->
+                <div class="glass-box">
+                    <h3 style="color: var(--success); margin-bottom: 15px;"><i class="fa-solid fa-database"></i>
+                        Analytics (Cold)</h3>
+                    <p style="color: #cbd5e1; font-size: 0.95rem; line-height: 1.6;">
+                        <strong>Supabase (PostgreSQL)</strong> para dados estruturados, relatórios complexos e histórico
+                        de auditoria (Logs).
+                        Permite queries SQL profundas para Business Intelligence.
+                    </p>
+                </div>
+            </div>
+            <div class="glass-box" style="margin-top: 30px; text-align: center;">
+                <span style="color: var(--secondary); font-weight: bold; font-family: 'Orbitron';">INTEGRAÇÃO AI:</span>
+                O sistema consome APIs do Google Gemini Pro via Edge Functions para análise contextual de tarefas e
+                geração de conteúdo.
+            </div>
+        </div>
+
+        <!-- 3. MÉTRICAS E VOLUMETRIA -->
+        <div class="slide">
+            <span class="header-tag">Engenharia de Software</span>
+            <h2 class="header-title">Raio-X do Código</h2>
+
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <span class="kpi-num count-up" data-val="9.2" data-suffix="M" data-decimals="1">0M</span>
+                    <span class="kpi-label">Caracteres Compilados</span>
+                </div>
+                <div class="kpi-card">
+                    <span class="kpi-num count-up" data-val="261" data-suffix="k" data-decimals="0">0k</span>
+                    <span class="kpi-label">Linhas de Código (LOC)</span>
+                </div>
+                <div class="kpi-card">
+                    <span class="kpi-num count-up" data-val="22" data-suffix="" data-decimals="0">0</span>
+                    <span class="kpi-label">Módulos Funcionais</span>
+                </div>
+                <div class="kpi-card">
+                    <span class="kpi-num count-up" data-val="250" data-prefix="~" data-suffix="ms"
+                        data-decimals="0">0ms</span>
+                    <span class="kpi-label">Tempo de Build (Vite)</span>
+                </div>
+            </div>
+
+            <h3 style="margin-bottom: 20px; font-family: 'Orbitron';">Stack Tecnológica Detalhada</h3>
+            <div class="tech-grid">
+                <div class="tech-item"><i class="fa-brands fa-js"></i> JavaScript ES2022+</div>
+                <div class="tech-item"><i class="fa-brands fa-html5"></i> HTML5 Semântico</div>
+                <div class="tech-item"><i class="fa-brands fa-css3"></i> CSS3 Variables</div>
+                <div class="tech-item"><i class="fa-solid fa-fire"></i> Firebase SDK 9.x</div>
+                <div class="tech-item"><i class="fa-solid fa-database"></i> Supabase JS 2.x</div>
+                <div class="tech-item"><i class="fa-solid fa-chart-pie"></i> Chart.js 4.4</div>
+                <div class="tech-item"><i class="fa-solid fa-file-powerpoint"></i> PptxGenJS</div>
+                <div class="tech-item"><i class="fa-solid fa-markdown"></i> Marked.js</div>
+                <div class="tech-item"><i class="fa-regular fa-bell"></i> Service Workers (PWA)</div>
+                <div class="tech-item"><i class="fa-solid fa-table"></i> FixedColumns (DataTables)</div>
+                <div class="tech-item"><i class="fa-solid fa-font"></i> Google Fonts API</div>
+                <div class="tech-item"><i class="fa-solid fa-robot"></i> Gemini Pro API</div>
+            </div>
+        </div>
+
+        <!-- 4. MÓDULO: KANBAN -->
+        <div class="slide">
+            <div class="module-layout">
+                <div class="module-info">
+                    <span class="header-tag">Gestão Operacional</span>
+                    <h2 class="header-title">Kanban 4.0</h2>
+                    <ul class="feature-list">
+                        <li><i class="fa-solid fa-check"></i> <strong>SLA Automático:</strong> Cards mudam de cor
+                            conforme prazo.</li>
+                        <li><i class="fa-solid fa-check"></i> <strong>Drag & Drop Nativo:</strong> API HTML5 para
+                            performance em mobile.</li>
+                        <li><i class="fa-solid fa-check"></i> <strong>Filtros Avançados:</strong> Por Tag, Responsável,
+                            Setor ou Prazo.</li>
+                        <li><i class="fa-solid fa-check"></i> <strong>Histórico Completo:</strong> Cada movimento gera
+                            um log auditável.</li>
+                        <li><i class="fa-solid fa-check"></i> <strong>Integração AI:</strong> "Sugira uma sub-tarefa"
+                            direto no card.</li>
+                    </ul>
+                </div>
+                <div class="module-preview"
+                    style="background: center/contain no-repeat url('https://placehold.co/800x600/1e293b/38bdf8?text=Kanban+UI+Mockup');">
+                    <div
+                        style="position: absolute; bottom: 20px; left: 20px; background: rgba(0,0,0,0.8); padding: 10px; border-radius: 8px; border: 1px solid var(--primary);">
+                        <i class="fa-solid fa-bolt" style="color: var(--accent);"></i> 2.4s Latência média de update
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. MÓDULO: ADMIN V2 -->
+        <div class="slide">
+            <div class="module-layout">
+                <div class="module-info">
+                    <span class="header-tag">Governança & Risco</span>
+                    <h2 class="header-title">Central de Comando V2</h2>
+                    <p style="color: #cbd5e1; margin-bottom: 20px; font-size: 1.1rem;">
+                        Painel executivo para C-Level e Coordenadores. Visibilidade total de gargalos e performance.
+                    </p>
+                    <ul class="feature-list">
+                        <li><i class="fa-solid fa-eye"></i> <strong>Pontos Cegos:</strong> Alerta tarefas paradas há +3
+                            dias.</li>
+                        <li><i class="fa-solid fa-chart-line"></i> <strong>Throughput:</strong> Velocidade de entrega
+                            (Last 7d/24h).</li>
+                        <li><i class="fa-solid fa-shield-halved"></i> <strong>Security Logs:</strong> Auditoria de
+                            logins e alterações de permissão.</li>
+                        <li><i class="fa-solid fa-users-viewfinder"></i> <strong>User Heatmap:</strong> Quem está online
+                            e ativo agora.</li>
+                    </ul>
+                </div>
+                <div class="module-preview" style="background: #0f172a;">
+                    <!-- CSS Mockups -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 80%;">
+                        <div
+                            style="background: #1e293b; height: 100px; border-radius: 8px; border-top: 3px solid var(--primary);">
+                        </div>
+                        <div
+                            style="background: #1e293b; height: 100px; border-radius: 8px; border-top: 3px solid var(--secondary);">
+                        </div>
+                        <div
+                            style="background: #1e293b; height: 100px; border-radius: 8px; border-top: 3px solid var(--danger);">
+                        </div>
+                        <div
+                            style="background: #1e293b; height: 100px; border-radius: 8px; border-top: 3px solid var(--success);">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 6. MÓDULO: GAMIFICAÇÃO -->
+        <div class="slide">
+            <div class="module-layout">
+                <div class="module-info">
+                    <span class="header-tag">Engajamento Humano</span>
+                    <h2 class="header-title">Gamificação Nativa</h2>
+                    <p style="color: #cbd5e1; margin-bottom: 20px;">
+                        Transformamos o trabalho repetitivo em uma jornada de progresso visível.
+                    </p>
+                    <ul class="feature-list">
+                        <li><i class="fa-solid fa-trophy"></i> <strong>Sistema de XP:</strong> Tarefas = Pontos. Cursos
+                            = Pontos.</li>
+                        <li><i class="fa-solid fa-layer-group"></i> <strong>Ranking Semanal:</strong> Competitividade
+                            saudável entre times.</li>
+                        <li><i class="fa-solid fa-medal"></i> <strong>Badges & Conquistas:</strong> "Mestre do Prazo",
+                            "On Fire", etc.</li>
+                        <li><i class="fa-solid fa-store"></i> <strong>Loja de Recompensas:</strong> Troca de pontos por
+                            benefícios reais.</li>
+                    </ul>
+                </div>
+                <div class="module-preview" style="background: linear-gradient(45deg, #1e1b4b, #312e81);">
+                    <i class="fa-solid fa-crown"
+                        style="font-size: 10rem; color: #fbbf24; filter: drop-shadow(0 0 30px rgba(251, 191, 36, 0.5));"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- 7. MÓDULO: EDUCAÇÃO -->
+        <div class="slide">
+            <div class="module-layout">
+                <div class="module-info">
+                    <span class="header-tag">Capacitação Contínua</span>
+                    <h2 class="header-title">Universidade & Podcast</h2>
+                    <p style="color: #cbd5e1; margin-bottom: 20px;">
+                        LMS (Learning Management System) integrado ao fluxo de trabalho.
+                    </p>
+                    <ul class="feature-list">
+                        <li><i class="fa-solid fa-graduation-cap"></i> <strong>Cursos Modulares:</strong> Aulas em
+                            vídeo/texto com tracking.</li>
+                        <li><i class="fa-solid fa-file-signature"></i> <strong>Sistema de Provas:</strong> Validação de
+                            conhecimento automática.</li>
+                        <li><i class="fa-solid fa-podcast"></i> <strong>Podcast Player:</strong> Player de áudio
+                            persistente (background).</li>
+                        <li><i class="fa-solid fa-certificate"></i> <strong>Certificação:</strong> Geração de PDF
+                            automática ao concluir.</li>
+                    </ul>
+                </div>
+                <div class="module-preview">
+                    <i class="fa-solid fa-play-circle" style="font-size: 8rem; color: var(--secondary);"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- 8. MÓDULO: FÉRIAS & RH -->
+        <div class="slide">
+            <div class="module-layout">
+                <div class="module-info">
+                    <span class="header-tag">Gestão de Pessoas</span>
+                    <h2 class="header-title">Time Off & Escalas</h2>
+                    <p style="color: #cbd5e1; margin-bottom: 20px;">
+                        Automação de solicitações de ausência e controle de cobertura.
+                    </p>
+                    <ul class="feature-list">
+                        <li><i class="fa-solid fa-calendar-check"></i> <strong>Solicitação Self-Service:</strong>
+                            Usuário pede, gestor aprova.</li>
+                        <li><i class="fa-solid fa-users"></i> <strong>Prevenção de Choque:</strong> Aviso se >2 pessoas
+                            do mesmo time saem.</li>
+                        <li><i class="fa-solid fa-calculator"></i> <strong>Saldo de Banco de Horas:</strong> Cálculo
+                            automático.</li>
+                        <li><i class="fa-solid fa-print"></i> <strong>Geração de Docs:</strong> Avisos de férias prontos
+                            para assinatura.</li>
+                    </ul>
+                </div>
+                <div class="module-preview">
+                    <i class="fa-regular fa-calendar-days" style="font-size: 8rem; color: var(--success);"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- 9. ESTAGIÁRIO IA -->
+        <div class="slide">
+            <div class="module-layout">
+                <div class="module-info">
+                    <span class="header-tag">Innovation Edge</span>
+                    <h2 class="header-title">Neuronyo</h2>
+                    <p style="color: #cbd5e1; margin-bottom: 20px;">
+                        Assistente Virtual Contextualizado com RAG (Retrieval Augmented Generation).
+                    </p>
+                    <ul class="feature-list">
+                        <li><i class="fa-solid fa-robot"></i> <strong>Suporte N1:</strong> "Como cadastro um cliente?"
+                            (Lê o manual).</li>
+                        <li><i class="fa-solid fa-pen-nib"></i> <strong>Draft de Conteúdo:</strong> Gera textos para
+                            e-mails e avisos.</li>
+                        <li><i class="fa-solid fa-file-powerpoint"></i> <strong>Criador de PPT:</strong> "Gere uma
+                            apresentação sobre os resultados de ontem".</li>
+                        <li><i class="fa-solid fa-database"></i> <strong>SQL Generator:</strong> Ajuda admins a criar
+                            queries para relatórios.</li>
+                    </ul>
+                </div>
+                <div class="module-preview" style="background: radial-gradient(circle, #2e1065 0%, #020617 70%);">
+                    <i class="fa-solid fa-brain"
+                        style="font-size: 8rem; color: #a78bfa; animation: pulse 2s infinite;"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- 10. DIFERENCIAIS -->
+        <div class="slide">
+            <span class="header-tag">Aposta de Valor</span>
+            <h2 class="header-title">Por Que Somos Diferentes?</h2>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 40px;">
+                <div class="glass-box">
+                    <h3 style="color: var(--danger); margin-bottom: 20px;">O Jeito Antigo (Caos)</h3>
+                    <ul class="feature-list" style="color: #cbd5e1;">
+                        <li style="color: #94a3b8;"><i class="fa-solid fa-xmark" style="color: var(--danger)"></i> Dados
+                            em planilhas desconexas</li>
+                        <li style="color: #94a3b8;"><i class="fa-solid fa-xmark" style="color: var(--danger)"></i> "Cadê
+                            aquele e-mail?"</li>
+                        <li style="color: #94a3b8;"><i class="fa-solid fa-xmark" style="color: var(--danger)"></i>
+                            Gestão por sentimento, não por dados</li>
+                        <li style="color: #94a3b8;"><i class="fa-solid fa-xmark" style="color: var(--danger)"></i>
+                            Turnover alto por falta de engajamento</li>
+                    </ul>
+                </div>
+                <div class="glass-box" style="border-color: var(--primary);">
+                    <h3 style="color: var(--success); margin-bottom: 20px;">O Jeito NEP (Ordem)</h3>
+                    <ul class="feature-list">
+                        <li><i class="fa-solid fa-check"></i> Single Source of Truth (SSoT)</li>
+                        <li><i class="fa-solid fa-check"></i> Rastreabilidade total (Quem, Quando, Onde)</li>
+                        <li><i class="fa-solid fa-check"></i> Decisões baseadas em Dashboard V2</li>
+                        <li><i class="fa-solid fa-check"></i> Retenção via Gamificação e Propósito</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- 11. ROADMAP -->
+        <div class="slide">
+            <div class="module-layout">
+                <div class="module-info">
+                    <span class="header-tag">Visão de Futuro</span>
+                    <h2 class="header-title">Roadmap 2026</h2>
+                    <ul class="feature-list">
+                        <li><i class="fa-solid fa-circle-arrow-right"></i> <strong>Q1:</strong> App Mobile Nativo (React
+                            Native)</li>
+                        <li><i class="fa-solid fa-circle-arrow-right"></i> <strong>Q2:</strong> Módulo Financeiro
+                            Integrado</li>
+                        <li><i class="fa-solid fa-circle-arrow-right"></i> <strong>Q3:</strong> IA Preditiva (Prever
+                            churn de clientes)</li>
+                        <li><i class="fa-solid fa-circle-arrow-right"></i> <strong>Q4:</strong> SaaS White-label (Venda
+                            para outras empresas)</li>
+                    </ul>
+                </div>
+                <div class="module-preview">
+                    <i class="fa-solid fa-rocket" style="font-size: 8rem; color: var(--accent);"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- 12. FINAL -->
+        <div class="slide"
+            style="text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+            <h2 class="header-title">Pronto para o Próximo Nível?</h2>
+            <p style="font-size: 1.2rem; color: #94a3b8; max-width: 600px; margin-bottom: 40px;">
+                O Ecossistema NEP não é apenas software. É a codificação da cultura de alta performance da empresa.
+            </p>
+            <a href="index.html" class="glass-box"
+                style="text-decoration: none; display: inline-flex; align-items: center; gap: 15px; padding: 20px 40px; background: var(--primary); color: #000; font-weight: bold; font-family: 'Orbitron'; font-size: 1.2rem; border-radius: 50px;">
+                <i class="fa-solid fa-power-off"></i> ACESSAR SISTEMA
+            </a>
+            <div style="margin-top: 30px; font-size: 0.9rem; color: rgba(255,255,255,0.3);">
+                Ecossistema NEP © 2026 • Desenvolvido com Antigravity Intelligence
+            </div>
+        </div>
+
+    </div>
+
+    <div class="controls">
+        <button class="btn-nav" onclick="prevSlide()"><i class="fa-solid fa-chevron-left"></i></button>
+        <button class="btn-nav" onclick="nextSlide()"><i class="fa-solid fa-chevron-right"></i></button>
+    </div>
+
+    <script>
+        let currentSlide = 0;
+        const totalSlides = 12;
+        const slider = document.getElementById('slider');
+        const progressBar = document.getElementById('progress');
+
+        function updateSlide() {
+            slider.style.transform = `translateX(-${currentSlide * 100}vw)`;
+            const pct = ((currentSlide + 1) / totalSlides) * 100;
+            progressBar.style.width = pct + '%';
+
+            // Trigger animations for specific slides
+            if (currentSlide === 2) { // Slide 3 (Métricas)
+                startCounting();
+            }
+        }
+
+        let counted = false;
+        function startCounting() {
+            if (counted) return;
+            const counters = document.querySelectorAll('.count-up');
+            counters.forEach(counter => {
+                const target = +counter.dataset.val;
+                const suffix = counter.dataset.suffix || '';
+                const prefix = counter.dataset.prefix || '';
+                const decimals = +counter.dataset.decimals || 0;
+
+                const duration = 2500; // 2.5s duration
+                const start = 0;
+                const startTime = performance.now();
+
+                function update(currentTime) {
+                    const elapsed = currentTime - startTime;
+                    const progress = Math.min(elapsed / duration, 1);
+
+                    // EaseOutExpo
+                    const ease = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+
+                    const current = start + (target - start) * ease;
+
+                    counter.innerText = prefix + current.toFixed(decimals) + suffix;
+
+                    if (progress < 1) {
+                        requestAnimationFrame(update);
+                    } else {
+                        counter.innerText = prefix + target.toFixed(decimals) + suffix;
+                    }
+                }
+                requestAnimationFrame(update);
+            });
+            counted = true;
+        }
+
+        function nextSlide() {
+            if (currentSlide < totalSlides - 1) {
+                currentSlide++;
+                updateSlide();
+            }
+        }
+
+        function prevSlide() {
+            if (currentSlide > 0) {
+                currentSlide--;
+                updateSlide();
+            }
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') nextSlide();
+            if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') prevSlide();
+        });
+
+        // Wheel navigation
+        let isWheeling = false;
+        window.addEventListener('wheel', (e) => {
+            if (isWheeling) return;
+            isWheeling = true;
+            setTimeout(() => isWheeling = false, 800);
+
+            if (e.deltaY > 0) nextSlide();
+            else prevSlide();
+        });
+
+        // Init
+        updateSlide();
+    </script>
+</body>
+
+</html>

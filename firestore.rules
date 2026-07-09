@@ -1,0 +1,221 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ========================================================================
+    // FUNCTIONS
+    // ========================================================================
+
+    // Usuário autenticado no Firebase Auth
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Dono do documento
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Perfil do usuário logado em users/{uid}
+    function hasProfile() {
+      return isAuthenticated()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function myProfile() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    // Usuário com perfil ATIVO — camada real de segurança (plano Spark,
+    // sem custom claims/Cloud Functions). Conta desativada perde todo acesso.
+    function isActive() {
+      return hasProfile() && myProfile().status == 'ATIVO';
+    }
+
+    // Admin: custom claim (legado) OU cargo ADMIN no perfil ativo
+    function isAdmin() {
+      return (isAuthenticated() && request.auth.token.admin == true)
+        || (isActive() && myProfile().cargo == 'ADMIN');
+    }
+
+    // Cargos de liderança (validações e gestão)
+    function isManager() {
+      return isActive()
+        && myProfile().cargo in ['ADMIN', 'DIRETOR', 'SUPERINTENDENTE', 'GERENTE', 'COORDENADOR'];
+    }
+
+    // ========================================================================
+    // USERS
+    // ========================================================================
+
+    match /users/{userId} {
+      // Leitura: usuários ativos (listas, delegação, rankings) e o próprio
+      // usuário (necessário no login, antes da checagem de status)
+      allow read: if isActive() || isOwner(userId);
+      // Criação: admin (painel ADM/importação) ou o próprio uid recém-criado
+      allow create: if isAdmin() || isOwner(userId);
+      // Atualização: admin controla tudo; o próprio usuário edita seu perfil,
+      // mas NUNCA pode alterar o próprio cargo ou status (anti-escalação)
+      allow update: if isAdmin()
+        || (isOwner(userId)
+          && !request.resource.data.diff(resource.data).affectedKeys()
+            .hasAny(['cargo', 'status']));
+      allow delete: if isAdmin();
+    }
+
+    // ========================================================================
+    // PÁGINAS PÚBLICAS (sem login)
+    // ========================================================================
+
+    // Mural público de depoimentos (public-feedback.html envia sem login;
+    // aprovação/moderação é interna)
+    match /testimonials/{document} {
+      allow read: if isAuthenticated();
+      allow create: if true;
+      allow update: if isActive();
+      allow delete: if isAdmin();
+    }
+
+    // Changelog público (status.html)
+    match /status_updates/{document} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Notificações: página pública cria aviso de novo feedback;
+    // leitura/gestão apenas para usuários ativos
+    match /notifications/{notificationId} {
+      allow create: if true;
+      allow read, update, delete: if isActive();
+    }
+
+    // ========================================================================
+    // ADMINISTRAÇÃO E PERMISSÕES
+    // ========================================================================
+
+    match /module_permissions/{moduleId} {
+      allow read: if isActive();
+      allow write: if isAdmin();
+    }
+
+    match /tool_permissions/{toolId} {
+      allow read: if isActive();
+      allow write: if isAdmin();
+    }
+
+    match /logos/{logoId} {
+      allow read: if isActive();
+      allow write: if isAdmin();
+    }
+
+    // Auditoria: imutável — ninguém edita ou apaga logs
+    match /audit_logs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isAuthenticated();
+      allow update, delete: if false;
+    }
+
+    // ========================================================================
+    // OPERAÇÃO (exige perfil ATIVO)
+    // ========================================================================
+
+    // Kanban: leitura/criação/edição para ativos; exclusão espelha o front-end
+    // (kanban.js canDeleteTask): apenas ADMIN ou o criador da demanda
+    match /tasks/{taskId} {
+      allow read, create, update: if isActive();
+      allow delete: if isAdmin() || (isActive() && resource.data.creatorUid == request.auth.uid);
+    }
+    match /deliveries/{deliveryId} { allow read, write: if isActive(); }
+    match /entregas/{entregaId} { allow read, write: if isActive(); }
+    match /reports/{reportId} { allow read, write: if isActive(); }
+    match /okrs/{okrId} { allow read, write: if isActive(); }
+
+    match /vacations/{vacationId} { allow read, write: if isActive(); }
+    match /vacation_requests/{requestId} { allow read, write: if isActive(); }
+
+    match /agendas/{agendaId} { allow read, write: if isActive(); }
+    match /daily_routines/{docId} { allow read, write: if isActive(); }
+    match /rotina_checklist/{docId} { allow read, write: if isActive(); }
+    match /rotinas_adm/{docId} { allow read, write: if isActive(); }
+
+    match /feedback_requests/{document} { allow read, write: if isActive(); }
+
+    // ========================================================================
+    // CURSOS
+    // ========================================================================
+
+    match /courses/{courseId} {
+      allow read: if isActive();
+      allow write: if isManager();
+    }
+
+    match /course_progress/{progressId} { allow read, write: if isActive(); }
+    match /user_courses/{docId} { allow read, write: if isActive(); }
+
+    // ========================================================================
+    // COMUNICAÇÃO
+    // ========================================================================
+
+    match /announcements/{avisoId} {
+      allow read: if isActive();
+      allow write: if isManager();
+    }
+
+    match /push_subscriptions/{subId} {
+      allow read: if isAdmin() || isOwner(subId);
+      allow write: if isOwner(subId) || isAdmin();
+    }
+
+    // ========================================================================
+    // FÓRUM
+    // ========================================================================
+
+    match /forum_topics/{topicId} {
+      allow read, create, update: if isActive();
+      allow delete: if isAdmin();
+
+      match /replies/{replyId} {
+        allow read, create, update: if isActive();
+        allow delete: if isAdmin();
+      }
+    }
+
+    match /forum_replies/{replyId} {
+      allow read, create, update: if isActive();
+      allow delete: if isAdmin();
+    }
+
+    // ========================================================================
+    // GAMIFICAÇÃO E ANALYTICS
+    // ========================================================================
+
+    match /analytics/{document=**} { allow read, write: if isActive(); }
+    match /user_analytics/{docId} { allow read, write: if isActive(); }
+    match /user_data/{docId} { allow read, write: if isActive(); }
+
+    match /points/{docId} { allow read, write: if isActive(); }
+    match /user_points/{userId} { allow read, write: if isActive(); }
+
+    match /points_transactions/{transactionId} {
+      allow read: if isActive();
+      allow create: if isActive();
+      allow update, delete: if isAdmin();
+    }
+
+    match /user_stats/{userId} { allow read, write: if isActive(); }
+    match /user_achievements/{uid} { allow read, write: if isActive(); }
+
+    match /achievements/{achievementId} {
+      allow read: if isActive();
+      allow write: if isAdmin();
+    }
+
+    // ========================================================================
+    // DEFAULT DENY
+    // ========================================================================
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

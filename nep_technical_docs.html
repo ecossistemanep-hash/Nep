@@ -1,0 +1,1403 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEP Delivery Control - Documentação Técnica</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0a0f1e;
+            --bg-darker: #050a14;
+            --bg-card: #141d33;
+            --primary: #2f6fed;
+            --primary-dark: #1c4ed8;
+            --accent: #8b5cf6;
+            --text-main: #e5e7eb;
+            --text-sec: #8fa6c6;
+            --text-muted: #64748b;
+            --border: #1e3a5f;
+            --success: #2ecc71;
+            --warning: #f2b705;
+            --danger: #e5533d;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, var(--bg-dark) 0%, var(--bg-darker) 100%);
+            color: var(--text-main);
+            line-height: 1.7;
+            scroll-behavior: smooth;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 40px;
+        }
+
+        /* HEADER */
+        header {
+            background: rgba(10, 15, 30, 0.95);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 25px 0;
+        }
+
+        .logo-area h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 32px;
+            font-weight: 900;
+            color: var(--primary);
+            letter-spacing: -1px;
+        }
+
+        .logo-area p {
+            font-size: 11px;
+            color: var(--text-sec);
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-top: 3px;
+        }
+
+        .nav-docs {
+            display: flex;
+            gap: 25px;
+            align-items: center;
+        }
+
+        .nav-docs a {
+            color: var(--text-sec);
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 8px 16px;
+            border-radius: 8px;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .nav-docs a:hover {
+            color: var(--primary);
+            background: rgba(47, 111, 237, 0.1);
+        }
+
+        /* HERO */
+        .hero {
+            padding: 100px 0 80px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(47, 111, 237, 0.15), transparent);
+            pointer-events: none;
+        }
+
+        .hero-badge {
+            display: inline-block;
+            padding: 8px 20px;
+            background: rgba(47, 111, 237, 0.15);
+            border: 1px solid rgba(47, 111, 237, 0.3);
+            border-radius: 50px;
+            color: var(--primary);
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 25px;
+        }
+
+        .hero h2 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            font-weight: 900;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #fff, var(--primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-subtitle {
+            font-size: 18px;
+            color: var(--text-sec);
+            max-width: 700px;
+            margin: 0 auto 40px;
+            line-height: 1.8;
+        }
+
+        .author-card {
+            display: inline-flex;
+            align-items: center;
+            gap: 20px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            padding: 20px 30px;
+            border-radius: 16px;
+            margin-top: 30px;
+        }
+
+        .author-avatar {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            color: #fff;
+            font-weight: 900;
+        }
+
+        .author-info h4 {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .author-info p {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* SECTIONS */
+        section {
+            padding: 80px 0;
+            border-top: 1px solid var(--border);
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .section-tag {
+            display: inline-block;
+            padding: 6px 16px;
+            background: rgba(139, 92, 246, 0.15);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 30px;
+            color: var(--accent);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(1.8rem, 4vw, 2.8rem);
+            font-weight: 700;
+            margin-bottom: 15px;
+            color: #fff;
+        }
+
+        .section-desc {
+            font-size: 16px;
+            color: var(--text-sec);
+            max-width: 800px;
+            margin: 0 auto;
+            line-height: 1.8;
+        }
+
+        /* CONTENT BOX */
+        .content-box {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 40px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+
+        .content-box h3 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .content-box h3 i {
+            font-size: 24px;
+        }
+
+        .content-box p {
+            color: var(--text-sec);
+            line-height: 1.9;
+            margin-bottom: 15px;
+        }
+
+        .content-box ul, .content-box ol {
+            margin: 20px 0;
+            padding-left: 25px;
+        }
+
+        .content-box li {
+            color: var(--text-sec);
+            margin-bottom: 12px;
+            line-height: 1.8;
+        }
+
+        .content-box li strong {
+            color: var(--text-main);
+        }
+
+        /* CODE BLOCKS */
+        .code-block {
+            background: #0a0f1e;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 25px;
+            margin: 25px 0;
+            overflow-x: auto;
+            position: relative;
+        }
+
+        .code-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .code-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+
+        .code-lang {
+            background: rgba(47, 111, 237, 0.15);
+            color: var(--primary);
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        pre {
+            margin: 0;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            line-height: 1.7;
+            color: #e5e7eb;
+        }
+
+        .keyword { color: #c792ea; }
+        .string { color: #c3e88d; }
+        .comment { color: #546e7a; font-style: italic; }
+        .function { color: #82aaff; }
+        .variable { color: #eeffff; }
+        .number { color: #f78c6c; }
+
+        /* GRID LAYOUTS */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 30px;
+            margin: 40px 0;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+            margin: 40px 0;
+        }
+
+        /* INFO CARDS */
+        .info-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 25px;
+            transition: all 0.3s;
+        }
+
+        .info-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+        }
+
+        .info-card-icon {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: #fff;
+            margin-bottom: 20px;
+        }
+
+        .info-card h4 {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: #fff;
+        }
+
+        .info-card p {
+            font-size: 14px;
+            color: var(--text-sec);
+            line-height: 1.7;
+        }
+
+        /* TABLE */
+        .tech-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 30px 0;
+            background: var(--bg-card);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .tech-table thead {
+            background: rgba(47, 111, 237, 0.1);
+        }
+
+        .tech-table th {
+            padding: 18px;
+            text-align: left;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--primary);
+            border-bottom: 2px solid var(--border);
+        }
+
+        .tech-table td {
+            padding: 18px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-sec);
+            font-size: 14px;
+        }
+
+        .tech-table tr:hover {
+            background: rgba(47, 111, 237, 0.05);
+        }
+
+        .tech-table code {
+            background: rgba(0,0,0,0.3);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: var(--primary);
+        }
+
+        /* BADGES */
+        .badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin: 4px;
+        }
+
+        .badge-success {
+            background: rgba(46, 204, 113, 0.15);
+            color: var(--success);
+            border: 1px solid rgba(46, 204, 113, 0.3);
+        }
+
+        .badge-warning {
+            background: rgba(242, 183, 5, 0.15);
+            color: var(--warning);
+            border: 1px solid rgba(242, 183, 5, 0.3);
+        }
+
+        .badge-danger {
+            background: rgba(229, 83, 61, 0.15);
+            color: var(--danger);
+            border: 1px solid rgba(229, 83, 61, 0.3);
+        }
+
+        .badge-primary {
+            background: rgba(47, 111, 237, 0.15);
+            color: var(--primary);
+            border: 1px solid rgba(47, 111, 237, 0.3);
+        }
+
+        /* HIERARCHY DIAGRAM */
+        .hierarchy-diagram {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 40px;
+            margin: 40px 0;
+        }
+
+        .hierarchy-level {
+            display: flex;
+            align-items: center;
+            padding: 20px;
+            margin-bottom: 15px;
+            background: rgba(47, 111, 237, 0.05);
+            border-left: 4px solid var(--primary);
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        .hierarchy-level:hover {
+            transform: translateX(10px);
+            background: rgba(47, 111, 237, 0.1);
+        }
+
+        .hierarchy-number {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: 900;
+            color: #fff;
+            margin-right: 20px;
+        }
+
+        .hierarchy-info h5 {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 6px;
+            color: #fff;
+        }
+
+        .hierarchy-info p {
+            font-size: 13px;
+            color: var(--text-sec);
+        }
+
+        /* ALERT BOXES */
+        .alert {
+            padding: 20px 25px;
+            border-radius: 12px;
+            margin: 25px 0;
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+        }
+
+        .alert i {
+            font-size: 20px;
+            margin-top: 2px;
+        }
+
+        .alert-info {
+            background: rgba(47, 111, 237, 0.1);
+            border: 1px solid rgba(47, 111, 237, 0.3);
+            color: var(--primary);
+        }
+
+        .alert-warning {
+            background: rgba(242, 183, 5, 0.1);
+            border: 1px solid rgba(242, 183, 5, 0.3);
+            color: var(--warning);
+        }
+
+        .alert-success {
+            background: rgba(46, 204, 113, 0.1);
+            border: 1px solid rgba(46, 204, 113, 0.3);
+            color: var(--success);
+        }
+
+        .alert-content {
+            flex: 1;
+        }
+
+        .alert-content strong {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .alert-content p {
+            font-size: 14px;
+            line-height: 1.7;
+            opacity: 0.9;
+        }
+
+        /* FOOTER */
+        footer {
+            background: var(--bg-darker);
+            border-top: 1px solid var(--border);
+            padding: 60px 0 40px;
+            margin-top: 80px;
+        }
+
+        .footer-content {
+            text-align: center;
+        }
+
+        .footer-logo {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 32px;
+            font-weight: 900;
+            color: var(--primary);
+            margin-bottom: 15px;
+        }
+
+        .footer-text {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-bottom: 30px;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .footer-links a {
+            color: var(--text-sec);
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 600;
+            transition: color 0.3s;
+        }
+
+        .footer-links a:hover {
+            color: var(--primary);
+        }
+
+        .copyright {
+            font-size: 12px;
+            color: var(--text-muted);
+            padding-top: 30px;
+            border-top: 1px solid var(--border);
+        }
+
+        /* SCROLLBAR */
+        ::-webkit-scrollbar {
+            width: 12px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-darker);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary);
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 20px;
+            }
+
+            .hero {
+                padding: 60px 0 40px;
+            }
+
+            section {
+                padding: 50px 0;
+            }
+
+            .grid-2, .grid-3 {
+                grid-template-columns: 1fr;
+            }
+
+            .nav-docs {
+                display: none;
+            }
+
+            .code-block {
+                padding: 15px;
+            }
+
+            pre {
+                font-size: 11px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- HEADER -->
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div class="logo-area">
+                    <h1>NEP</h1>
+                    <p>Technical Documentation</p>
+                </div>
+                <nav class="nav-docs">
+                    <a href="#overview">Visão Geral</a>
+                    <a href="#architecture">Arquitetura</a>
+                    <a href="#features">Funcionalidades</a>
+                    <a href="#permissions">Permissões</a>
+                    <a href="#api">API</a>
+                    <a href="#deployment">Deploy</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- HERO -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-badge">
+                <i class="fa-solid fa-book"></i> Documentação Técnica Completa v3.0
+            </div>
+            <h2>NEP DELIVERY CONTROL</h2>
+            <p class="hero-subtitle">
+                Sistema Enterprise de Governança Holística da Qualidade com Hierarquia Granular, 
+                Trava de Evidência Obrigatória e Business Intelligence em Tempo Real.
+            </p>
+            
+            <div class="author-card">
+                <div class="author-avatar">FE</div>
+                <div class="author-info">
+                    <h4>Fernando Pereira Evangelista</h4>
+                    <p>Quality Coordinator & Data Science Student</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- OVERVIEW -->
+    <section id="overview">
+        <div class="container">
+            <div class="section-header">
+                <div class="section-tag">
+                    <i class="fa-solid fa-circle-info"></i> Visão Geral
+                </div>
+                <h2 class="section-title">Sobre o Sistema</h2>
+                <p class="section-desc">
+                    O NEP Delivery Control é uma solução proprietária desenvolvida para eliminar 
+                    a "caixa preta" operacional em ambientes de Qualidade, oferecendo rastreabilidade 
+                    total desde o micro (monitoria individual) até o macro (visão executiva).
+                </p>
+            </div>
+
+            <div class="content-box">
+                <h3><i class="fa-solid fa-bullseye"></i> Objetivo do Projeto</h3>
+                <p>
+                    Criar um sistema zero-custo, altamente customizável e específico para a dor de 
+                    Governança de Qualidade, substituindo soluções genéricas (Monday/Jira/Trello) 
+                    que custam R$ 120k/ano e não possuem funcionalidades críticas como:
+                </p>
+                <ul>
+                    <li><strong>Hierarquia Granular Nativa:</strong> 6 níveis de acesso (0-5) com permissões específicas</li>
+                    <li><strong>Trava de Evidência Obrigatória:</strong> Bloqueio automático de entrega sem anexo</li>
+                    <li><strong>Validação/Aprovação:</strong> Fluxo de auditoria pós-entrega</li>
+                    <li><strong>Reset Automático:</strong> Rotinas diárias recriadas automaticamente</li>
+                    <li><strong>Visão Holística:</strong> Do operacional ao estratégico em um único painel</li>
+                </ul>
+            </div>
+
+            <div class="alert alert-info">
+                <i class="fa-solid fa-lightbulb"></i>
+                <div class="alert-content">
+                    <strong>Problema Resolvido</strong>
+                    <p>
+                        Antes: Demandas espalhadas por e-mails, WhatsApp, planilhas offline sem dono, 
+                        zero rastreabilidade, impossibilidade de gerar relatórios executivos.
+                        <br><br>
+                        Depois: Backlog unificado, status em tempo real, auditabilidade total, 
+                        BI automático e compliance operacional garantido.
+                    </p>
+                </div>
+            </div>
+
+            <div class="grid-3">
+                <div class="info-card">
+                    <div class="info-card-icon">
+                        <i class="fa-solid fa-users"></i>
+                    </div>
+                    <h4>40+ Colaboradores</h4>
+                    <p>Gerenciamento simultâneo de Consultores, Analistas, Coordenadores e Monitores com permissões granulares.</p>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card-icon">
+                        <i class="fa-solid fa-shield-halved"></i>
+                    </div>
+                    <h4>100% Auditável</h4>
+                    <p>Todo movimento de status, edição e validação é registrado em histórico com timestamp e responsável.</p>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card-icon">
+                        <i class="fa-solid fa-dollar-sign"></i>
+                    </div>
+                    <h4>Custo Zero</h4>
+                    <p>Infraestrutura Serverless no Google Cloud (Firebase) com tier gratuito suficiente para 100+ usuários.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ARCHITECTURE -->
+    <section id="architecture">
+        <div class="container">
+            <div class="section-header">
+                <div class="section-tag">
+                    <i class="fa-solid fa-sitemap"></i> Arquitetura
+                </div>
+                <h2 class="section-title">Stack Tecnológica</h2>
+                <p class="section-desc">
+                    Arquitetura moderna, escalável e 100% serverless utilizando as melhores 
+                    práticas do mercado para aplicações enterprise-grade.
+                </p>
+            </div>
+
+            <div class="content-box">
+                <h3><i class="fa-solid fa-layer-group"></i> Visão Arquitetural</h3>
+                <p>
+                    O sistema foi projetado seguindo arquitetura de três camadas (Apresentação, 
+                    Lógica e Dados) com separação clara de responsabilidades e comunicação 
+                    assíncrona via Firebase Realtime Listeners.
+                </p>
+            </div>
+
+            <table class="tech-table">
+                <thead>
+                    <tr>
+                        <th>Camada</th>
+                        <th>Tecnologia</th>
+                        <th>Versão</th>
+                        <th>Justificativa</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Frontend</strong></td>
+                        <td>HTML5 Semântico</td>
+                        <td>-</td>
+                        <td>Acessibilidade, SEO e compatibilidade com leitores de tela</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Estilização</strong></td>
+                        <td>CSS3 (Variables)</td>
+                        <td>-</td>
+                        <td>Design System nativo, tema claro/escuro sem frameworks pesados</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Lógica</strong></td>
+                        <td>JavaScript ES6+</td>
+                        <td>Vanilla</td>
+                        <td>Zero dependências de runtime, bundle size mínimo (~30KB)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Backend</strong></td>
+                        <td>Firebase (BaaS)</td>
+                        <td>10.7.1</td>
+                        <td>Serverless, real-time sync, autenticação integrada</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Banco de Dados</strong></td>
+                        <td>Firestore (NoSQL)</td>
+                        <td>-</td>
+                        <td>Queries eficientes, escalabilidade automática, offline-first</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Visualização</strong></td>
+                        <td>Chart.js</td>
+                        <td>4.4.0</td>
+                        <td>Gráficos responsivos com HTML5 Canvas</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Ícones</strong></td>
+                        <td>Font Awesome</td>
+                        <td>6.4.0</td>
+                        <td>Biblioteca completa, ícones vetoriais escaláveis</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="alert alert-success">
+                <i class="fa-solid fa-check-circle"></i>
+                <div class="alert-content">
+                    <strong>Vantagens da Arquitetura Serverless</strong>
+                    <p>
+                        • <strong>Escalabilidade Automática:</strong> Firebase escala de 1 a 1M usuários sem mudança de código
+                        <br>
+                        • <strong>Zero DevOps:</strong> Sem servidores para gerenciar, patches ou backups manuais
+                        <br>
+                        • <strong>Custo Variável:</strong> Paga-se apenas pelo uso real (tier gratuito até 1GB + 50k leituras/dia)
+                        <br>
+                        • <strong>SLA 99.95%:</strong> Uptime garantido pelo Google Cloud
+                    </p>
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div class="content-box">
+                    <h3><i class="fa-brands fa-js"></i> Frontend (Client-Side)</h3>
+                    <div class="code-block">
+                        <div class="code-header">
+                            <span class="code-label">Estrutura de Arquivos</span>
+                            <span class="code-lang">TXT</span>
+                        </div>
+                        <pre>
+├── index.html          <span class="comment">// Sistema principal (Kanban)</span>
+├── login.html          <span class="comment">// Autenticação</span>
+├── Control_landing_page.html  <span class="comment">// Landing page</span>
+├── onboarding_treinamento.html <span class="comment">// Tutorial</span>
+├── script.js           <span class="comment">// Lógica (ES6 Modules)</span>
+└── style.css           <span class="comment">// Design System</span>
+                        </pre>
+                    </div>
+                    <p>
+                        <span class="badge badge-primary">Vanilla JS</span>
+                        <span class="badge badge-primary">Zero Build</span>
+                        <span class="badge badge-success">30KB Total</span>
+                    </p>
+                </div>
+
+                <div class="content-box">
+                    <h3><i class="fa-solid fa-fire"></i> Backend (Firebase)</h3>
+                    <div class="code-block">
+                        <div class="code-header">
+                            <span class="code-label">Firebase Config</span>
+                            <span class="code-lang">JavaScript</span>
+                        </div>
+                        <pre>
+<span class="keyword">const</span> firebaseConfig = {
+  <span class="variable">apiKey</span>: <span class="string">"AIza..."</span>,
+  <span class="variable">authDomain</span>: <span class="string">"ecossistema-nep.firebaseapp.com"</span>,
+  <span class="variable">projectId</span>: <span class="string">"ecossistema-nep"</span>,
+  <span class="variable">storageBucket</span>: <span class="string">"ecossistema-nep..."</span>,
+  <span class="variable">messagingSenderId</span>: <span class="string">"1041112586342"</span>,
+  <span class="variable">appId</span>: <span class="string">"1:1041112586342:web:..."</span>
+};
+
+<span class="keyword">const</span> app = <span class="function">initializeApp</span>(firebaseConfig);
+<span class="keyword">const</span> db = <span class="function">getFirestore</span>(app);
+                        </pre>
+                    </div>
+                    <p>
+                        <span class="badge badge-warning">Firestore</span>
+                        <span class="badge badge-warning">Real-time</span>
+                        <span class="badge badge-success">Serverless</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FEATURES -->
+    <section id="features">
+        <div class="container">
+            <div class="section-header">
+                <div class="section-tag">
+                    <i class="fa-solid fa-star"></i> Funcionalidades
+                </div>
+                <h2 class="section-title">Recursos Principais</h2>
+                <p class="section-desc">
+                    Conjunto completo de funcionalidades enterprise para governança de demandas 
+                    com foco em auditabilidade, transparência e eficiência operacional.
+                </p>
+            </div>
+
+            <div class="content-box">
+                <h3><i class="fa-solid fa-clipboard-check"></i> 1. Sistema Kanban com Drag & Drop</h3>
+                <p>
+                    Visualização em tempo real do fluxo de trabalho com 4 colunas de status 
+                    (Backlog → Execução → Block → Entregue). Drag & drop nativo com validação 
+                    de evidência obrigatória ao mover para "Entregue".
+                </p>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-label">Lógica de Drag & Drop</span>
+                        <span class="code-lang">JavaScript</span>
+                    </div>
+                    <pre>
+<span class="variable">card</span>.<span class="function">addEventListener</span>(<span class="string">'dragstart'</span>, () => {
+  <span class="variable">draggedItem</span> = <span class="variable">card</span>;
+  <span class="variable">card</span>.<span class="variable">classList</span>.<span class="function">add</span>(<span class="string">'is-dragging'</span>);
+});
+
+<span class="variable">col</span>.<span class="function">addEventListener</span>(<span class="string">'drop'</span>, <span class="keyword">async</span> (<span class="variable">e</span>) => {
+  <span class="keyword">const</span> newStatus = <span class="variable">col</span>.<span class="variable">dataset</span>.<span class="variable">status</span>;
+  
+  <span class="comment">// Validação: Exige evidência para "done"</span>
+  <span class="keyword">if</span> (newStatus === <span class="string">'done'</span> && oldStatus !== <span class="string">'done'</span>) {
+    <span class="function">openDeliveryModal</span>(<span class="variable">taskId</span>);
+    <span class="keyword">return</span>;
+  }
+  
+  <span class="keyword">await</span> <span class="function">updateDoc</span>(<span class="function">doc</span>(db, <span class="string">'tasks'</span>, id), { 
+    <span class="variable">status</span>: newStatus 
+  });
+});
+                    </pre>
+                </div>
+                <p>
+                    <span class="badge badge-success">Real-time Sync</span>
+                    <span class="badge badge-primary">Touch Friendly</span>
+                    <span class="badge badge-warning">Validation</span>
+                </p>
+            </div>
+
+            <div class="content-box">
+                <h3><i class="fa-solid fa-lock"></i> 2. Trava de Evidência Obrigatória</h3>
+                <p>
+                    Ao mover um card para "Entregue", o sistema abre modal exigindo:
+                    <br>• Descrição detalhada do que foi realizado (mín. 3 caracteres)
+                    <br>• Link de evidência (opcional, mas recomendado)
+                </p>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-label">Modal de Entrega</span>
+                        <span class="code-lang">JavaScript</span>
+                    </div>
+                    <pre>
+<span class="variable">btnConfirmDelivery</span>.<span class="function">addEventListener</span>(<span class="string">'click'</span>, <span class="keyword">async</span> () => {
+  <span class="keyword">const</span> evidenceText = <span class="variable">deliveryEvidence</span>.<span class="variable">value</span>.<span class="function">trim</span>();
+  <span class="keyword">const</span> evidenceLink = <span class="variable">deliveryLink</span>.<span class="variable">value</span>.<span class="function">trim</span>();
+  
+  <span class="keyword">if</span> (evidenceText.<span class="variable">length</span> &lt; <span class="number">3</span>) {
+    <span class="function">alert</span>(<span class="string">'Descreva o que foi feito.'</span>);
+    <span class="keyword">return</span>;
+  }
+  
+  <span class="keyword">const</span> payload = {
+    <span class="variable">status</span>: <span class="string">'done'</span>,
+    <span class="variable">evidence</span>: evidenceText,
+    <span class="variable">evidenceLink</span>: evidenceLink || <span class="keyword">null</span>,
+    <span class="variable">deliveredAt</span>: <span class="keyword">new</span> <span class="function">Date</span>().<span class="function">toISOString</span>(),
+    <span class="variable">validated</span>: <span class="keyword">false</span> <span class="comment">// Aguarda aprovação</span>
+  };
+  
+  <span class="keyword">await</span> <span class="function">updateDoc</span>(<span class="function">doc</span>(db, <span class="string">'tasks'</span>, taskId), payload);
+  <span class="function">showToast</span>(<span class="string">'Entrega enviada para validação!'</span>);
+});
+                    </pre>
+                </div>
+            </div>
+
+            <div class="content-box">
+                <h3><i class="fa-solid fa-check-double"></i> 3. Sistema de Validação/Aprovação</h3>
+                <p>
+                    Após entrega, cards ficam com status "Aguardando Validação" até que um 
+                    gestor de nível superior revise e aprove. Superintendente tem auto-aprovação.
+                </p>
+                <div class="hierarchy-diagram">
+                    <div class="hierarchy-level">
+                        <div class="hierarchy-number">5</div>
+                        <div class="hierarchy-info">
+                            <h5>Superintendente</h5>
+                            <p>Auto-aprova entregas + Valida todos os níveis</p>
+                        </div>
+                    </div>
+                    <div class="hierarchy-level">
+                        <div class="hierarchy-number">4</div>
+                        <div class="hierarchy-info">
+                            <h5>Gerente</h5>
+                            <p>Valida: Consultor, Coordenador, Analista, Monitor</p>
+                        </div>
+                    </div>
+                    <div class="hierarchy-level">
+                        <div class="hierarchy-number">3</div>
+                        <div class="hierarchy-info">
+                            <h5>Consultor</h5>
+                            <p>Valida: Coordenador, Analista, Monitor</p>
+                        </div>
+                    </div>
+                    <div class="hierarchy-level">
+                        <div class="hierarchy-number">2</div>
+                        <div class="hierarchy-info">
+                            <h5>Coordenador</h5>
+                            <p>Valida: Analista, Monitor</p>
+                        </div>
+                    </div>
+                    <div class="hierarchy-level">
+                        <div class="hierarchy-number">1</div>
+                        <div class="hierarchy-info">
+                            <h5>Analista</h5>
+                            <p>Valida: Monitor</p>
+                        </div>
+                    </div>
+                    <div class="hierarchy-level">
+                        <div class="hierarchy-number">0</div>
+                        <div class="hierarchy-info">
+                            <h5>Monitor</h5>
+                            <p>Executa tarefas / Não valida</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="content-box">
+                <h3><i class="fa-solid fa-chart-pie"></i> 4. Dashboard BI em Tempo Real</h3>
+                <p>
+                    Visualização analítica com gráficos dinâmicos:
+                    <br>• Status das Demandas (Doughnut Chart)
+                    <br>• Demandas por Solicitante (Bar Chart)
+                    <br>• Demandas por Unidade (Horizontal Bar)
+                    <br>• Lead Time de Conclusão (Line Chart)
+                </p>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-label">Geração de Charts</span>
+                        <span class="code-lang">JavaScript</span>
+                    </div>
+                    <pre>
+<span class="keyword">function</span> <span class="function">updateCharts</span>() {
+  <span class="keyword">const</span> visible = <span class="function">getVisibleTasks</span>();
+  
+  <span class="keyword">const</span> statusData = [<span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>];
+  visible.<span class="function">forEach</span>(<span class="variable">t</span> => {
+    <span class="keyword">if</span> (<span class="variable">t</span>.<span class="variable">status</span> === <span class="string">'backlog'</span>) statusData[<span class="number">0</span>]++;
+    <span class="keyword">if</span> (<span class="variable">t</span>.<span class="variable">status</span> === <span class="string">'doing'</span>) statusData[<span class="number">1</span>]++;
+    <span class="keyword">if</span> (<span class="variable">t</span>.<span class="variable">status</span> === <span class="string">'pending'</span>) statusData[<span class="number">2</span>]++;
+    <span class="keyword">if</span> (<span class="variable">t</span>.<span class="variable">status</span> === <span class="string">'done'</span>) statusData[<span class="number">3</span>]++;
+  });
+
+  <span class="keyword">new</span> <span class="function">Chart</span>(ctx, {
+    <span class="variable">type</span>: <span class="string">'doughnut'</span>,
+    <span class="variable">data</span>: {
+      <span class="variable">labels</span>: [<span class="string">'Backlog'</span>, <span class="string">'Execução'</span>, <span class="string">'Block'</span>, <span class="string">'Entregue'</span>],
+      <span class="variable">datasets</span>: [{ 
+        <span class="variable">data</span>: statusData, 
+        <span class="variable">backgroundColor</span>: [<span class="string">'#2F6FED'</span>, <span class="string">'#F2B705'</span>, <span class="string">'#E5533D'</span>, <span class="string">'#2ECC71'</span>]
+      }]
+    }
+  });
+}
+                    </pre>
+                </div>
+            </div>
+
+            <div class="content-box">
+                <h3><i class="fa-solid fa-list-check"></i> 5. Rotina ADM (Checklist Diário)</h3>
+                <p>
+                    Sistema de checklist persistente com localStorage para compliance operacional.
+                    Cada usuário possui sua própria lista de rotinas, armazenada localmente com 
+                    chave única: <code>nep_routine_{cargo}_{nome}</code>
+                </p>
+                <ul>
+                    <li>Criação dinâmica de tarefas personalizadas</li>
+                    <li>Checkbox com marcação diária (resetada por data)</li>
+                    <li>Barra de progresso em tempo real</li>
+                    <li>Exclusão individual de itens</li>
+                </ul>
+            </div>
+
+            <div class="content-box">
+                <h3><i class="fa-solid fa-bell"></i> 6. Sistema de Notificações</h3>
+                <p>
+                    Notificação visual quando novas demandas são atribuídas ao usuário:
+                    <br>• Badge numérico no botão "Kanban" da sidebar
+                    <br>• Card destacado com animação de pulse
+                    <br>• Banner "Nova demanda de [Cargo] - [Nome]"
+                    <br>• Botão "RECEBI A DEMANDA" para reconhecimento
+                </p>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-label">Lógica de Notificação</span>
+                        <span class="code-lang">JavaScript</span>
+                    </div>
+                    <pre>
+<span class="keyword">function</span> <span class="function">countUnacknowledgedTasks</span>() {
+  <span class="keyword">const</span> myTasks = allTasks.<span class="function">filter</span>(<span class="variable">t</span> => {
+    <span class="keyword">const</span> assignedToMe = myName && 
+      <span class="function">norm</span>(<span class="variable">t</span>?.<span class="variable">owner</span>) === <span class="function">norm</span>(myName);
+    <span class="keyword">const</span> isNew = <span class="variable">t</span>.<span class="variable">status</span> === <span class="string">'backlog'</span> && 
+      !<span class="variable">t</span>.<span class="variable">acknowledged</span>;
+    <span class="keyword">return</span> assignedToMe && isNew;
+  });
+  <span class="keyword">return</span> myTasks.<span class="variable">length</span>;
+}
+
+<span class="keyword">function</span> <span class="function">updateNotificationBadge</span>() {
+  <span class="keyword">const</span> count = <span class="function">countUnacknowledgedTasks</span>();
+  <span class="keyword">const</span> badge = document.<span class="function">getElementById</span>(<span class="string">'notification-badge'</span>);
+  
+  <span class="keyword">if</span> (count > <span class="number">0</span>) {
+    badge.<span class="variable">textContent</span> = count;
+    badge.<span class="variable">style</span>.<span class="variable">display</span> = <span class="string">'flex'</span>;
+  } <span class="keyword">else</span> {
+    badge.<span class="variable">style</span>.<span class="variable">display</span> = <span class="string">'none'</span>;
+  }
+}
+                    </pre>
+                </div>
+            </div>
+
+            <div class="content-box">
+                <h3><i class="fa-solid fa-stopwatch"></i> 7. SLA Timer Visual</h3>
+                <p>
+                    Contador regressivo em cada card baseado no campo <code>deadline</code>:
+                    <br>• <strong>Verde:</strong> Mais de 2 dias restantes
+                    <br>• <strong>Amarelo:</strong> Entre 4h e 2 dias
+                    <br>• <strong>Vermelho:</strong> Menos de 4h ou expirado
+                </p>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-label">Timer Automático</span>
+                        <span class="code-lang">JavaScript</span>
+                    </div>
+                    <pre>
+<span class="function">setInterval</span>(() => {
+  document.<span class="function">querySelectorAll</span>(<span class="string">'.card'</span>).<span class="function">forEach</span>(<span class="variable">card</span> => {
+    <span class="keyword">const</span> task = allTasks.<span class="function">find</span>(<span class="variable">t</span> => <span class="variable">t</span>.<span class="variable">id</span> === <span class="variable">card</span>.<span class="variable">dataset</span>.<span class="variable">id</span>);
+    <span class="keyword">if</span> (!task || !task.<span class="variable">deadline</span>) <span class="keyword">return</span>;
+
+    <span class="keyword">const</span> deadline = <span class="keyword">new</span> <span class="function">Date</span>(task.<span class="variable">deadline</span> + <span class="string">'T23:59:59'</span>);
+    <span class="keyword">const</span> diff = deadline - <span class="keyword">new</span> <span class="function">Date</span>();
+
+    <span class="keyword">if</span> (diff &lt; <span class="number">0</span>) {
+      slaDiv.<span class="variable">className</span> = <span class="string">'sla-timer sla-danger'</span>;
+      slaDiv.<span class="variable">innerHTML</span> = <span class="string">'⚠️ EXPIRADO'</span>;
+    } <span class="keyword">else</span> {
+      <span class="keyword">const</span> hours = Math.<span class="function">floor</span>(diff / (<span class="number">1000</span> * <span class="number">60</span> * <span class="number">60</span>));
+      slaDiv.<span class="variable">className</span> = hours &lt; <span class="number">4</span> ? 
+        <span class="string">'sla-timer sla-danger'</span> : <span class="string">'sla-timer sla-warn'</span>;
+      slaDiv.<span class="variable">innerHTML</span> = `⏱️ ${hours}h`;
+    }
+  });
+}, <span class="number">1000</span>);
+                    </pre>
+                </div>
+            </div>
+
+            <div class="content-box">
+                <h3><i class="fa-solid fa-filter"></i> 8. Sistema de Filtros Avançados</h3>
+                <p>
+                    Filtros dinâmicos na sidebar que atualizam automaticamente os selects 
+                    baseados nas demandas visíveis:
+                </p>
+                <ul>
+                    <li><strong>Por Unidade:</strong> Comercial, Operações, TI, etc.</li>
+                    <li><strong>Por Segmento:</strong> Desenvolvimento, Monitoria, Auditoria, etc.</li>
+                    <li><strong>Por Solicitante:</strong> Nome de quem criou a demanda</li>
+                    <li><strong>Por Responsável:</strong> Nome do executor atribuído</li>
+                </ul>
+                <p>
+                    Todos os filtros funcionam em conjunto (AND lógico) e aplicam-se 
+                    tanto ao Kanban quanto ao Dashboard BI.
+                </p>
+            </div>
+
+            <div class="alert alert-warning">
+                <i class="fa-solid fa-exclamation-triangle"></i>
+                <div class="alert-content">
+                    <strong>Limitação Conhecida</strong>
+                    <p>
+                        O sistema não utiliza localStorage/sessionStorage para persistência 
+                        de dados das demandas (apenas para Rotina ADM). Toda informação de 
+                        tasks está no Firestore e sincroniza em tempo real via listeners.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- PERMISSIONS -->
+    <section id="permissions">
+        <div class="container">
+            <div class="section-header">
+                <div class="section-tag">
+                    <i class="fa-solid fa-shield"></i> Permissões
+                </div>
+                <h2 class="section-title">Sistema Hierárquico</h2>
+                <p class="section-desc">
+                    Matriz completa de permissões baseada em 6 níveis de acesso, garantindo 
+                    segregação de funções e compliance com princípios de least privilege.
+                </p>
+            </div>
+
+            <div class="content-box">
+                <h3><i class="fa-solid fa-user-shield"></i> Hierarquia de Níveis</h3>
+                <p>
+                    O sistema define permissões através do objeto <code>ROLE_LEVEL</code>:
+                </p>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-label">Constantes de Hierarquia</span>
+                        <span class="code-lang">JavaScript</span>
+                    </div>
+                    <pre>
+<span class="keyword">const</span> ROLE_LEVEL = {
+  <span class="variable">superintendente</span>: <span class="number">5</span>,
+  <span class="variable">gerente</span>: <span class="number">4</span>,
+  <span class="variable">consultor</span>: <span class="number">3</span>,
+  <span class="variable">coordenador</span>: <span class="number">2</span>,
+  <span class="variable">analista</span>: <span class="number">1</span>,
+  <span class="variable">monitor</span>: <span class="number">0</span>
+};
+
+<span class="keyword">const</span> ROLE_LABEL = {
+  <span class="variable">superintendente</span>: <span class="string">"SUPERINTENDENTE"</span>,
+  <span class="variable">gerente</span>: <span class="string">"GERENTE"</span>,
+  <span class="variable">consultor</span>: <span class="string">"CONSULTOR"</span>,
+  <span class="variable">coordenador</span>: <span class="string">"COORDENADOR"</span>,
+  <span class="variable">analista</span>: <span class="string">"ANALISTA"</span>,
+  <span class="variable">monitor</span>: <span class="string">"MONITOR"</span>
+};
+                    </pre>
+                </div>
+            </div>
+
+            <table class="tech-table">
+                <thead>
+                    <tr>
+                        <th>Cargo</th>
+                        <th>Nível</th>
+                        <th>Visualização</th>
+                        <th>Criação</th>
+                        <th>Validação</th>
+                        <th>Exclusão</th>
+                        <th>Especial</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Superintendente</strong></td>
+                        <td><span class="badge badge-danger">5</span></td>
+                        <td>Tudo</td>
+                        <td>Tudo</td>
+                        <td>Tudo</td>
+                        <td>Tudo</td>
+                        <td>Auto-aprova entregas + Exporta CSV</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Gerente</strong></td>
+                        <td><span class="badge badge-warning">4</span></td>
+                        <td>Subordinados</td>
+                        <td>Tudo</td>
+                        <td>Nível ≤ 3</td>
+                        <td>Criadas por ele</td>
+                        <td>Exporta CSV</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Consultor</strong></td>
+                        <td><span class="badge badge-primary">3</span></td>
+                        <td>Subordinados</td>
+                        <td>Tudo</td>
+                        <td>Nível ≤ 2</td>
+                        <td>Criadas por ele</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Coordenador</strong></td>
+                        <td><span class="badge badge-primary">2</span></td>
+                        <td>Subordinados</td>
+                        <td>Para ≤ 2</td>
+                        <td>Nível ≤ 1</td>
+                        <td>Criadas por ele</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Analista</strong></td>
+                        <td><span class="badge badge-success">1</span></td>
+                        <td>Atribuídas + Criadas</td>
+                        <td>Para ≤ 2</td>
+                        <td>Monitor</td>
+                        <td>Criadas por ele</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Monitor</strong></td>
+                        <td><span class="badge badge-success">0</span></td>
+                        <td>Só suas tarefas</td>
+                        <td>Só para si</td>
+                        <td>Não valida</td>
+                        <td>Não deleta</td>
+                        <td>Delegação bloqueada</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="content-box">
+                <h3><i class="fa-solid fa-code"></i> Implementação de Permissões</h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-label">Funções de Controle</span>
+                        <span class="code-lang">JavaScript</span>
+                    </div>
+                    <pre>
+<span class="keyword">function</span> <span class="function">canSeeTask</span>(<span class="variable">task</span>) {
+  <span class="keyword">const</span> tLevel = <span class="function">taskCreatorLevel</span>(task);
+  
+  <span class="comment">// Superintendente vê tudo</span>
+  <span class="keyword">if</span> (myRoleKey === <span class="string">'superintendente'</span>) <span class="keyword">return true</span>;
+  
+  <span class="comment">// Se EU sou o responsável, SEMPRE vejo</span>
+  <span class="keyword">const</span> assignedToMe = myName && 
+    <span class="function">norm</span>(task?.<span class="variable">owner</span>) === <span class="function">norm</span>(myName);
+  <span class="keyword">if</span> (assignedToMe) <span class="keyword">return true</span>;
+  
+  <span class="comment">// Criador sempre vê suas tarefas</span>
+  <span class="keyword">if</span> (<span class="function">isCreatorMe</span>(task)) <span class="keyword">return true</span>;
+  
+  <span class="comment">// Monitor só vê tarefas de monitor</span>
+  <span class="keyword">if</span> (myRoleKey === <span class="string">'monitor'</span>) {
+    <span class="keyword">return</span> tLevel === <span class="number">0</span>;
+  }
+  
+  <span class="comment">// Demais veem nível igual ou inferior</span>
+  <span class="keyword">return</span> tLevel &lt;= myLevel;
+}
+
+<span class="keyword">function</span> <span class="function">canDeleteTask</span>(<span class="variablenivel"></span>) {
+  <span class="comment">// (trecho final truncado no arquivo original do pacote)</span>
+}
+                    </pre>
+                </div>
+            </div>
+        </div>
+    </section>
+</body>
+
+</html>

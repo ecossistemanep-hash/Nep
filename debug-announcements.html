@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <title>NEP | Debug Avisos</title>
+    <style>
+        body {
+            background: #0f172a;
+            color: #fff;
+            font-family: monospace;
+            padding: 20px;
+        }
+
+        .card {
+            background: #1e293b;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #334155;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            color: #38bdf8;
+            margin-top: 0;
+        }
+
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background: #2563eb;
+        }
+
+        #log {
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .success {
+            color: #22c55e;
+        }
+
+        .error {
+            color: #ef4444;
+        }
+
+        .warning {
+            color: #f59e0b;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card">
+        <h1>🐞 Debug Avisos & Notificações</h1>
+        <p>Vamos testar se o banco de dados está aceitando avisos e se os índices estão corretos.</p>
+        <div style="display:flex; gap:10px;">
+            <button onclick="runDiagnostics()">INICIAR DIAGNÓSTICO</button>
+            <button onclick="createTestAnnouncement()">CRIAR AVISO TESTE</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>Logs:</h3>
+        <div id="log">Aguardando início...</div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyCqwJ64SjXQf_ekZhRZcF4nN_Fqhwvxi_Q",
+            authDomain: "ecossistema-nep.firebaseapp.com",
+            projectId: "ecossistema-nep",
+            storageBucket: "ecossistema-nep.firebasestorage.app",
+            messagingSenderId: "1041112586342",
+            appId: "1:1041112586342:web:0b7dc02b242cd3dbe635a7"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+
+        function log(msg, type = '') {
+            const el = document.getElementById('log');
+            const color = type === 'error' ? '#ef4444' : type === 'success' ? '#22c55e' : '#cbd5e1';
+            el.innerHTML += `<div style="color:${color}; margin-bottom: 5px;">[${new Date().toLocaleTimeString()}] ${msg}</div>`;
+            el.scrollTop = el.scrollHeight;
+        }
+
+        async function runDiagnostics() {
+            document.getElementById('log').innerHTML = '';
+            log('Iniciando diagnósticos...', 'warning');
+
+            // 1. Auth Check
+            const user = auth.currentUser;
+            if (!user) {
+                log('❌ Usuário não logado! O teste vai falhar. Faça login no sistema primeiro.', 'error');
+                return;
+            }
+            log(`✅ Usuário logado: ${user.email} (${user.uid})`, 'success');
+
+            // 2. Read Announcements (Simulate App Logic)
+            log('Tentando ler avisos (Query com Índice)...');
+            try {
+                const snapshot = await db.collection('announcements')
+                    .where('ativo', '==', true)
+                    .orderBy('created_at', 'desc')
+                    .limit(5)
+                    .get();
+
+                log(`✅ Query executada com sucesso! Encontrados: ${snapshot.size}`, 'success');
+
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    log(`   - [${doc.id}] ${data.titulo} (Alcance: ${data.alcance})`);
+                });
+
+                if (snapshot.size === 0) {
+                    log('⚠️ Nenhum aviso encontrado. Isso é normal se o banco estiver vazio.', 'warning');
+                }
+
+            } catch (e) {
+                log(`❌ ERRO NA LEITURA: ${e.message}`, 'error');
+                if (e.message.includes('index')) {
+                    log('👉 O erro indica falta de índice! Link para criar:', 'warning');
+                    log(e.message); // O link vem na mensagem de erro
+                }
+            }
+
+            // 3. Read Notifications
+            log('Tentando ler notificações...');
+            try {
+                const notifSnap = await db.collection('notifications')
+                    .orderBy('created_at', 'desc')
+                    .limit(5)
+                    .get();
+                log(`✅ Notificações lidas com sucesso: ${notifSnap.size}`, 'success');
+            } catch (e) {
+                log(`❌ Erro notificações: ${e.message}`, 'error');
+            }
+        }
+
+        async function createTestAnnouncement() {
+            log('Tentando criar aviso de teste...');
+            try {
+                const docRef = await db.collection('announcements').add({
+                    titulo: "Aviso de Teste Debug",
+                    conteudo: "Este é um aviso gerado pelo script de diagnóstico.",
+                    alcance: "TODOS",
+                    prioridade: "normal",
+                    autor_uid: auth.currentUser?.uid || 'debug',
+                    autor_nome: auth.currentUser?.email || 'DebugBot',
+                    ativo: true,
+                    lido_por: [],
+                    created_at: firebase.firestore.FieldValue.serverTimestamp(),
+                    updated_at: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                log(`✅ Aviso criado com ID: ${docRef.id}`, 'success');
+                log('👉 Agora rode o Diagnóstico novamente para ver se ele aparece.');
+
+            } catch (e) {
+                log(`❌ ERRO AO CRIAR: ${e.message}`, 'error');
+            }
+        }
+
+        // Auto-run se já estiver logado
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                log('Auth State: Logado', 'success');
+            } else {
+                log('Auth State: Deslogado', 'error');
+            }
+        });
+    </script>
+</body>
+
+</html>

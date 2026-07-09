@@ -1,0 +1,107 @@
+TEMPORADA 0 — EPISÓDIOS INTRODUTÓRIOS
+
+Objetivo: Onboarding estratégico e alinhamento de mindset.
+
+Episódio 0.1 — Transição de Carreira em Qualidade & Dados
+
+Episódio 0.2 — Construção de Perfil Profissional Estratégico
+
+Episódio 0.3 — Roadmap de Estudos e Evolução de Carreira
+
+Episódio 0.4 — Mercado, Tendências e Posicionamento Profissional
+
+TEMPORADA 1 — CX AVANÇADO
+
+Objetivo: Elevar a visão de experiência do cliente para nível analítico e preditivo.
+
+Episódio 1.1 — Jornada do Cliente Data-Driven
+
+Episódio 1.2 — Voz do Cliente (VoC) na Prática
+
+Episódio 1.3 — Métricas Estratégicas de CX
+
+Episódio 1.4 — CX Preditivo e Antecipação de Comportamentos
+
+TEMPORADA 2 — IA APLICADA
+
+Objetivo: Aplicar Inteligência Artificial diretamente na operação de qualidade.
+
+Episódio 2.1 — Fundamentos de IA para Qualidade
+
+Episódio 2.2 — Modelos Preditivos em Operações
+
+Episódio 2.3 — Chatbots, Assistentes e Automação Cognitiva
+
+Episódio 2.4 — Generative AI aplicada a Atendimento e Qualidade
+
+TEMPORADA 3 — FUNDAMENTOS DATA-DRIVEN
+
+Objetivo: Consolidar base analítica sólida para decisões executivas.
+
+Episódio 3.1 — SQL Estratégico para Qualidade
+
+Episódio 3.2 — Estatística Aplicada ao Negócio
+
+Episódio 3.3 — Power BI para Tomada de Decisão
+
+Episódio 3.4 — Visualização de Dados Executiva
+
+TEMPORADA 4 — PYTHON PARA QUALIDADE
+
+Objetivo: Transformar analistas em profissionais de automação e eficiência.
+
+Episódio 4.1 — Python como Alavanca de Performance
+
+Episódio 4.2 — Pandas para Análise de Qualidade
+
+Episódio 4.3 — Web Scraping para Coleta Inteligente
+
+Episódio 4.4 — NLP aplicado a Atendimento e Monitorias
+
+TEMPORADA 5 — SOFT SKILLS DO FUTURO
+
+Objetivo: Desenvolver liderança, influência e pensamento estratégico.
+
+Episódio 5.1 — Storytelling Executivo com Dados
+
+Episódio 5.2 — Pensamento Crítico e Tomada de Decisão
+
+Episódio 5.3 — Liderança Analítica
+
+Episódio 5.4 — Comunicação de Alto Impacto
+
+TEMPORADA 6 — FERRAMENTAS AVANÇADAS
+
+Objetivo: Escalar soluções com integração e automação.
+
+Episódio 6.1 — Power BI Avançado e Arquitetura de Dados
+
+Episódio 6.2 — APIs e Integrações Inteligentes
+
+Episódio 6.3 — No-Code & Low-Code para Qualidade
+
+Episódio 6.4 — Automação de Processos Analíticos
+
+TEMPORADA 7 — PROJETOS PRÁTICOS
+
+Objetivo: Converter conhecimento em entregáveis reais de alto valor.
+
+Episódio 7.1 — Projeto de Churn e Retenção
+
+Episódio 7.2 — Construção de Dashboards Executivos
+
+Episódio 7.3 — Automação de Feedback e Qualidade
+
+Episódio 7.4 — Case Completo de Transformação Analítica
+
+TEMPORADA 8 — FUTURO DA QUALIDADE
+
+Objetivo: Posicionar o profissional na fronteira da inovação.
+
+Episódio 8.1 — Tendências Globais em Qualidade
+
+Episódio 8.2 — IA Avançada e Operações Autônomas
+
+Episódio 8.3 — Qualidade como Ativo Estratégico
+
+Episódio 8.4 — Roadmap Qualidade 2030

@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEP | Depoimentos - Enviar Elogio</title>
+    <link rel="stylesheet" href="css/design-system.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@500;700;900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #020408;
+            color: #f9fafb;
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Animated Background Orbs */
+        .orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.6;
+            animation: float 8s ease-in-out infinite;
+            pointer-events: none;
+        }
+
+        .orb-1 {
+            width: 400px;
+            height: 400px;
+            background: linear-gradient(135deg, #00E0FF, #0097a7);
+            top: -100px;
+            left: -100px;
+            animation-delay: 0s;
+        }
+
+        .orb-2 {
+            width: 350px;
+            height: 350px;
+            background: linear-gradient(135deg, #A855F7, #7c3aed);
+            bottom: -80px;
+            right: -80px;
+            animation-delay: 2s;
+        }
+
+        .orb-3 {
+            width: 250px;
+            height: 250px;
+            background: linear-gradient(135deg, #10B981, #059669);
+            top: 50%;
+            right: 10%;
+            animation-delay: 4s;
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            25% {
+                transform: translate(20px, -30px) scale(1.05);
+            }
+
+            50% {
+                transform: translate(-10px, 20px) scale(0.95);
+            }
+
+            75% {
+                transform: translate(30px, 10px) scale(1.02);
+            }
+        }
+
+        /* Noise overlay for premium feel */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+            opacity: 0.03;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .feedback-container {
+            width: 100%;
+            max-width: 480px;
+            background: rgba(11, 17, 26, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5),
+                0 0 0 1px rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            z-index: 1;
+            animation: scaleIn 0.5s ease-out;
+        }
+
+        @keyframes scaleIn {
+            from {
+                opacity: 0;
+                transform: scale(0.95) translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .feedback-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, #00E0FF, #A855F7, #10B981);
+            border-radius: 24px 24px 0 0;
+        }
+
+        .logo-area {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .logo-text {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #00E0FF, #A855F7);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 2px;
+        }
+
+        .logo-text span {
+            font-weight: 300;
+            font-size: 20px;
+            background: none;
+            -webkit-text-fill-color: #9CA3AF;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            color: #9CA3AF;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .form-input,
+        .form-textarea {
+            width: 100%;
+            padding: 14px 16px;
+            background: rgba(19, 27, 41, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: #f9fafb;
+            font-family: inherit;
+            font-size: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .form-input::placeholder,
+        .form-textarea::placeholder {
+            color: #6B7280;
+        }
+
+        .form-input:focus,
+        .form-textarea:focus {
+            border-color: #00E0FF;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(0, 224, 255, 0.15),
+                0 0 20px rgba(0, 224, 255, 0.1);
+            background: rgba(19, 27, 41, 1);
+        }
+
+        .tags-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .tag-option {
+            padding: 8px 14px;
+            background: rgba(19, 27, 41, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            user-select: none;
+            color: #9CA3AF;
+        }
+
+        .tag-option:hover {
+            border-color: #00E0FF;
+            color: #00E0FF;
+        }
+
+        .tag-option.selected {
+            background: linear-gradient(135deg, rgba(0, 224, 255, 0.2), rgba(168, 85, 247, 0.2));
+            border-color: #00E0FF;
+            color: #00E0FF;
+            box-shadow: 0 0 15px rgba(0, 224, 255, 0.2);
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #00E0FF, #A855F7);
+            color: white;
+            border: none;
+            border-radius: 14px;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 8px;
+            box-shadow: 0 4px 15px rgba(0, 224, 255, 0.3);
+        }
+
+        .btn-submit:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        .btn-submit:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 224, 255, 0.4);
+        }
+
+        .success-message {
+            display: none;
+            text-align: center;
+            padding: 40px 0;
+        }
+
+        .success-icon {
+            font-size: 64px;
+            color: #10B981;
+            margin-bottom: 20px;
+            display: block;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.1);
+            }
+        }
+
+        .success-message h2 {
+            color: #f9fafb;
+            margin-bottom: 10px;
+        }
+    </style>
+
+    <!-- Firebase Compat SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyCqwJ64SjXQf_ekZhRZcF4nN_Fqhwvxi_Q",
+            authDomain: "ecossistema-nep.firebaseapp.com",
+            projectId: "ecossistema-nep",
+            storageBucket: "ecossistema-nep.firebasestorage.app",
+            messagingSenderId: "1041112586342",
+            appId: "1:1041112586342:web:0b7dc02b242cd3dbe635a7"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+    </script>
+</head>
+
+<body>
+    <!-- Animated Background Orbs -->
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+
+    <div class="feedback-container">
+        <div id="form-view">
+            <div class="logo-area">
+                <div class="logo-text">NEP <span
+                        style="font-weight: 300; font-size: 24px; color: var(--text-primary);">| Depoimentos</span>
+                </div>
+                <p style="color: var(--text-secondary); margin-top: 10px;">Reconheça o trabalho incrível de um colega!
+                </p>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Para quem é o elogio? (Nome/Área)</label>
+                <input type="text" id="target" class="form-input" placeholder="Ex: João Silva - TI" required>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Sua Mensagem</label>
+                <textarea id="message" class="form-textarea" rows="4"
+                    placeholder="Descreva o que essa pessoa fez de incrível..." required></textarea>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Competências / Valores (Selecione até 3)</label>
+                <div class="tags-grid" id="tags-container">
+                    <div class="tag-option" onclick="toggleTag(this)">#Inovação</div>
+                    <div class="tag-option" onclick="toggleTag(this)">#TrabalhoEmEquipe</div>
+                    <div class="tag-option" onclick="toggleTag(this)">#FocoNoCliente</div>
+                    <div class="tag-option" onclick="toggleTag(this)">#EntregasRápidas</div>
+                    <div class="tag-option" onclick="toggleTag(this)">#Proatividade</div>
+                    <div class="tag-option" onclick="toggleTag(this)">#Mentoria</div>
+                    <div class="tag-option" onclick="toggleTag(this)">#Resiliência</div>
+                    <div class="tag-option" onclick="toggleTag(this)">#Liderança</div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Seu Nome (Opcional)</label>
+                <input type="text" id="sender" class="form-input" placeholder="Deixe em branco para anônimo">
+            </div>
+
+            <button class="btn-submit" id="btn-submit" onclick="submitFeedback()">
+                <i class="fa-solid fa-paper-plane"></i> Enviar Elogio
+            </button>
+        </div>
+
+        <div id="success-view" class="success-message">
+            <i class="fa-solid fa-circle-check success-icon"></i>
+            <h2>Obrigado!</h2>
+            <p style="color: var(--text-secondary); margin-top: 10px;">Seu elogio foi enviado e está aguardando
+                aprovação da gestão.</p>
+            <p style="color: #f59e0b; font-size: 13px; margin-top: 8px;">⏳ Em breve aparecerá no Mural!</p>
+            <button class="btn-submit"
+                style="margin-top: 30px; background: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border-color);"
+                onclick="resetForm()">
+                Enviar Outro
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const selectedTags = new Set();
+
+        function toggleTag(el) {
+            const tag = el.innerText;
+            if (selectedTags.has(tag)) {
+                selectedTags.delete(tag);
+                el.classList.remove('selected');
+            } else {
+                if (selectedTags.size >= 3) return;
+                selectedTags.add(tag);
+                el.classList.add('selected');
+            }
+        }
+
+        async function submitFeedback() {
+            const btn = document.getElementById('btn-submit');
+            const target = document.getElementById('target').value.trim();
+            const message = document.getElementById('message').value.trim();
+            const sender = document.getElementById('sender').value.trim() || 'Anônimo';
+
+            if (!target || !message) {
+                alert('Por favor, preencha o destinatário e a mensagem.');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Enviando...';
+
+            try {
+                await db.collection('testimonials').add({
+                    toName: target,
+                    message: message,
+                    fromName: sender,
+                    tags: Array.from(selectedTags),
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    origin: 'public',
+                    approved: false, // Pendente de aprovação
+                    public: true
+                });
+
+                // Enviar Notificação de Sistema
+                db.collection('notifications').add({
+                    titulo: 'Novo Elogio Pendente! ⏳',
+                    mensagem: `${sender} enviou um elogio para ${target} - aguardando aprovação.`,
+                    destinatario_uid: 'ALL',
+                    lida: false,
+                    data: firebase.firestore.FieldValue.serverTimestamp(),
+                    tipo: 'sistema',
+                    referencia_tipo: 'testimonials'
+                }).catch(e => console.error('Erro notificação', e));
+
+                document.getElementById('form-view').style.display = 'none';
+                document.getElementById('success-view').style.display = 'block';
+
+            } catch (error) {
+                console.error(error);
+                alert('Erro ao enviar. Tente novamente.');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Enviar Elogio';
+            }
+        }
+
+        function resetForm() {
+            document.getElementById('target').value = '';
+            document.getElementById('message').value = '';
+            document.getElementById('sender').value = '';
+            selectedTags.clear();
+            document.querySelectorAll('.tag-option').forEach(el => el.classList.remove('selected'));
+
+            document.getElementById('success-view').style.display = 'none';
+            document.getElementById('form-view').style.display = 'block';
+
+            const btn = document.getElementById('btn-submit');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Enviar Elogio';
+        }
+    </script>
+</body>
+
+</html>

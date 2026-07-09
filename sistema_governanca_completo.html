@@ -1,0 +1,1557 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Governança - Superintendência Samuel Rosa</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #667eea;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 1.2em;
+        }
+
+        /* Navigation Tabs */
+        .nav-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .tab-button {
+            background: white;
+            color: #667eea;
+            border: none;
+            padding: 15px 25px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+
+        .tab-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 7px 20px rgba(0,0,0,0.15);
+        }
+
+        .tab-button.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .section {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            margin-bottom: 25px;
+        }
+
+        h2 {
+            color: #667eea;
+            font-size: 1.8em;
+            margin-bottom: 20px;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        h3 {
+            color: #764ba2;
+            font-size: 1.4em;
+            margin: 20px 0 15px 0;
+        }
+
+        /* Form Styles */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        input[type="date"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1em;
+            font-family: inherit;
+            transition: border-color 0.3s ease;
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        button[type="submit"],
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        button[type="submit"]:hover,
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 7px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+
+        /* Table Styles */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 0.95em;
+        }
+
+        th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        tr:hover {
+            background: #f5f5f5;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 5px;
+        }
+
+        .btn-edit,
+        .btn-delete {
+            padding: 5px 12px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+
+        .btn-edit {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .btn-delete {
+            background: #f44336;
+            color: white;
+        }
+
+        /* Status Badge */
+        .status-badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+
+        .status-andamento {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-concluido {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-atrasado {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        /* Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .stat-label {
+            font-size: 1em;
+            opacity: 0.9;
+        }
+
+        /* Progress Bar */
+        .progress-bar {
+            width: 100%;
+            height: 25px;
+            background: #e0e0e0;
+            border-radius: 12px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 0.9em;
+            transition: width 0.3s ease;
+        }
+
+        /* Alert Messages */
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .alert.show {
+            display: block;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border-left: 5px solid #28a745;
+        }
+
+        .alert-warning {
+            background: #fff3cd;
+            color: #856404;
+            border-left: 5px solid #ffc107;
+        }
+
+        /* Filters */
+        .filters {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .filter-group {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.8em;
+            }
+
+            h2 {
+                font-size: 1.4em;
+            }
+
+            .nav-tabs {
+                flex-direction: column;
+            }
+
+            .tab-button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Sistema de Governança</h1>
+            <p class="subtitle">Superintendência Samuel Rosa - 2026</p>
+            <p style="margin-top: 10px; color: #764ba2; font-weight: 600;">Antecipar & Diferenciar</p>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <div class="nav-tabs">
+            <button class="tab-button active" onclick="showTab('dashboard')">📊 Dashboard</button>
+            <button class="tab-button" onclick="showTab('okrs')">🎯 Cadastrar OKRs</button>
+            <button class="tab-button" onclick="showTab('cases')">💡 Registrar Cases</button>
+            <button class="tab-button" onclick="showTab('sugestoes')">💭 Sugestões</button>
+            <button class="tab-button" onclick="showTab('elogios')">⭐ Elogios</button>
+            <button class="tab-button" onclick="showTab('rituais')">⏰ Controle de Rituais</button>
+            <button class="tab-button" onclick="showTab('recuperacao')">💰 Recuperação</button>
+        </div>
+
+        <!-- Dashboard Tab -->
+        <div id="dashboard" class="tab-content active">
+            <div class="section">
+                <h2>📊 Dashboard de Indicadores</h2>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-label">OKRs Cadastrados</div>
+                        <div class="stat-number" id="total-okrs">0</div>
+                        <div class="stat-label">Total</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Cases Validados</div>
+                        <div class="stat-number" id="total-cases">0</div>
+                        <div class="stat-label">Este Mês</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Sugestões Aprovadas</div>
+                        <div class="stat-number" id="total-sugestoes">0</div>
+                        <div class="stat-label">Este Mês</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Recuperação Financeira</div>
+                        <div class="stat-number" id="total-recuperacao">R$ 0</div>
+                        <div class="stat-label">Este Mês</div>
+                    </div>
+                </div>
+
+                <h3>Aderência aos Rituais</h3>
+                <div style="margin: 20px 0;">
+                    <label>Agendas Programadas</label>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 0%;" id="progress-agendas">0%</div>
+                    </div>
+
+                    <label style="margin-top: 15px;">Reports de Qualidade</label>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 0%;" id="progress-reports">0%</div>
+                    </div>
+
+                    <label style="margin-top: 15px;">Cumprimento de Prazos</label>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 0%;" id="progress-prazos">0%</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- OKRs Tab -->
+        <div id="okrs" class="tab-content">
+            <div class="section">
+                <h2>🎯 Cadastrar OKRs</h2>
+
+                <div class="alert alert-success" id="alert-okr"></div>
+
+                <form id="form-okr" onsubmit="cadastrarOKR(event)">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Líder Responsável *</label>
+                            <select name="lider" required>
+                                <option value="">Selecione...</option>
+                                <option value="Pedro Almeida">Pedro Almeida (Vivo - Dutra)</option>
+                                <option value="Kathellen Heloisa">Kathellen Heloisa (Vivo - Gisele)</option>
+                                <option value="Luiz Bertoldo">Luiz Bertoldo (Nubank)</option>
+                                <option value="Thyellisson Ayslan">Thyellisson Ayslan (Processos)</option>
+                                <option value="Aleff Dias">Aleff Dias (Dados, IA, Automações)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Período *</label>
+                            <select name="periodo" required>
+                                <option value="">Selecione...</option>
+                                <option value="Q1-2026">Q1 2026</option>
+                                <option value="Q2-2026">Q2 2026</option>
+                                <option value="Q3-2026">Q3 2026</option>
+                                <option value="Q4-2026">Q4 2026</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Objetivo (O) *</label>
+                        <textarea name="objetivo" required placeholder="Qual mudança vamos causar?"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Key Result 1 *</label>
+                        <input type="text" name="kr1" required placeholder="Métrica mensurável">
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Baseline KR1</label>
+                            <input type="text" name="baseline1" placeholder="Média Q4/2025">
+                        </div>
+                        <div class="form-group">
+                            <label>Meta KR1 *</label>
+                            <input type="text" name="meta1" required placeholder="Valor esperado">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Key Result 2</label>
+                        <input type="text" name="kr2" placeholder="Métrica mensurável">
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Baseline KR2</label>
+                            <input type="text" name="baseline2" placeholder="Média Q4/2025">
+                        </div>
+                        <div class="form-group">
+                            <label>Meta KR2</label>
+                            <input type="text" name="meta2" placeholder="Valor esperado">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Key Result 3</label>
+                        <input type="text" name="kr3" placeholder="Métrica mensurável">
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Baseline KR3</label>
+                            <input type="text" name="baseline3" placeholder="Média Q4/2025">
+                        </div>
+                        <div class="form-group">
+                            <label>Meta KR3</label>
+                            <input type="text" name="meta3" placeholder="Valor esperado">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Fonte Oficial dos Dados *</label>
+                            <input type="text" name="fonte" required placeholder="Sistema/painel single source of truth">
+                        </div>
+                        <div class="form-group">
+                            <label>Owner do Indicador *</label>
+                            <input type="text" name="owner" required placeholder="Responsável por validar os dados">
+                        </div>
+                    </div>
+
+                    <button type="submit">💾 Cadastrar OKR</button>
+                </form>
+
+                <h3 style="margin-top: 40px;">OKRs Cadastrados</h3>
+                <table id="table-okrs">
+                    <thead>
+                        <tr>
+                            <th>Líder</th>
+                            <th>Período</th>
+                            <th>Objetivo</th>
+                            <th>KRs</th>
+                            <th>Status</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-okrs">
+                        <tr>
+                            <td colspan="6" style="text-align: center; color: #999;">Nenhum OKR cadastrado ainda</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Cases Tab -->
+        <div id="cases" class="tab-content">
+            <div class="section">
+                <h2>💡 Registrar Cases</h2>
+                <p style="color: #666; margin-bottom: 20px;">Meta: 5 cases/mês validados pela superintendência</p>
+
+                <div class="alert alert-success" id="alert-case"></div>
+
+                <form id="form-case" onsubmit="cadastrarCase(event)">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Responsável *</label>
+                            <select name="responsavel" required>
+                                <option value="">Selecione...</option>
+                                <option value="Pedro Almeida">Pedro Almeida</option>
+                                <option value="Kathellen Heloisa">Kathellen Heloisa</option>
+                                <option value="Luiz Bertoldo">Luiz Bertoldo</option>
+                                <option value="Thyellisson Ayslan">Thyellisson Ayslan</option>
+                                <option value="Aleff Dias">Aleff Dias</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Data *</label>
+                            <input type="date" name="data" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Título do Case *</label>
+                        <input type="text" name="titulo" required placeholder="Nome identificador do case">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Contexto / Problema *</label>
+                        <textarea name="contexto" required placeholder="Qual era a situação ou problema enfrentado?"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Solução Implementada *</label>
+                        <textarea name="solucao" required placeholder="O que foi feito para resolver?"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Resultados e Impacto *</label>
+                        <textarea name="resultados" required placeholder="Quais foram os resultados mensuráveis?"></textarea>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Área de Impacto *</label>
+                            <select name="area" required>
+                                <option value="">Selecione...</option>
+                                <option value="Qualidade">Qualidade</option>
+                                <option value="Performance">Performance</option>
+                                <option value="Processos">Processos</option>
+                                <option value="Inovação">Inovação</option>
+                                <option value="Pessoas">Pessoas</option>
+                                <option value="Financeiro">Financeiro</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Status *</label>
+                            <select name="status" required>
+                                <option value="Aguardando Validação">Aguardando Validação</option>
+                                <option value="Validado">Validado</option>
+                                <option value="Revisão Necessária">Revisão Necessária</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <button type="submit">💾 Registrar Case</button>
+                </form>
+
+                <h3 style="margin-top: 40px;">Cases Registrados</h3>
+                <div class="filters">
+                    <div class="filter-group">
+                        <label>Filtrar por Responsável</label>
+                        <select onchange="filtrarCases(this.value, 'responsavel')">
+                            <option value="">Todos</option>
+                            <option value="Pedro Almeida">Pedro Almeida</option>
+                            <option value="Kathellen Heloisa">Kathellen Heloisa</option>
+                            <option value="Luiz Bertoldo">Luiz Bertoldo</option>
+                            <option value="Thyellisson Ayslan">Thyellisson Ayslan</option>
+                            <option value="Aleff Dias">Aleff Dias</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Filtrar por Status</label>
+                        <select onchange="filtrarCases(this.value, 'status')">
+                            <option value="">Todos</option>
+                            <option value="Validado">Validado</option>
+                            <option value="Aguardando Validação">Aguardando Validação</option>
+                            <option value="Revisão Necessária">Revisão Necessária</option>
+                        </select>
+                    </div>
+                </div>
+                <table id="table-cases">
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Responsável</th>
+                            <th>Título</th>
+                            <th>Área</th>
+                            <th>Status</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-cases">
+                        <tr>
+                            <td colspan="6" style="text-align: center; color: #999;">Nenhum case registrado ainda</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Sugestões Tab -->
+        <div id="sugestoes" class="tab-content">
+            <div class="section">
+                <h2>💭 Registrar Sugestões de Melhoria</h2>
+                <p style="color: #666; margin-bottom: 20px;">Meta: 20 sugestões/mês com ≥70% aprovação do cliente</p>
+
+                <div class="alert alert-success" id="alert-sugestao"></div>
+
+                <form id="form-sugestao" onsubmit="cadastrarSugestao(event)">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Responsável *</label>
+                            <select name="responsavel" required>
+                                <option value="">Selecione...</option>
+                                <option value="Pedro Almeida">Pedro Almeida</option>
+                                <option value="Kathellen Heloisa">Kathellen Heloisa</option>
+                                <option value="Luiz Bertoldo">Luiz Bertoldo</option>
+                                <option value="Thyellisson Ayslan">Thyellisson Ayslan</option>
+                                <option value="Aleff Dias">Aleff Dias</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Data *</label>
+                            <input type="date" name="data" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Título da Sugestão *</label>
+                        <input type="text" name="titulo" required placeholder="Resumo da sugestão">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Descrição Completa *</label>
+                        <textarea name="descricao" required placeholder="Detalhe a sugestão de melhoria"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Impacto Esperado *</label>
+                        <textarea name="impacto" required placeholder="Quais benefícios essa melhoria trará?"></textarea>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Categoria *</label>
+                            <select name="categoria" required>
+                                <option value="">Selecione...</option>
+                                <option value="Processo">Processo</option>
+                                <option value="Tecnologia">Tecnologia</option>
+                                <option value="Qualidade">Qualidade</option>
+                                <option value="Atendimento">Atendimento</option>
+                                <option value="Treinamento">Treinamento</option>
+                                <option value="Outro">Outro</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Prioridade *</label>
+                            <select name="prioridade" required>
+                                <option value="">Selecione...</option>
+                                <option value="Alta">Alta</option>
+                                <option value="Média">Média</option>
+                                <option value="Baixa">Baixa</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Status de Aprovação *</label>
+                            <select name="status" required>
+                                <option value="Aguardando Análise">Aguardando Análise</option>
+                                <option value="Aprovada">Aprovada</option>
+                                <option value="Em Implementação">Em Implementação</option>
+                                <option value="Implementada">Implementada</option>
+                                <option value="Recusada">Recusada</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Cliente/Stakeholder</label>
+                            <input type="text" name="cliente" placeholder="Quem aprovou/solicitou">
+                        </div>
+                    </div>
+
+                    <button type="submit">💾 Registrar Sugestão</button>
+                </form>
+
+                <h3 style="margin-top: 40px;">Sugestões Registradas</h3>
+                <table id="table-sugestoes">
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Responsável</th>
+                            <th>Título</th>
+                            <th>Categoria</th>
+                            <th>Prioridade</th>
+                            <th>Status</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-sugestoes">
+                        <tr>
+                            <td colspan="7" style="text-align: center; color: #999;">Nenhuma sugestão registrada ainda</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Elogios Tab -->
+        <div id="elogios" class="tab-content">
+            <div class="section">
+                <h2>⭐ Registrar Elogios Formais</h2>
+                <p style="color: #666; margin-bottom: 20px;">Meta: 5 elogios formais/mês no NEP Delivery Control</p>
+
+                <div class="alert alert-success" id="alert-elogio"></div>
+
+                <form id="form-elogio" onsubmit="cadastrarElogio(event)">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Responsável pelo Registro *</label>
+                            <select name="responsavel" required>
+                                <option value="">Selecione...</option>
+                                <option value="Pedro Almeida">Pedro Almeida</option>
+                                <option value="Kathellen Heloisa">Kathellen Heloisa</option>
+                                <option value="Luiz Bertoldo">Luiz Bertoldo</option>
+                                <option value="Thyellisson Ayslan">Thyellisson Ayslan</option>
+                                <option value="Aleff Dias">Aleff Dias</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Data do Elogio *</label>
+                            <input type="date" name="data" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Quem Elogiou *</label>
+                            <input type="text" name="autor" required placeholder="Nome e cargo">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Tipo de Elogio *</label>
+                            <select name="tipo" required>
+                                <option value="">Selecione...</option>
+                                <option value="Cliente">Cliente</option>
+                                <option value="Diretoria">Diretoria</option>
+                                <option value="Gerência">Gerência</option>
+                                <option value="Pares">Pares</option>
+                                <option value="Equipe">Equipe</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Motivo do Elogio *</label>
+                        <textarea name="motivo" required placeholder="Pelo que foi elogiado?"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Descrição Completa *</label>
+                        <textarea name="descricao" required placeholder="Detalhe o elogio recebido"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Canal/Evidência</label>
+                        <input type="text" name="canal" placeholder="E-mail, reunião, sistema, etc.">
+                    </div>
+
+                    <button type="submit">💾 Registrar Elogio</button>
+                </form>
+
+                <h3 style="margin-top: 40px;">Elogios Registrados</h3>
+                <table id="table-elogios">
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Responsável</th>
+                            <th>Quem Elogiou</th>
+                            <th>Tipo</th>
+                            <th>Motivo</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-elogios">
+                        <tr>
+                            <td colspan="6" style="text-align: center; color: #999;">Nenhum elogio registrado ainda</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Rituais Tab -->
+        <div id="rituais" class="tab-content">
+            <div class="section">
+                <h2>⏰ Controle de Rituais de Governança</h2>
+
+                <div class="alert alert-success" id="alert-ritual"></div>
+
+                <form id="form-ritual" onsubmit="cadastrarRitual(event)">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Tipo de Ritual *</label>
+                            <select name="tipo" required>
+                                <option value="">Selecione...</option>
+                                <option value="Check-in OKRs">Check-in OKRs (Semanal)</option>
+                                <option value="Carta Controle">Carta Controle (Semanal)</option>
+                                <option value="Report de Qualidade">Report de Qualidade</option>
+                                <option value="Cases e Melhorias">Cases e Melhorias (Mensal)</option>
+                                <option value="Review Trimestral">Review Trimestral</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Responsável *</label>
+                            <select name="responsavel" required>
+                                <option value="">Selecione...</option>
+                                <option value="Pedro Almeida">Pedro Almeida</option>
+                                <option value="Kathellen Heloisa">Kathellen Heloisa</option>
+                                <option value="Luiz Bertoldo">Luiz Bertoldo</option>
+                                <option value="Thyellisson Ayslan">Thyellisson Ayslan</option>
+                                <option value="Aleff Dias">Aleff Dias</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Data Prevista *</label>
+                            <input type="date" name="dataPrevista" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Data Realizada</label>
+                            <input type="date" name="dataRealizada">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Observações</label>
+                        <textarea name="observacoes" placeholder="Principais pontos discutidos, decisões, etc."></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Status *</label>
+                        <select name="status" required>
+                            <option value="Agendado">Agendado</option>
+                            <option value="Realizado">Realizado</option>
+                            <option value="Cancelado">Cancelado</option>
+                            <option value="Remarcado">Remarcado</option>
+                        </select>
+                    </div>
+
+                    <button type="submit">💾 Registrar Ritual</button>
+                </form>
+
+                <h3 style="margin-top: 40px;">Histórico de Rituais</h3>
+                <table id="table-rituais">
+                    <thead>
+                        <tr>
+                            <th>Tipo</th>
+                            <th>Responsável</th>
+                            <th>Data Prevista</th>
+                            <th>Data Realizada</th>
+                            <th>Status</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-rituais">
+                        <tr>
+                            <td colspan="6" style="text-align: center; color: #999;">Nenhum ritual registrado ainda</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Recuperação Tab -->
+        <div id="recuperacao" class="tab-content">
+            <div class="section">
+                <h2>💰 Controle de Recuperação Financeira</h2>
+                <p style="color: #666; margin-bottom: 20px;">Meta: >R$ 300k/mês por unidade</p>
+
+                <div class="alert alert-success" id="alert-recuperacao"></div>
+
+                <form id="form-recuperacao" onsubmit="cadastrarRecuperacao(event)">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Responsável *</label>
+                            <select name="responsavel" required>
+                                <option value="">Selecione...</option>
+                                <option value="Pedro Almeida - Vivo">Pedro Almeida - Vivo</option>
+                                <option value="Kathellen Heloisa - Vivo">Kathellen Heloisa - Vivo</option>
+                                <option value="Luiz Bertoldo - Nubank">Luiz Bertoldo - Nubank</option>
+                                <option value="Aleff Dias - Vivo">Aleff Dias - Vivo</option>
+                                <option value="Aleff Dias - Nubank">Aleff Dias - Nubank</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Mês/Ano *</label>
+                            <input type="month" name="mesAno" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Tipo de Recuperação *</label>
+                            <select name="tipo" required>
+                                <option value="">Selecione...</option>
+                                <option value="Pleito">Pleito</option>
+                                <option value="Qualidade">Qualidade</option>
+                                <option value="Processos">Processos</option>
+                                <option value="Performance">Performance</option>
+                                <option value="Outro">Outro</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Valor Recuperado (R$) *</label>
+                            <input type="number" name="valor" required step="0.01" placeholder="0.00">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Descrição da Recuperação *</label>
+                        <textarea name="descricao" required placeholder="Como o valor foi recuperado?"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Evidências/Comprovação</label>
+                        <input type="text" name="evidencias" placeholder="Link ou referência da evidência">
+                    </div>
+
+                    <button type="submit">💾 Registrar Recuperação</button>
+                </form>
+
+                <h3 style="margin-top: 40px;">Histórico de Recuperações</h3>
+                <div class="stats-grid" style="margin-bottom: 30px;">
+                    <div class="stat-card">
+                        <div class="stat-label">Total Mês Atual</div>
+                        <div class="stat-number" id="recuperacao-mes">R$ 0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Total Acumulado</div>
+                        <div class="stat-number" id="recuperacao-total">R$ 0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Média Mensal</div>
+                        <div class="stat-number" id="recuperacao-media">R$ 0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">% da Meta</div>
+                        <div class="stat-number" id="recuperacao-meta">0%</div>
+                    </div>
+                </div>
+
+                <table id="table-recuperacao">
+                    <thead>
+                        <tr>
+                            <th>Mês/Ano</th>
+                            <th>Responsável</th>
+                            <th>Tipo</th>
+                            <th>Valor (R$)</th>
+                            <th>Descrição</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-recuperacao">
+                        <tr>
+                            <td colspan="6" style="text-align: center; color: #999;">Nenhuma recuperação registrada ainda</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Database simulation using localStorage
+        const DB = {
+            okrs: JSON.parse(localStorage.getItem('okrs') || '[]'),
+            cases: JSON.parse(localStorage.getItem('cases') || '[]'),
+            sugestoes: JSON.parse(localStorage.getItem('sugestoes') || '[]'),
+            elogios: JSON.parse(localStorage.getItem('elogios') || '[]'),
+            rituais: JSON.parse(localStorage.getItem('rituais') || '[]'),
+            recuperacao: JSON.parse(localStorage.getItem('recuperacao') || '[]')
+        };
+
+        // Tab navigation
+        function showTab(tabName) {
+            const tabs = document.querySelectorAll('.tab-content');
+            const buttons = document.querySelectorAll('.tab-button');
+
+            tabs.forEach(tab => tab.classList.remove('active'));
+            buttons.forEach(btn => btn.classList.remove('active'));
+
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+
+            if (tabName === 'dashboard') {
+                updateDashboard();
+            }
+        }
+
+        // Show alert message
+        function showAlert(elementId, message) {
+            const alert = document.getElementById(elementId);
+            alert.textContent = message;
+            alert.classList.add('show');
+            setTimeout(() => alert.classList.remove('show'), 3000);
+        }
+
+        // OKRs Functions
+        function cadastrarOKR(event) {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData(form);
+
+            const okr = {
+                id: Date.now(),
+                lider: formData.get('lider'),
+                periodo: formData.get('periodo'),
+                objetivo: formData.get('objetivo'),
+                kr1: formData.get('kr1'),
+                baseline1: formData.get('baseline1'),
+                meta1: formData.get('meta1'),
+                kr2: formData.get('kr2'),
+                baseline2: formData.get('baseline2'),
+                meta2: formData.get('meta2'),
+                kr3: formData.get('kr3'),
+                baseline3: formData.get('baseline3'),
+                meta3: formData.get('meta3'),
+                fonte: formData.get('fonte'),
+                owner: formData.get('owner'),
+                status: 'Em Andamento',
+                dataCadastro: new Date().toLocaleDateString('pt-BR')
+            };
+
+            DB.okrs.push(okr);
+            localStorage.setItem('okrs', JSON.stringify(DB.okrs));
+
+            renderOKRs();
+            form.reset();
+            showAlert('alert-okr', '✅ OKR cadastrado com sucesso!');
+        }
+
+        function renderOKRs() {
+            const tbody = document.getElementById('tbody-okrs');
+            if (DB.okrs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #999;">Nenhum OKR cadastrado ainda</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = DB.okrs.map(okr => `
+                <tr>
+                    <td>${okr.lider}</td>
+                    <td>${okr.periodo}</td>
+                    <td>${okr.objetivo.substring(0, 50)}...</td>
+                    <td>${okr.kr1}${okr.kr2 ? ', ' + okr.kr2 : ''}${okr.kr3 ? ', ' + okr.kr3 : ''}</td>
+                    <td><span class="status-badge status-andamento">${okr.status}</span></td>
+                    <td class="action-buttons">
+                        <button class="btn-edit" onclick="editarOKR(${okr.id})">✏️ Editar</button>
+                        <button class="btn-delete" onclick="deletarOKR(${okr.id})">🗑️ Excluir</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function deletarOKR(id) {
+            if (confirm('Tem certeza que deseja excluir este OKR?')) {
+                DB.okrs = DB.okrs.filter(okr => okr.id !== id);
+                localStorage.setItem('okrs', JSON.stringify(DB.okrs));
+                renderOKRs();
+            }
+        }
+
+        // Cases Functions
+        function cadastrarCase(event) {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData(form);
+
+            const caso = {
+                id: Date.now(),
+                responsavel: formData.get('responsavel'),
+                data: formData.get('data'),
+                titulo: formData.get('titulo'),
+                contexto: formData.get('contexto'),
+                solucao: formData.get('solucao'),
+                resultados: formData.get('resultados'),
+                area: formData.get('area'),
+                status: formData.get('status')
+            };
+
+            DB.cases.push(caso);
+            localStorage.setItem('cases', JSON.stringify(DB.cases));
+
+            renderCases();
+            form.reset();
+            showAlert('alert-case', '✅ Case registrado com sucesso!');
+        }
+
+        function renderCases() {
+            const tbody = document.getElementById('tbody-cases');
+            if (DB.cases.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #999;">Nenhum case registrado ainda</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = DB.cases.map(caso => `
+                <tr>
+                    <td>${new Date(caso.data).toLocaleDateString('pt-BR')}</td>
+                    <td>${caso.responsavel}</td>
+                    <td>${caso.titulo}</td>
+                    <td>${caso.area}</td>
+                    <td><span class="status-badge ${caso.status === 'Validado' ? 'status-concluido' : 'status-andamento'}">${caso.status}</span></td>
+                    <td class="action-buttons">
+                        <button class="btn-edit" onclick="visualizarCase(${caso.id})">👁️ Ver</button>
+                        <button class="btn-delete" onclick="deletarCase(${caso.id})">🗑️ Excluir</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function deletarCase(id) {
+            if (confirm('Tem certeza que deseja excluir este case?')) {
+                DB.cases = DB.cases.filter(caso => caso.id !== id);
+                localStorage.setItem('cases', JSON.stringify(DB.cases));
+                renderCases();
+            }
+        }
+
+        function visualizarCase(id) {
+            const caso = DB.cases.find(c => c.id === id);
+            if (caso) {
+                alert(`CASE: ${caso.titulo}
+
+Contexto: ${caso.contexto}
+
+Solução: ${caso.solucao}
+
+Resultados: ${caso.resultados}`);
+            }
+        }
+
+        // Sugestões Functions
+        function cadastrarSugestao(event) {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData(form);
+
+            const sugestao = {
+                id: Date.now(),
+                responsavel: formData.get('responsavel'),
+                data: formData.get('data'),
+                titulo: formData.get('titulo'),
+                descricao: formData.get('descricao'),
+                impacto: formData.get('impacto'),
+                categoria: formData.get('categoria'),
+                prioridade: formData.get('prioridade'),
+                status: formData.get('status'),
+                cliente: formData.get('cliente')
+            };
+
+            DB.sugestoes.push(sugestao);
+            localStorage.setItem('sugestoes', JSON.stringify(DB.sugestoes));
+
+            renderSugestoes();
+            form.reset();
+            showAlert('alert-sugestao', '✅ Sugestão registrada com sucesso!');
+        }
+
+        function renderSugestoes() {
+            const tbody = document.getElementById('tbody-sugestoes');
+            if (DB.sugestoes.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #999;">Nenhuma sugestão registrada ainda</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = DB.sugestoes.map(sug => `
+                <tr>
+                    <td>${new Date(sug.data).toLocaleDateString('pt-BR')}</td>
+                    <td>${sug.responsavel}</td>
+                    <td>${sug.titulo}</td>
+                    <td>${sug.categoria}</td>
+                    <td>${sug.prioridade}</td>
+                    <td><span class="status-badge ${sug.status === 'Aprovada' || sug.status === 'Implementada' ? 'status-concluido' : 'status-andamento'}">${sug.status}</span></td>
+                    <td class="action-buttons">
+                        <button class="btn-edit" onclick="visualizarSugestao(${sug.id})">👁️ Ver</button>
+                        <button class="btn-delete" onclick="deletarSugestao(${sug.id})">🗑️ Excluir</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function deletarSugestao(id) {
+            if (confirm('Tem certeza que deseja excluir esta sugestão?')) {
+                DB.sugestoes = DB.sugestoes.filter(sug => sug.id !== id);
+                localStorage.setItem('sugestoes', JSON.stringify(DB.sugestoes));
+                renderSugestoes();
+            }
+        }
+
+        function visualizarSugestao(id) {
+            const sug = DB.sugestoes.find(s => s.id === id);
+            if (sug) {
+                alert(`SUGESTÃO: ${sug.titulo}
+
+Descrição: ${sug.descricao}
+
+Impacto: ${sug.impacto}
+
+Status: ${sug.status}`);
+            }
+        }
+
+        // Elogios Functions
+        function cadastrarElogio(event) {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData(form);
+
+            const elogio = {
+                id: Date.now(),
+                responsavel: formData.get('responsavel'),
+                data: formData.get('data'),
+                autor: formData.get('autor'),
+                tipo: formData.get('tipo'),
+                motivo: formData.get('motivo'),
+                descricao: formData.get('descricao'),
+                canal: formData.get('canal')
+            };
+
+            DB.elogios.push(elogio);
+            localStorage.setItem('elogios', JSON.stringify(DB.elogios));
+
+            renderElogios();
+            form.reset();
+            showAlert('alert-elogio', '✅ Elogio registrado com sucesso!');
+        }
+
+        function renderElogios() {
+            const tbody = document.getElementById('tbody-elogios');
+            if (DB.elogios.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #999;">Nenhum elogio registrado ainda</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = DB.elogios.map(elogio => `
+                <tr>
+                    <td>${new Date(elogio.data).toLocaleDateString('pt-BR')}</td>
+                    <td>${elogio.responsavel}</td>
+                    <td>${elogio.autor}</td>
+                    <td>${elogio.tipo}</td>
+                    <td>${elogio.motivo.substring(0, 50)}...</td>
+                    <td class="action-buttons">
+                        <button class="btn-edit" onclick="visualizarElogio(${elogio.id})">👁️ Ver</button>
+                        <button class="btn-delete" onclick="deletarElogio(${elogio.id})">🗑️ Excluir</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function deletarElogio(id) {
+            if (confirm('Tem certeza que deseja excluir este elogio?')) {
+                DB.elogios = DB.elogios.filter(e => e.id !== id);
+                localStorage.setItem('elogios', JSON.stringify(DB.elogios));
+                renderElogios();
+            }
+        }
+
+        function visualizarElogio(id) {
+            const elogio = DB.elogios.find(e => e.id === id);
+            if (elogio) {
+                alert(`ELOGIO de ${elogio.autor}
+
+Motivo: ${elogio.motivo}
+
+Descrição: ${elogio.descricao}`);
+            }
+        }
+
+        // Rituais Functions
+        function cadastrarRitual(event) {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData(form);
+
+            const ritual = {
+                id: Date.now(),
+                tipo: formData.get('tipo'),
+                responsavel: formData.get('responsavel'),
+                dataPrevista: formData.get('dataPrevista'),
+                dataRealizada: formData.get('dataRealizada'),
+                observacoes: formData.get('observacoes'),
+                status: formData.get('status')
+            };
+
+            DB.rituais.push(ritual);
+            localStorage.setItem('rituais', JSON.stringify(DB.rituais));
+
+            renderRituais();
+            form.reset();
+            showAlert('alert-ritual', '✅ Ritual registrado com sucesso!');
+        }
+
+        function renderRituais() {
+            const tbody = document.getElementById('tbody-rituais');
+            if (DB.rituais.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #999;">Nenhum ritual registrado ainda</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = DB.rituais.map(ritual => `
+                <tr>
+                    <td>${ritual.tipo}</td>
+                    <td>${ritual.responsavel}</td>
+                    <td>${new Date(ritual.dataPrevista).toLocaleDateString('pt-BR')}</td>
+                    <td>${ritual.dataRealizada ? new Date(ritual.dataRealizada).toLocaleDateString('pt-BR') : '-'}</td>
+                    <td><span class="status-badge ${ritual.status === 'Realizado' ? 'status-concluido' : 'status-andamento'}">${ritual.status}</span></td>
+                    <td class="action-buttons">
+                        <button class="btn-edit" onclick="editarRitual(${ritual.id})">✏️ Editar</button>
+                        <button class="btn-delete" onclick="deletarRitual(${ritual.id})">🗑️ Excluir</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function deletarRitual(id) {
+            if (confirm('Tem certeza que deseja excluir este ritual?')) {
+                DB.rituais = DB.rituais.filter(r => r.id !== id);
+                localStorage.setItem('rituais', JSON.stringify(DB.rituais));
+                renderRituais();
+            }
+        }
+
+        // Recuperação Functions
+        function cadastrarRecuperacao(event) {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData(form);
+
+            const recuperacao = {
+                id: Date.now(),
+                responsavel: formData.get('responsavel'),
+                mesAno: formData.get('mesAno'),
+                tipo: formData.get('tipo'),
+                valor: parseFloat(formData.get('valor')),
+                descricao: formData.get('descricao'),
+                evidencias: formData.get('evidencias')
+            };
+
+            DB.recuperacao.push(recuperacao);
+            localStorage.setItem('recuperacao', JSON.stringify(DB.recuperacao));
+
+            renderRecuperacao();
+            updateRecuperacaoStats();
+            form.reset();
+            showAlert('alert-recuperacao', '✅ Recuperação registrada com sucesso!');
+        }
+
+        function renderRecuperacao() {
+            const tbody = document.getElementById('tbody-recuperacao');
+            if (DB.recuperacao.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #999;">Nenhuma recuperação registrada ainda</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = DB.recuperacao.map(rec => `
+                <tr>
+                    <td>${rec.mesAno}</td>
+                    <td>${rec.responsavel}</td>
+                    <td>${rec.tipo}</td>
+                    <td>R$ ${rec.valor.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
+                    <td>${rec.descricao.substring(0, 50)}...</td>
+                    <td class="action-buttons">
+                        <button class="btn-delete" onclick="deletarRecuperacao(${rec.id})">🗑️ Excluir</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function deletarRecuperacao(id) {
+            if (confirm('Tem certeza que deseja excluir esta recuperação?')) {
+                DB.recuperacao = DB.recuperacao.filter(r => r.id !== id);
+                localStorage.setItem('recuperacao', JSON.stringify(DB.recuperacao));
+                renderRecuperacao();
+                updateRecuperacaoStats();
+            }
+        }
+
+        function updateRecuperacaoStats() {
+            const hoje = new Date();
+            const mesAtual = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`;
+
+            const recuperacaoMes = DB.recuperacao
+                .filter(r => r.mesAno === mesAtual)
+                .reduce((acc, r) => acc + r.valor, 0);
+
+            const recuperacaoTotal = DB.recuperacao.reduce((acc, r) => acc + r.valor, 0);
+
+            const mesesUnicos = [...new Set(DB.recuperacao.map(r => r.mesAno))].length;
+            const recuperacaoMedia = mesesUnicos > 0 ? recuperacaoTotal / mesesUnicos : 0;
+
+            const meta = 300000;
+            const percentualMeta = (recuperacaoMes / meta) * 100;
+
+            document.getElementById('recuperacao-mes').textContent = 
+                `R$ ${recuperacaoMes.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+            document.getElementById('recuperacao-total').textContent = 
+                `R$ ${recuperacaoTotal.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+            document.getElementById('recuperacao-media').textContent = 
+                `R$ ${recuperacaoMedia.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+            document.getElementById('recuperacao-meta').textContent = 
+                `${percentualMeta.toFixed(1)}%`;
+        }
+
+        // Dashboard Functions
+        function updateDashboard() {
+            document.getElementById('total-okrs').textContent = DB.okrs.length;
+
+            const hoje = new Date();
+            const mesAtual = hoje.getMonth();
+            const anoAtual = hoje.getFullYear();
+
+            const casesEsteMes = DB.cases.filter(c => {
+                const dataCaso = new Date(c.data);
+                return dataCaso.getMonth() === mesAtual && 
+                       dataCaso.getFullYear() === anoAtual &&
+                       c.status === 'Validado';
+            }).length;
+            document.getElementById('total-cases').textContent = casesEsteMes;
+
+            const sugestoesAprovadas = DB.sugestoes.filter(s => {
+                const dataSugestao = new Date(s.data);
+                return dataSugestao.getMonth() === mesAtual && 
+                       dataSugestao.getFullYear() === anoAtual &&
+                       (s.status === 'Aprovada' || s.status === 'Implementada');
+            }).length;
+            document.getElementById('total-sugestoes').textContent = sugestoesAprovadas;
+
+            const mesAnoAtual = `${anoAtual}-${String(mesAtual + 1).padStart(2, '0')}`;
+            const recuperacaoMes = DB.recuperacao
+                .filter(r => r.mesAno === mesAnoAtual)
+                .reduce((acc, r) => acc + r.valor, 0);
+            document.getElementById('total-recuperacao').textContent = 
+                `R$ ${recuperacaoMes.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+
+            // Update progress bars
+            const rituaisRealizados = DB.rituais.filter(r => r.status === 'Realizado').length;
+            const rituaisTotal = DB.rituais.length;
+            const aderenciaRituais = rituaisTotal > 0 ? (rituaisRealizados / rituaisTotal) * 100 : 0;
+
+            updateProgressBar('progress-agendas', aderenciaRituais);
+            updateProgressBar('progress-reports', aderenciaRituais);
+            updateProgressBar('progress-prazos', aderenciaRituais);
+        }
+
+        function updateProgressBar(id, value) {
+            const element = document.getElementById(id);
+            element.style.width = `${value}%`;
+            element.textContent = `${value.toFixed(1)}%`;
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            renderOKRs();
+            renderCases();
+            renderSugestoes();
+            renderElogios();
+            renderRituais();
+            renderRecuperacao();
+            updateRecuperacaoStats();
+            updateDashboard();
+
+            // Set default date to today
+            document.querySelectorAll('input[type="date"]').forEach(input => {
+                if (!input.value) {
+                    input.value = new Date().toISOString().split('T')[0];
+                }
+            });
+        });
+    </script>
+</body>
+</html>

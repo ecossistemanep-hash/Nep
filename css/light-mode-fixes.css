@@ -1,0 +1,485 @@
+/* =========================================
+   LIGHT MODE FIXES - CORREÇÃO GLOBAL
+   Sobrescreve estilos hardcoded para dark mode
+   ========================================= */
+
+/* =========================================
+   DASHBOARD - Light Mode
+   ========================================= */
+[data-theme="light"] .kpi-card,
+[data-theme="light"] .dash-section,
+[data-theme="light"] .dashboard-card,
+[data-theme="light"] .dashboard-section {
+    background: var(--surface-card) !important;
+    border-color: var(--surface-border) !important;
+    color: var(--text-primary) !important;
+}
+
+[data-theme="light"] .kpi-card:hover,
+[data-theme="light"] .dash-section:hover {
+    border-color: var(--primary-500) !important;
+}
+
+[data-theme="light"] .kpi-value,
+[data-theme="light"] .kpi-label,
+[data-theme="light"] .section-title {
+    color: var(--text-primary) !important;
+}
+
+[data-theme="light"] .dash-subtitle {
+    color: var(--text-secondary) !important;
+}
+
+/* =========================================
+   SCORING / RANKING - Light Mode
+   ========================================= */
+[data-theme="light"] .scoring-header,
+[data-theme="light"] .level-progress-section,
+[data-theme="light"] .scoring-tab,
+[data-theme="light"] .podium-item,
+[data-theme="light"] .ranking-row,
+[data-theme="light"] .history-item,
+[data-theme="light"] .achievement-card {
+    background: var(--surface-card) !important;
+    border-color: var(--surface-border) !important;
+    color: var(--text-primary) !important;
+}
+
+[data-theme="light"] .level-progress-bar {
+    background: var(--surface-elevated) !important;
+}
+
+[data-theme="light"] .scoring-tab.active {
+    background: var(--surface-elevated) !important;
+    border-color: var(--primary-500) !important;
+}
+
+[data-theme="light"] .ranking-row:hover,
+[data-theme="light"] .history-item:hover {
+    background: var(--surface-hover) !important;
+}
+
+/* =========================================
+   OKR MANAGEMENT - Light Mode
+   ========================================= */
+[data-theme="light"] .okr-kpi-card,
+[data-theme="light"] .delivery-card,
+[data-theme="light"] .okr-section,
+[data-theme="light"] [style*="background:#1e293b"],
+[data-theme="light"] [style*="background: #1e293b"],
+[data-theme="light"] [style*="background:#0f172a"],
+[data-theme="light"] [style*="background: #0f172a"] {
+    background: var(--surface-card) !important;
+    border-color: var(--surface-border) !important;
+}
+
+[data-theme="light"] .modal-content {
+    background: var(--surface-card) !important;
+    border-color: var(--surface-border) !important;
+    color: var(--text-primary) !important;
+}
+
+[data-theme="light"] .modal-header,
+[data-theme="light"] .modal-footer {
+    border-color: var(--surface-border) !important;
+}
+
+/* =========================================
+   KANBAN CARDS - Light Mode
+   ========================================= */
+[data-theme="light"] .card,
+[data-theme="light"] .kanban-card,
+[data-theme="light"] .task-card {
+    background: var(--surface-card) !important;
+    border-color: var(--surface-border) !important;
+    color: var(--text-primary) !important;
+    box-shadow: var(--shadow-md) !important;
+}
+
+[data-theme="light"] .card:hover,
+[data-theme="light"] .kanban-card:hover {
+    background: var(--surface-hover) !important;
+    border-color: var(--primary-500) !important;
+}
+
+[data-theme="light"] .card .tag,
+[data-theme="light"] .card-header .tag {
+    background: var(--surface-elevated) !important;
+    color: var(--text-secondary) !important;
+}
+
+[data-theme="light"] .card-title,
+[data-theme="light"] .task-title {
+    color: var(--text-primary) !important;
+}
+
+[data-theme="light"] .card-meta,
+[data-theme="light"] .card-info,
+[data-theme="light"] .task-meta {
+    color: var(--text-secondary) !important;
+}
+
+[data-theme="light"] .board-col,
+[data-theme="light"] .track {
+    background: var(--surface-elevated) !important;
+    border-color: var(--surface-border) !important;
+}
+
+[data-theme="light"] .col-header {
+    background: var(--surface-card) !important;
+}
+
+/* =========================================
+   PROFILE - Light Mode
+   ========================================= */
+[data-theme="light"] .profile-section,
+[data-theme="light"] .profile-card,
+[data-theme="light"] .quick-card,
+[data-theme="light"] .hierarchy-item,
+[data-theme="light"] .achievement-card,
+[data-theme="light"] .history-item {
+    background: var(--surface-card) !important;
+    border-color: var(--surface-border) !important;
+    color: var(--text-primary) !important;
+}
+
+[data-theme="light"] .hierarchy-item.current {
+    background: rgba(47, 111, 237, 0.1) !important;
+    border-color: var(--primary-500) !important;
+}
+
+[data-theme="light"] .level-detail-card {
+    background: var(--surface-elevated) !important;
+}
+
+[data-theme="light"] .level-progress-bar,
+[data-theme="light"] .score-bar {
+    background: var(--surface-elevated) !important;
+}
+
+/* =========================================
+   CALENDAR / AGENDAS - Light Mode
+   ========================================= */
+[data-theme="light"] .ea-section,
+[data-theme="light"] .ea-card,
+[data-theme="light"] .agenda-card,
+[data-theme="light"] .event-card {
+    background: var(--surface-card) !important;
+    border-color: var(--surface-border) !important;
+    color: var(--text-primary) !important;
+}
+
+[data-theme="light"] .ea-card-header,
+[data-theme="light"] .ea-card-body {
+    color: var(--text-primary) !important;
+}
+
+/* =========================================
+   FORUM - Light Mode
+   ========================================= */
+[data-theme="light"] .forum-post,
+[data-theme="light"] .forum-card,
+[data-theme="light"] .reply-card,
+[data-theme="light"] .topic-card {
+    background: var(--surface-card) !important;
+    border-color: var(--surface-border) !important;
+    color: var(--text-primary) !important;
+}
+
+[data-theme="light"] .forum-post:hover,
+[data-theme="light"] .topic-card:hover {
+    background: var(--surface-hover) !important;
+}
+
+/* =========================================
+   COURSES - Light Mode
+   ========================================= */
+[data-theme="light"] .course-card,
+[data-theme="light"] .module-card,
+[data-theme="light"] .lesson-item {
+    background: var(--surface-card) !important;
+    border-color: var(--surface-border) !important;
+    color: var(--text-primary) !important;
+}
+
+/* =========================================
+   VACATION - Light Mode
+   ========================================= */
+[data-theme="light"] .vacation-card,
+[data-theme="light"] .vacation-row,
+[data-theme="light"] .vacation-table {
+    background: var(--surface-card) !important;
+    border-color: var(--surface-border) !important;
+    color: var(--text-primary) !important;
+}
+
+[data-theme="light"] .vacation-table th,
+[data-theme="light"] .vacation-table td {
+    border-color: var(--surface-border) !important;
+}
+
+/* =========================================
+   TOOLS - Light Mode
+   ========================================= */
+[data-theme="light"] .tool-card,
+[data-theme="light"] .tools-section,
+[data-theme="light"] .tool-modal-body {
+    background: var(--surface-card) !important;
+    border-color: var(--surface-border) !important;
+    color: var(--text-primary) !important;
+}
+
+[data-theme="light"] .tool-card:hover {
+    background: var(--surface-hover) !important;
+}
+
+/* =========================================
+   REPORTS - Light Mode
+   ========================================= */
+[data-theme="light"] .report-card,
+[data-theme="light"] .report-section,
+[data-theme="light"] .chart-container {
+    background: var(--surface-card) !important;
+    border-color: var(--surface-border) !important;
+    color: var(--text-primary) !important;
+}
+
+/* =========================================
+   ESTAGIÁRIO IA - Light Mode
+   ========================================= */
+[data-theme="light"] .chat-container,
+[data-theme="light"] .message-bubble,
+[data-theme="light"] .ai-response {
+    background: var(--surface-card) !important;
+    border-color: var(--surface-border) !important;
+}
+
+[data-theme="light"] .user-message {
+    background: var(--primary-100) !important;
+    color: var(--text-primary) !important;
+}
+
+[data-theme="light"] .ai-message {
+    background: var(--surface-elevated) !important;
+    color: var(--text-primary) !important;
+}
+
+/* =========================================
+   ANNOUNCEMENTS - Light Mode
+   ========================================= */
+[data-theme="light"] .announcement-card,
+[data-theme="light"] .aviso-card {
+    background: var(--surface-card) !important;
+    border-color: var(--surface-border) !important;
+    color: var(--text-primary) !important;
+}
+
+/* =========================================
+   CHECKLIST - Light Mode
+   ========================================= */
+[data-theme="light"] .checklist-item,
+[data-theme="light"] .routine-card {
+    background: var(--surface-card) !important;
+    border-color: var(--surface-border) !important;
+    color: var(--text-primary) !important;
+}
+
+[data-theme="light"] .checklist-item:hover {
+    background: var(--surface-hover) !important;
+}
+
+/* =========================================
+   NEP HELP CHATBOT - Light Mode
+   ========================================= */
+[data-theme="light"] #nep-help-container,
+[data-theme="light"] .nep-help-chat {
+    background: var(--surface-card) !important;
+    border-color: var(--surface-border) !important;
+}
+
+[data-theme="light"] .nep-help-header {
+    background: linear-gradient(135deg, var(--primary-500), var(--primary-600)) !important;
+}
+
+[data-theme="light"] .nep-help-message.bot {
+    background: var(--surface-elevated) !important;
+    color: var(--text-primary) !important;
+}
+
+[data-theme="light"] .nep-help-message.user {
+    background: var(--primary-500) !important;
+}
+
+[data-theme="light"] .nep-help-input-container {
+    background: var(--surface-card) !important;
+    border-color: var(--surface-border) !important;
+}
+
+[data-theme="light"] .nep-help-input {
+    background: var(--surface-elevated) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--surface-border) !important;
+}
+
+/* =========================================
+   FORMS & INPUTS - Light Mode
+   ========================================= */
+[data-theme="light"] input,
+[data-theme="light"] select,
+[data-theme="light"] textarea,
+[data-theme="light"] .form-input,
+[data-theme="light"] .form-select {
+    background: var(--surface-card) !important;
+    border-color: var(--surface-border) !important;
+    color: var(--text-primary) !important;
+}
+
+[data-theme="light"] input:focus,
+[data-theme="light"] select:focus,
+[data-theme="light"] textarea:focus {
+    border-color: var(--primary-500) !important;
+}
+
+[data-theme="light"] input::placeholder,
+[data-theme="light"] textarea::placeholder {
+    color: var(--text-tertiary) !important;
+}
+
+/* =========================================
+   SIDEBAR & HEADER - Light Mode
+   ========================================= */
+[data-theme="light"] .sidebar {
+    background: var(--surface-card) !important;
+    border-color: var(--surface-border) !important;
+}
+
+[data-theme="light"] .nav-item {
+    color: var(--text-secondary) !important;
+}
+
+[data-theme="light"] .nav-item:hover {
+    background: var(--surface-hover) !important;
+    color: var(--text-primary) !important;
+}
+
+[data-theme="light"] .nav-item.active {
+    background: var(--primary-500) !important;
+    color: white !important;
+}
+
+[data-theme="light"] .nav-section-title {
+    color: var(--text-tertiary) !important;
+}
+
+[data-theme="light"] .topbar,
+[data-theme="light"] .top-bar,
+[data-theme="light"] .header {
+    background: var(--surface-card) !important;
+    border-color: var(--surface-border) !important;
+}
+
+[data-theme="light"] .search-box,
+[data-theme="light"] .search-input {
+    background: var(--surface-elevated) !important;
+    border-color: var(--surface-border) !important;
+    color: var(--text-primary) !important;
+}
+
+/* =========================================
+   MODALS & DROPDOWNS - Light Mode
+   ========================================= */
+[data-theme="light"] .modal-backdrop {
+    background: rgba(0, 0, 0, 0.5) !important;
+}
+
+[data-theme="light"] .dropdown-menu,
+[data-theme="light"] .notifications-dropdown {
+    background: var(--surface-card) !important;
+    border-color: var(--surface-border) !important;
+}
+
+[data-theme="light"] .dropdown-item:hover,
+[data-theme="light"] .notif-item:hover {
+    background: var(--surface-hover) !important;
+}
+
+[data-theme="light"] .notif-item.unread {
+    background: rgba(47, 111, 237, 0.05) !important;
+}
+
+/* =========================================
+   BUTTONS - Light Mode adjustments
+   ========================================= */
+[data-theme="light"] .btn-ghost,
+[data-theme="light"] .btn-secondary {
+    background: var(--surface-elevated) !important;
+    border-color: var(--surface-border) !important;
+    color: var(--text-primary) !important;
+}
+
+[data-theme="light"] .btn-ghost:hover,
+[data-theme="light"] .btn-secondary:hover {
+    background: var(--surface-hover) !important;
+}
+
+/* =========================================
+   TEXT COLORS - Ensure readability
+   ========================================= */
+[data-theme="light"] .text-primary,
+[data-theme="light"] h1,
+[data-theme="light"] h2,
+[data-theme="light"] h3,
+[data-theme="light"] h4,
+[data-theme="light"] h5,
+[data-theme="light"] h6 {
+    color: var(--text-primary) !important;
+}
+
+[data-theme="light"] .text-secondary,
+[data-theme="light"] .text-muted,
+[data-theme="light"] .meta-text {
+    color: var(--text-secondary) !important;
+}
+
+[data-theme="light"] p,
+[data-theme="light"] span:not([class*="badge"]):not([class*="tag"]):not([class*="icon"]) {
+    color: var(--text-primary);
+}
+
+/* =========================================
+   LOADING SPINNERS - Light Mode
+   ========================================= */
+[data-theme="light"] .loading-spinner i,
+[data-theme="light"] .spinner {
+    color: var(--primary-500) !important;
+}
+
+/* =========================================
+   BANNER PICKER - Light Mode
+   ========================================= */
+[data-theme="light"] .banner-picker-content {
+    background: var(--surface-card) !important;
+    border-color: var(--surface-border) !important;
+}
+
+[data-theme="light"] .banner-picker-header h3 {
+    color: var(--text-primary) !important;
+}
+
+/* =========================================
+   TABLES - Light Mode
+   ========================================= */
+[data-theme="light"] table,
+[data-theme="light"] th,
+[data-theme="light"] td {
+    border-color: var(--surface-border) !important;
+}
+
+[data-theme="light"] th {
+    background: var(--surface-elevated) !important;
+    color: var(--text-primary) !important;
+}
+
+[data-theme="light"] tr:hover td {
+    background: var(--surface-hover) !important;
+}

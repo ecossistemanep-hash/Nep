@@ -1,0 +1,1587 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEP Delivery Control - Governança de Qualidade</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* ==================== FONTES ==================== */
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Inter:wght@300;400;500;600;700&display=swap');
+
+        /* ==================== RESET & VARIÁVEIS ==================== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            /* Identidade Visual: Corporate Tech (Blue/Slate) */
+            --primary: #38bdf8;
+            /* Azul Sky (Foco) */
+            --secondary: #6366f1;
+            /* Indigo (Profundidade) */
+            --accent: #0ea5e9;
+            /* Azul Corporativo */
+
+            --success: #10b981;
+            /* Verde Emerald (Aprovado) */
+            --danger: #ef4444;
+            /* Vermelho (Bloqueio/Erro) */
+            --warning: #f59e0b;
+            /* Laranja (Atenção) */
+
+            --bg-dark: #0f172a;
+            /* Slate 900 (Fundo Principal) */
+            --bg-darker: #020617;
+            /* Slate 950 (Fundo Secundário) */
+
+            --glass-bg: rgba(15, 23, 42, 0.85);
+            /* Mais opaco para leitura */
+            --glass-border: rgba(56, 189, 248, 0.1);
+            --glass-highlight: rgba(56, 189, 248, 0.2);
+
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --text-dim: #64748b;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-main);
+            overflow-x: hidden;
+            scroll-behavior: smooth;
+            -webkit-font-smoothing: antialiased;
+            text-rendering: optimizeLegibility;
+        }
+
+        /* ==================== BACKGROUND ANIMADO ==================== */
+        .bg-fixed {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: radial-gradient(circle at 50% 0%, #1e293b 0%, #020617 100%);
+        }
+
+        .particles {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: var(--primary);
+            opacity: 0.2;
+            animation: float linear infinite;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(100vh) translateX(0);
+                opacity: 0;
+            }
+
+            20% {
+                opacity: 0.3;
+            }
+
+            80% {
+                opacity: 0.3;
+            }
+
+            100% {
+                transform: translateY(-100px) translateX(50px);
+                opacity: 0;
+            }
+        }
+
+        /* ==================== UTILITÁRIOS & ANIMAÇÕES ==================== */
+        section {
+            padding: 6rem 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+        }
+
+        .orbitron {
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .fade-in {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.8s cubic-bezier(0.5, 0, 0, 1);
+        }
+
+        .fade-in.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 5rem;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .section-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            font-weight: 700;
+            background: linear-gradient(135deg, #fff 0%, var(--primary) 100%);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 1rem;
+        }
+
+        .section-subtitle {
+            font-size: 1.2rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        /* ==================== COMPONENTES UI ==================== */
+        /* Botões */
+        .btn {
+            padding: 1rem 2.5rem;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-family: 'Orbitron', sans-serif;
+            position: relative;
+            overflow: hidden;
+            border: none;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: var(--bg-darker);
+            box-shadow: 0 0 20px rgba(56, 189, 248, 0.3);
+        }
+
+        .btn-primary:hover {
+            background: #fff;
+            box-shadow: 0 0 40px rgba(56, 189, 248, 0.6);
+            transform: translateY(-3px);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            border: 1px solid var(--primary);
+            color: var(--primary);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(56, 189, 248, 0.1);
+            transform: translateY(-3px);
+        }
+
+        /* Cards Glass (Centralizados) */
+        .glass-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 2.5rem;
+            backdrop-filter: blur(12px);
+            transition: all 0.4s ease;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            height: 100%;
+        }
+
+        .glass-card:hover {
+            transform: translateY(-10px);
+            border-color: var(--primary);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+        }
+
+        /* ==================== HERO SECTION ==================== */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding-top: 0;
+            text-align: center;
+        }
+
+        .hero-badge {
+            display: inline-block;
+            padding: 0.5rem 1.5rem;
+            border-radius: 50px;
+            background: rgba(56, 189, 248, 0.1);
+            border: 1px solid var(--glass-border);
+            color: var(--primary);
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 2rem;
+            letter-spacing: 2px;
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .hero-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(3rem, 7vw, 6rem);
+            font-weight: 900;
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+            text-transform: uppercase;
+            color: #fff;
+            text-shadow: 0 0 30px rgba(56, 189, 248, 0.4);
+            animation: pulseGlow 3s infinite alternate;
+        }
+
+        @keyframes pulseGlow {
+            from {
+                text-shadow: 0 0 20px rgba(56, 189, 248, 0.2);
+            }
+
+            to {
+                text-shadow: 0 0 50px rgba(56, 189, 248, 0.6);
+            }
+        }
+
+        .hero-desc {
+            font-size: 1.25rem;
+            color: var(--text-muted);
+            max-width: 800px;
+            margin: 0 auto 3rem;
+            line-height: 1.8;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            margin-top: 5rem;
+            width: 100%;
+            max-width: 1200px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--glass-border);
+            padding: 2rem;
+            border-radius: 15px;
+            transition: 0.3s;
+            text-align: center;
+        }
+
+        .stat-card:hover {
+            background: rgba(56, 189, 248, 0.05);
+            border-color: var(--primary);
+        }
+
+        .stat-number {
+            font-family: 'Orbitron';
+            font-size: 3rem;
+            font-weight: 700;
+            color: var(--primary);
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+        }
+
+        /* ==================== TIMELINE (JORNADA) ==================== */
+        .timeline {
+            position: relative;
+            padding: 2rem 0;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 2px;
+            height: 100%;
+            background: linear-gradient(180deg, transparent, var(--primary), transparent);
+        }
+
+        .timeline-item {
+            display: flex;
+            margin-bottom: 4rem;
+            position: relative;
+        }
+
+        .timeline-item:nth-child(even) {
+            flex-direction: row-reverse;
+        }
+
+        .timeline-content {
+            flex: 1;
+            padding: 2.5rem;
+            background: var(--bg-darker);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            margin: 0 3rem;
+            position: relative;
+            transition: all 0.3s;
+        }
+
+        .timeline-content:hover {
+            border-color: var(--primary);
+            box-shadow: 0 0 30px rgba(56, 189, 248, 0.1);
+        }
+
+        .timeline-icon {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 60px;
+            background: var(--bg-dark);
+            border: 2px solid var(--primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: var(--primary);
+            z-index: 1;
+            box-shadow: 0 0 20px rgba(56, 189, 248, 0.4);
+        }
+
+        @media (max-width: 768px) {
+            .timeline::before {
+                left: 30px;
+            }
+
+            .timeline-item {
+                flex-direction: column !important;
+            }
+
+            .timeline-content {
+                margin: 0 0 0 60px;
+            }
+
+            .timeline-icon {
+                left: 30px;
+            }
+        }
+
+        /* ==================== FEATURES GRID ==================== */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 2.5rem;
+            justify-content: center;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .feature-icon {
+            font-size: 3.5rem;
+            margin-bottom: 1.5rem;
+            color: var(--primary);
+            filter: drop-shadow(0 0 10px rgba(56, 189, 248, 0.3));
+        }
+
+        .feature-title {
+            font-family: 'Orbitron';
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: #fff;
+        }
+
+        /* ==================== ARCHITECTURE & TECH ==================== */
+        .arch-section {
+            background: var(--bg-darker);
+            border-top: 1px solid var(--glass-border);
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .tech-stack {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .tech-item {
+            text-align: center;
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--glass-border);
+            border-radius: 15px;
+            min-width: 160px;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .tech-item:hover {
+            transform: translateY(-10px);
+            background: rgba(56, 189, 248, 0.1);
+            border-color: var(--primary);
+        }
+
+        .tech-icon-img {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        /* ==================== COMPARISON ==================== */
+        .comparison-wrapper {
+            overflow-x: auto;
+            border-radius: 16px;
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--bg-darker);
+        }
+
+        .comparison-table th {
+            background: rgba(56, 189, 248, 0.1);
+            padding: 1.5rem;
+            text-align: center;
+            font-family: 'Orbitron';
+            color: var(--primary);
+            font-size: 1.1rem;
+        }
+
+        .comparison-table th:first-child,
+        .comparison-table td:first-child {
+            text-align: left;
+            padding-left: 2rem;
+        }
+
+        .comparison-table td {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--glass-border);
+            color: var(--text-muted);
+            text-align: center;
+            font-size: 1rem;
+        }
+
+        .comparison-table tr:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .comparison-table td:nth-child(2) {
+            font-weight: 600;
+            color: #fff;
+            background: rgba(56, 189, 248, 0.03);
+        }
+
+        /* BUILD VS BUY BLOCK */
+        .bvb-container {
+            margin-top: 4rem;
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 2rem;
+            align-items: stretch;
+            max-width: 1000px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .bvb-card {
+            padding: 3rem;
+            border-radius: 20px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .bvb-internal {
+            background: rgba(239, 68, 68, 0.05);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .bvb-nep {
+            background: linear-gradient(145deg, rgba(56, 189, 248, 0.05), rgba(99, 102, 241, 0.05));
+            border: 2px solid var(--primary);
+            box-shadow: 0 0 30px rgba(56, 189, 248, 0.1);
+            transform: scale(1.02);
+        }
+
+        .bvb-title {
+            font-family: 'Orbitron';
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .bvb-list {
+            list-style: none;
+            margin: 2rem 0;
+            flex-grow: 1;
+        }
+
+        .bvb-list li {
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        .price-tag {
+            text-align: center;
+            padding-top: 1.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .price-val {
+            font-family: 'Orbitron';
+            font-size: 2.5rem;
+            font-weight: 700;
+            display: block;
+        }
+
+        .vs-badge {
+            align-self: center;
+            background: var(--bg-dark);
+            border: 1px solid var(--glass-border);
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Orbitron';
+            font-weight: 900;
+            z-index: 2;
+        }
+
+        @media (max-width: 900px) {
+            .bvb-container {
+                grid-template-columns: 1fr;
+                gap: 3rem;
+            }
+
+            .vs-badge {
+                transform: rotate(90deg);
+                margin: -2rem auto;
+            }
+        }
+
+        /* ==================== DEMO INTERATIVO (AGORA COM DRAG & DROP) ==================== */
+        .demo-section {
+            background: var(--bg-darker);
+        }
+
+        .kanban-container {
+            background: rgba(0, 0, 0, 0.4);
+            border: 2px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 2rem;
+            position: relative;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .kanban-board {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .kanban-col {
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 10px;
+            padding: 1rem;
+            min-height: 300px;
+            transition: background 0.3s;
+            /* Suavidade no drag over */
+        }
+
+        .kanban-col.drag-over {
+            background: rgba(56, 189, 248, 0.1) !important;
+            border: 2px dashed var(--primary);
+        }
+
+        .col-header {
+            font-family: 'Orbitron';
+            color: var(--primary);
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--glass-border);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .k-card {
+            background: rgba(56, 189, 248, 0.05);
+            border-left: 3px solid var(--primary);
+            padding: 1rem;
+            border-radius: 6px;
+            margin-bottom: 0.8rem;
+            cursor: grab;
+            /* Cursor de mãozinha */
+            transition: 0.3s;
+            text-align: left;
+        }
+
+        .k-card:hover {
+            background: rgba(56, 189, 248, 0.15);
+            transform: translateX(5px);
+        }
+
+        .k-card.dragging {
+            opacity: 0.5;
+            border: 2px dashed var(--primary);
+            background: rgba(56, 189, 248, 0.05);
+            cursor: grabbing;
+        }
+
+        .k-tag {
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            margin-right: 5px;
+        }
+
+        /* ==================== FOOTER ==================== */
+        .footer {
+            background: #020617;
+            padding: 4rem 2rem;
+            border-top: 1px solid var(--glass-border);
+            text-align: center;
+            padding-bottom: 8rem;
+            /* Espaço para o widget */
+        }
+
+        .footer-logo {
+            font-family: 'Orbitron';
+            font-size: 1.5rem;
+            color: var(--primary);
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        .footer-links a {
+            color: var(--text-muted);
+            margin: 0 1rem;
+            text-decoration: none;
+            transition: 0.3s;
+        }
+
+        .footer-links a:hover {
+            color: var(--primary);
+        }
+
+        /* ==================== MODAL TECNOLOGIA ==================== */
+        .tech-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(2, 6, 23, 0.95);
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .tech-modal.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        .modal-content {
+            background: var(--bg-dark);
+            border: 2px solid var(--primary);
+            border-radius: 20px;
+            padding: 3rem;
+            max-width: 800px;
+            width: 90%;
+            position: relative;
+            box-shadow: 0 0 50px rgba(56, 189, 248, 0.3);
+            transform: translateY(50px);
+            transition: transform 0.3s ease;
+        }
+
+        .tech-modal.active .modal-content {
+            transform: translateY(0);
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 2rem;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .close-modal:hover {
+            color: var(--danger);
+            transform: rotate(90deg);
+        }
+
+        /* ==================== EXPERT WIDGET ==================== */
+        .expert-widget {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .expert-bubble {
+            background: var(--bg-dark);
+            border: 1px solid var(--primary);
+            border-radius: 15px 15px 0 15px;
+            padding: 20px;
+            width: 320px;
+            margin-bottom: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            opacity: 0;
+            transform: translateY(20px) scale(0.9);
+            visibility: hidden;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+        }
+
+        .expert-bubble.active {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            visibility: visible;
+        }
+
+        .bubble-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            border-bottom: 1px solid var(--glass-border);
+            padding-bottom: 10px;
+        }
+
+        .bubble-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 2px solid var(--success);
+            margin-right: 12px;
+            object-fit: cover;
+        }
+
+        .bubble-info h4 {
+            color: var(--text-main);
+            font-size: 0.95rem;
+            margin-bottom: 2px;
+        }
+
+        .bubble-info span {
+            color: var(--success);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+
+        .bubble-body {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .highlight-value {
+            color: var(--primary);
+            font-weight: 700;
+            background: rgba(56, 189, 248, 0.1);
+            padding: 2px 5px;
+            border-radius: 4px;
+        }
+
+        .expert-btn {
+            width: 65px;
+            height: 65px;
+            border-radius: 50%;
+            background: var(--bg-dark);
+            border: 2px solid var(--primary);
+            cursor: pointer;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 20px rgba(56, 189, 248, 0.4);
+            transition: transform 0.3s;
+        }
+
+        .expert-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .expert-img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            padding: 3px;
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 20px;
+            height: 20px;
+            background: var(--danger);
+            border-radius: 50%;
+            border: 2px solid var(--bg-dark);
+            animation: bounce 2s infinite;
+        }
+
+        .expert-btn::before,
+        .expert-btn::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 1px solid var(--primary);
+            animation: wave 2s infinite;
+            z-index: -1;
+        }
+
+        .expert-btn::after {
+            animation-delay: 0.5s;
+        }
+
+        @keyframes wave {
+            0% {
+                width: 100%;
+                height: 100%;
+                opacity: 1;
+            }
+
+            100% {
+                width: 250%;
+                height: 250%;
+                opacity: 0;
+            }
+        }
+
+        @keyframes bounce {
+
+            0%,
+            20%,
+            50%,
+            80%,
+            100% {
+                transform: translateY(0);
+            }
+
+            40% {
+                transform: translateY(-5px);
+            }
+
+            60% {
+                transform: translateY(-3px);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="bg-fixed"></div>
+    <div class="particles" id="particles"></div>
+
+    <section class="hero">
+        <div class="container">
+            <span class="hero-badge fade-in">Versão Enterprise • Ecossistema de Gestão Múltipla</span>
+            <h1 class="hero-title fade-in">NEP Delivery Control</h1>
+            <p class="hero-subtitle orbitron" style="color: var(--primary); letter-spacing: 3px; margin-bottom: 2rem;">O
+                SISTEMA DEFINITIVO PARA PERFORMANCE E ENGAJAMENTO</p>
+
+            <p class="hero-desc fade-in">
+                O fim da "caixa preta" e das ferramentas isoladas.
+                Gerencie Operações, Equipes e Metas em um <strong>Ecossistema Unificado</strong>.
+                Dashboards, Gamificação, Fóruns, IA e Multi-Tenancy (Gestão de Múltiplos Clientes/Logos).
+            </p>
+
+            <div class="fade-in"
+                style="display: flex; gap: 1.5rem; justify-content: center; flex-wrap: wrap; margin-bottom: 4rem;">
+                <a href="#demo" class="btn btn-primary">
+                    <i class="fas fa-play-circle"></i> Ver Demo Interativa
+                </a>
+                <a href="#value" class="btn btn-secondary">
+                    <i class="fas fa-chart-line"></i> Business Case (ROI)
+                </a>
+            </div>
+
+            <div class="stats-grid fade-in">
+                <div class="stat-card">
+                    <span class="stat-number">40+</span>
+                    <span class="stat-label">Colaboradores</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number">100%</span>
+                    <span class="stat-label">Auditabilidade</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number">R$ 0</span>
+                    <span class="stat-label">Custo Mensal</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number">24h</span>
+                    <span class="stat-label">Deploy</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="story-section">
+        <div class="container">
+            <div class="section-header fade-in">
+                <h2 class="section-title">O Risco do Caos Operacional</h2>
+                <p class="section-subtitle">
+                    Superintendentes, Gerentes, Coordenadores e Analistas: muitas peças movendo-se sem uma verdade
+                    única.
+                </p>
+            </div>
+
+            <div class="features-grid">
+                <div class="glass-card fade-in">
+                    <i class="fas fa-eye-slash feature-icon" style="color: var(--danger);"></i>
+                    <h3 class="feature-title">Ferramentas Desconectadas</h3>
+                    <p style="color: var(--text-muted); line-height: 1.6;">
+                        Sem um ERP nativo, as equipes usam Chat, E-mail, Trello e Excel separados. A informação se
+                        perde, os prazos estouram e a diretoria fica cega.
+                    </p>
+                </div>
+
+                <div class="glass-card fade-in">
+                    <i class="fas fa-file-excel feature-icon" style="color: var(--warning);"></i>
+                    <h3 class="feature-title">O Caos das Planilhas</h3>
+                    <p style="color: var(--text-muted); line-height: 1.6;">
+                        Controle de qualidade, RH e Metas em planilhas manuais. Falta automação para ranqueamento, e
+                        gerar relatórios executivos leva dias.
+                    </p>
+                </div>
+
+                <div class="glass-card fade-in">
+                    <i class="fas fa-users-slash feature-icon" style="color: var(--secondary);"></i>
+                    <h3 class="feature-title">Baixo Engajamento</h3>
+                    <p style="color: var(--text-muted); line-height: 1.6;">
+                        Operadores e analistas sem visibilidade do seu próprio progresso, sem incentivos claros e sem
+                        uma comunidade (Fórum) para trocar conhecimento.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section style="background: var(--bg-darker);">
+        <div class="container">
+            <div class="section-header fade-in">
+                <h2 class="section-title">A Solução Criada</h2>
+                <p class="section-subtitle">Como transformamos uma dor latente em um produto de alta performance.</p>
+            </div>
+
+            <div class="timeline">
+                <div class="timeline-item fade-in">
+                    <div class="timeline-icon"><i class="fas fa-bolt"></i></div>
+                    <div class="timeline-content">
+                        <h3 class="orbitron" style="color: var(--primary); margin-bottom: 0.5rem;">O Insight</h3>
+                        <p>Precisávamos de um ERP leve. Monday e Jira custam R$ 120k/ano para 40 usuários. Excel é
+                            amador. A solução precisava ser <strong>Custom, Grátis e Segura</strong>.</p>
+                    </div>
+                </div>
+
+                <div class="timeline-item fade-in">
+                    <div class="timeline-icon"><i class="fas fa-code"></i></div>
+                    <div class="timeline-content">
+                        <h3 class="orbitron" style="color: var(--primary); margin-bottom: 0.5rem;">Desenvolvimento
+                            Inteligente</h3>
+                        <p>Uso de IA para acelerar o código + Arquitetura Serverless (Google Firebase). Resultado: Um
+                            sistema robusto criado em tempo recorde, focado 100% na dor da Qualidade.</p>
+                    </div>
+                </div>
+
+                <div class="timeline-item fade-in">
+                    <div class="timeline-icon"><i class="fas fa-check-circle"></i></div>
+                    <div class="timeline-content">
+                        <h3 class="orbitron" style="color: var(--primary); margin-bottom: 0.5rem;">O Resultado</h3>
+                        <p>NEP Delivery Control. Controle de hierarquia nativo (0-4), backlog unificado e transparência
+                            total. Tudo rodando na nuvem do Google.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="story-section">
+        <div class="container">
+            <div class="section-header fade-in">
+                <h2 class="section-title">Features Exclusivas</h2>
+                <p class="section-subtitle">O que faz o NEP ser superior ao Excel e Trello para Qualidade.</p>
+            </div>
+
+            <div class="features-grid">
+                <div class="glass-card fade-in">
+                    <i class="fas fa-building feature-icon"></i>
+                    <h3 class="feature-title">Multi-Tenancy (Logos)</h3>
+                    <p style="color: var(--text-muted);">
+                        Isolamento de dados por clientes (Vivo, Nubank, Hub). Administre múltiplos "mundos" no mesmo
+                        sistema sem vazar informações.
+                    </p>
+                </div>
+
+                <div class="glass-card fade-in">
+                    <i class="fas fa-gamepad feature-icon" style="color: var(--success);"></i>
+                    <h3 class="feature-title">Motor de Gamificação</h3>
+                    <p style="color: var(--text-muted);">
+                        Sistema de XP, níveis, patentes e ranqueamento global. Engaje sua equipe transformando cada
+                        entrega e ajuda no Fórum em reconhecimento.
+                    </p>
+                </div>
+
+                <div class="glass-card fade-in">
+                    <i class="fas fa-robot feature-icon" style="color: var(--accent);"></i>
+                    <h3 class="feature-title">Inteligência Artificial (Neuronyo)</h3>
+                    <p style="color: var(--text-muted);">
+                        Assistente Virtual Integrado. Analise sentimentos de monitorias e resuma relatórios de qualidade
+                        instantaneamente.
+                    </p>
+                </div>
+
+                <div class="glass-card fade-in">
+                    <i class="fas fa-comments feature-icon" style="color: var(--primary);"></i>
+                    <h3 class="feature-title">Portal Mura (Fórum)</h3>
+                    <p style="color: var(--text-muted);">
+                        Pare de perder conhecimento nos chats corporativos. Fórum estilo StackOverflow para compartilhar
+                        treinamentos e tirar dúvidas oficiais.
+                    </p>
+                </div>
+
+                <div class="glass-card fade-in">
+                    <i class="fas fa-filter feature-icon" style="color: var(--warning);"></i>
+                    <h3 class="feature-title">Kanban Universal</h3>
+                    <p style="color: var(--text-muted);">
+                        Centralize demandas de Qualidade, Backoffice e TI. Tudo com SLA reativo, trava de evidências e
+                        cálculo de pontos em tempo real.
+                    </p>
+                </div>
+
+                <div class="glass-card fade-in">
+                    <i class="fas fa-chart-line feature-icon" style="color: var(--secondary);"></i>
+                    <h3 class="feature-title">Estratégica Executiva (OKRs)</h3>
+                    <p style="color: var(--text-muted);">
+                        Ligue a operação do dia a dia aos grandes objetivos da diretoria. OKRs, KPIs e Dashboards
+                        gerenciais em tempo real.
+                    </p>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <section class="arch-section">
+        <div class="container">
+            <div class="section-header fade-in">
+                <h2 class="section-title">Arquitetura Enterprise</h2>
+                <p class="section-subtitle">Stack moderna, segura e escalável (Google Cloud Platform).</p>
+            </div>
+
+            <div class="tech-stack fade-in">
+                <div class="tech-item" onclick="openModal('html5')">
+                    <i class="fab fa-html5 tech-icon-img" style="color: #e34f26;"></i>
+                    <h4 class="orbitron">HTML5 Semântico</h4>
+                </div>
+                <div class="tech-item" onclick="openModal('css3')">
+                    <i class="fab fa-css3-alt tech-icon-img" style="color: #264de4;"></i>
+                    <h4 class="orbitron">CSS3 Variables</h4>
+                </div>
+                <div class="tech-item" onclick="openModal('js')">
+                    <i class="fab fa-js tech-icon-img" style="color: #f0db4f;"></i>
+                    <h4 class="orbitron">ES6+ Modules</h4>
+                </div>
+                <div class="tech-item" onclick="openModal('firebase')">
+                    <i class="fas fa-fire tech-icon-img" style="color: #ffca28;"></i>
+                    <h4 class="orbitron">Google Firebase</h4>
+                </div>
+                <div class="tech-item" onclick="openModal('chartjs')">
+                    <i class="fas fa-chart-pie tech-icon-img" style="color: #ff6384;"></i>
+                    <h4 class="orbitron">Chart.js Analytics</h4>
+                </div>
+            </div>
+            <p style="text-align: center; margin-top: 2rem; color: var(--text-dim); font-size: 0.9rem;">
+                <i class="fas fa-info-circle"></i> Clique nos cards para ver detalhes técnicos
+            </p>
+        </div>
+    </section>
+
+    <section id="value">
+        <div class="container">
+            <div class="section-header fade-in">
+                <h2 class="section-title">Business Case & ROI</h2>
+                <p class="section-subtitle">A matemática é simples: Superior em controle, zero em custo.</p>
+            </div>
+
+            <div class="comparison-wrapper fade-in">
+                <table class="comparison-table">
+                    <thead>
+                        <tr>
+                            <th>Funcionalidade Crítica</th>
+                            <th>NEP Delivery</th>
+                            <th>Trello / Planner</th>
+                            <th>Monday / Jira</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Aplicações Consolidadas</strong></td>
+                            <td><i class="fas fa-check" style="color: var(--success);"></i> 6+ em 1 (ERP)</td>
+                            <td><i class="fas fa-times" style="color: var(--danger);"></i> Apenas Kanban</td>
+                            <td><i class="fas fa-exclamation-triangle" style="color: var(--warning);"></i> Requer
+                                Plugins</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Motor de Gamificação</strong></td>
+                            <td><i class="fas fa-check" style="color: var(--success);"></i> Patentes e XP Nativos</td>
+                            <td><i class="fas fa-times" style="color: var(--danger);"></i> Inexistente</td>
+                            <td><i class="fas fa-times" style="color: var(--danger);"></i> Não tem</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Inteligência Artificial</strong></td>
+                            <td><i class="fas fa-robot" style="color: var(--success);"></i> <strong>Neuronyo IA</strong>
+                            </td>
+                            <td><i class="fas fa-times" style="color: var(--danger);"></i> Sem IA</td>
+                            <td><i class="fas fa-clock" style="color: var(--warning);"></i> Pago à Parte</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Fórum e Comunidade</strong></td>
+                            <td><i class="fas fa-check" style="color: var(--success);"></i> Mura (StackOverflow Interno)
+                            </td>
+                            <td><i class="fas fa-times" style="color: var(--danger);"></i> Apenas chat simples</td>
+                            <td><i class="fas fa-check" style="color: var(--success);"></i> Requer Confluence Space</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Custo Anual (40 Users)</strong></td>
+                            <td><i class="fas fa-check" style="color: var(--success);"></i> <strong>R$ 0,00</strong>
+                            </td>
+                            <td><i class="fas fa-dollar-sign" style="color: var(--danger);"></i> ~R$ 30.000</td>
+                            <td><i class="fas fa-dollar-sign" style="color: var(--danger);"></i> ~R$ 120.000</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="bvb-container fade-in">
+                <div class="bvb-card bvb-internal">
+                    <h3 class="bvb-title" style="color: var(--danger);">CONSTRUIR DO ZERO</h3>
+                    <p style="text-align: center; color: var(--text-muted); margin-bottom: 2rem;">
+                        Tentativa de recriar internamente com TI tradicional.
+                    </p>
+                    <ul class="bvb-list">
+                        <li><i class="fas fa-clock"></i> 4 a 6 meses de projeto</li>
+                        <li><i class="fas fa-code"></i> ~260h de Dev Sênior</li>
+                        <li><i class="fas fa-server"></i> Custo de Servidores/DevOps</li>
+                        <li><i class="fas fa-bug"></i> Bugs e Manutenção eterna</li>
+                    </ul>
+                    <div class="price-tag">
+                        <span style="display: block; font-size: 0.9rem; color: var(--text-muted);">Investimento
+                            (CAPEX)</span>
+                        <span class="price-val" style="color: var(--danger);">R$ 55k+</span>
+                    </div>
+                </div>
+
+                <div class="vs-badge">VS</div>
+
+                <div class="bvb-card bvb-nep">
+                    <div
+                        style="position: absolute; top: -15px; left: 50%; transform: translateX(-50%); background: var(--success); color: #000; padding: 5px 15px; border-radius: 20px; font-weight: 700; font-size: 0.8rem;">
+                        PRONTO AGORA</div>
+                    <h3 class="bvb-title" style="color: var(--primary);">NEP DELIVERY</h3>
+                    <p style="text-align: center; color: var(--text-muted); margin-bottom: 2rem;">
+                        Solução validada de Data Science aplicada à Qualidade.
+                    </p>
+                    <ul class="bvb-list">
+                        <li><i class="fas fa-bolt" style="color: var(--success);"></i> Deploy em 24 horas</li>
+                        <li><i class="fas fa-check-circle" style="color: var(--success);"></i> Produto Multi-Tenant
+                            Validado</li>
+                        <li><i class="fas fa-cloud" style="color: var(--success);"></i> Infra Google Inclusa</li>
+                        <li><i class="fas fa-brain" style="color: var(--success);"></i> IA e Gamificação Liderando
+                            Resultados
+                        </li>
+                    </ul>
+                    <div class="price-tag">
+                        <span style="display: block; font-size: 0.9rem; color: var(--text-muted);">Custo de
+                            Implementação</span>
+                        <span class="price-val" style="color: var(--success);">R$ 0,00</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <section id="demo" class="demo-section">
+        <div class="container">
+            <div class="section-header fade-in">
+                <h2 class="section-title">Command Center</h2>
+                <p class="section-subtitle">Veja como o ecossistema funciona unificando Metas, Fóruns e Demandas.
+                    <strong>(Arraste os
+                        cards!)</strong></p>
+            </div>
+
+            <div class="kanban-container fade-in">
+                <div style="text-align: center; margin-bottom: 2rem; color: var(--primary); letter-spacing: 2px;">
+                    <i class="fas fa-desktop"></i> VISÃO DO COORDENADOR
+                </div>
+
+                <div class="kanban-board">
+                    <div class="kanban-col" id="col-backlog">
+                        <div class="col-header">
+                            <span><i class="fas fa-inbox"></i> BACKLOG</span>
+                            <span class="count-badge">2</span>
+                        </div>
+                        <div class="k-card" draggable="true" id="card-1">
+                            <div style="font-weight: 600; font-size: 0.9rem;">Estratégia Cliente X</div>
+                            <div style="margin-top: 5px; font-size: 0.8rem; color: var(--text-muted);">
+                                <span class="k-tag"
+                                    style="background: rgba(245, 158, 11, 0.2); color: var(--warning);">Alta</span>
+                                Reunião OKR
+                            </div>
+                        </div>
+                        <div class="k-card" draggable="true" id="card-2">
+                            <div style="font-weight: 600; font-size: 0.9rem;">Dúvida Nova no Mura</div>
+                            <div style="margin-top: 5px; font-size: 0.8rem; color: var(--text-muted);">
+                                <span class="k-tag"
+                                    style="background: rgba(56, 189, 248, 0.2); color: var(--primary);">Fórum</span>
+                                Gamificação +20XP
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="kanban-col" id="col-analise">
+                        <div class="col-header">
+                            <span><i class="fas fa-spinner"></i> EM ANÁLISE</span>
+                            <span class="count-badge">1</span>
+                        </div>
+                        <div class="k-card" draggable="true" id="card-3" style="border-left-color: var(--warning);">
+                            <div style="font-weight: 600; font-size: 0.9rem;">Resumo de KPI pela Inteligência</div>
+                            <div style="margin-top: 5px; font-size: 0.8rem; color: var(--text-muted);">
+                                <i class="fas fa-robot"></i> Neuronyo IA Ativo
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="kanban-col" id="col-validado">
+                        <div class="col-header">
+                            <span><i class="fas fa-check-double"></i> VALIDADO</span>
+                            <span class="count-badge">1</span>
+                        </div>
+                        <div class="k-card" draggable="true" id="card-4"
+                            style="border-left-color: var(--success); opacity: 0.7;">
+                            <div style="font-weight: 600; font-size: 0.9rem;">Integração Hub/Vivo</div>
+                            <div style="margin-top: 5px; font-size: 0.8rem; color: var(--success);">
+                                <i class="fas fa-check"></i> Multi-Tenancy Aprovado
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section style="text-align: center; padding: 8rem 2rem;">
+        <div class="container fade-in">
+            <h2 class="section-title">Pronto para Escalar?</h2>
+            <p
+                style="font-size: 1.2rem; color: var(--text-muted); margin-bottom: 3rem; max-width: 700px; margin-left: auto; margin-right: auto;">
+                Não estamos apenas organizando tarefas. Estamos implementando uma <strong
+                    style="color: var(--primary);">cultura de alta performance auditável</strong>.
+            </p>
+            <a href="https://ecossistema-nep.web.app/login.html" target="_blank" class="btn btn-primary"
+                style="padding: 1.2rem 4rem; font-size: 1.2rem;">
+                <i class="fas fa-rocket"></i> ACESSAR SISTEMA AGORA
+            </a>
+            <p style="margin-top: 2rem; color: var(--text-dim); font-size: 0.9rem;">
+                <i class="fas fa-lock"></i> Acesso Seguro via Google Authentication
+            </p>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <span class="footer-logo">NEP DELIVERY CONTROL</span>
+            <div class="footer-links">
+                <a href="#">Documentação</a>
+                <a href="#">Status</a>
+                <a href="#">Segurança</a>
+                <a href="#">Contato</a>
+            </div>
+            <p style="color: var(--text-muted); margin: 2rem 0; font-style: italic;">
+                "Consultoria sem execução é apenas uma opinião."
+            </p>
+            <div style="border-top: 1px solid rgba(255,255,255,0.05); padding-top: 2rem; margin-top: 2rem;">
+                <p style="font-size: 0.9rem; color: var(--text-dim);">
+                    Desenvolvido por <strong>Fernando Evangelista</strong><br>
+                    Quality Coordinator & Data Science Student
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <div class="expert-widget">
+        <div class="expert-bubble" id="expertBubble">
+            <div class="bubble-header">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/dc/Steve_Jobs_Headshot_2010-CROP_%28cropped_2%29.jpg/800px-Steve_Jobs_Headshot_2010-CROP_%28cropped_2%29.jpg"
+                    alt="Steve Jobs" class="bubble-avatar" style="border-color: #999;">
+                <div class="bubble-info">
+                    <h4>Steve Jobs</h4>
+                    <span style="color: var(--primary);">Visionário Tech</span>
+                </div>
+                <div style="margin-left: auto; cursor: pointer; color: var(--text-muted);" onclick="toggleExpert()">
+                    <i class="fas fa-times"></i>
+                </div>
+            </div>
+            <div class="bubble-body">
+                <p
+                    style="font-style: italic; font-size: 0.85rem; margin-bottom: 12px; border-left: 2px solid var(--primary); padding-left: 10px; opacity: 0.8;">
+                    "Design não é apenas o que parece. <strong>Design é como funciona.</strong>"
+                </p>
+                <p>Analisei o <strong>NEP Delivery</strong>. A <span class="highlight-value">simplicidade</span> aqui é
+                    o grau máximo de sofisticação.</p>
+                <p style="margin-top: 10px;">Ele elimina o ruído das planilhas e foca no essencial. Não é apenas
+                    software, é uma experiência de gestão.</p>
+
+                <a href="#value" onclick="toggleExpert()"
+                    style="display: block; margin-top: 15px; text-align: center; color: var(--text-main); font-size: 0.8rem; text-decoration: none; font-weight: 600; letter-spacing: 1px;">
+                    VER O BUSINESS CASE <i class="fas fa-chevron-right"
+                        style="font-size: 0.7rem; color: var(--primary);"></i>
+                </a>
+            </div>
+        </div>
+
+        <div class="expert-btn" onclick="toggleExpert()" style="border-color: #fff;">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/dc/Steve_Jobs_Headshot_2010-CROP_%28cropped_2%29.jpg/800px-Steve_Jobs_Headshot_2010-CROP_%28cropped_2%29.jpg"
+                alt="Expert" class="expert-img">
+            <div class="notification-badge"></div>
+        </div>
+    </div>
+
+    <div class="tech-modal" id="techModal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal()">&times;</span>
+            <div id="modalBody">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // === WIDGET EXPERT TOGGLE ===
+        function toggleExpert() {
+            const bubble = document.getElementById('expertBubble');
+            bubble.classList.toggle('active');
+        }
+
+        setTimeout(() => {
+            const bubble = document.getElementById('expertBubble');
+            // bubble.classList.add('active'); // Descomente para abrir automatico
+        }, 5000);
+
+
+        // === PARTÍCULAS ===
+        const particlesContainer = document.getElementById('particles');
+        for (let i = 0; i < 40; i++) {
+            const particle = document.createElement('div');
+            particle.className = 'particle';
+            particle.style.left = Math.random() * 100 + '%';
+            particle.style.animationDuration = (Math.random() * 15 + 10) + 's';
+            particle.style.animationDelay = Math.random() * 5 + 's';
+            particlesContainer.appendChild(particle);
+        }
+
+        // === SCROLL ANIMATION ===
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+
+        // === MODAL LÓGICA ===
+        const techData = {
+            'html5': {
+                title: 'HTML5 Semântico',
+                desc: 'Estruturação moderna e acessível. Uso de tags semânticas para melhor SEO e compatibilidade com leitores de tela.'
+            },
+            'css3': {
+                title: 'CSS3 + Variables',
+                desc: 'Estilização reativa usando Variáveis Nativas (--primary) e Flexbox/Grid para layouts responsivos sem frameworks pesados.'
+            },
+            'js': {
+                title: 'Javascript ES6+',
+                desc: 'Lógica pura (Vanilla JS) com módulos ES6, Async/Await para requisições e manipulação de DOM otimizada.'
+            },
+            'firebase': {
+                title: 'Google Firebase',
+                desc: 'Backend as a Service (BaaS). Banco NoSQL Firestore para dados em tempo real e Auth para segurança de login.'
+            },
+            'chartjs': {
+                title: 'Chart.js Analytics',
+                desc: 'Renderização de gráficos via HTML5 Canvas. Leve, responsivo e permite visualização de dados complexos em tempo real.'
+            }
+        };
+
+        function openModal(tech) {
+            const data = techData[tech];
+            const modalBody = document.getElementById('modalBody');
+
+            modalBody.innerHTML = `
+                <h2 class="orbitron" style="color: var(--primary); margin-bottom: 1rem;">${data.title}</h2>
+                <p style="font-size: 1.2rem; line-height: 1.6; color: var(--text-main);">${data.desc}</p>
+                <div style="margin-top: 2rem; padding: 1rem; background: rgba(56,189,248,0.1); border-left: 4px solid var(--primary); border-radius: 5px;">
+                    <strong style="color: var(--primary);">Por que usamos?</strong><br>
+                    Garante performance máxima e custo zero de infraestrutura (Serverless).
+                </div>
+            `;
+
+            document.getElementById('techModal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('techModal').classList.remove('active');
+        }
+
+        document.getElementById('techModal').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('techModal')) closeModal();
+        });
+
+        // ==================== KANBAN DRAG & DROP LOGIC ====================
+        const cards = document.querySelectorAll('.k-card');
+        const columns = document.querySelectorAll('.kanban-col');
+
+        let draggedCard = null;
+
+        // Configurar Cards
+        cards.forEach(card => {
+            card.addEventListener('dragstart', dragStart);
+            card.addEventListener('dragend', dragEnd);
+        });
+
+        // Configurar Colunas
+        columns.forEach(col => {
+            col.addEventListener('dragover', dragOver);
+            col.addEventListener('dragenter', dragEnter);
+            col.addEventListener('dragleave', dragLeave);
+            col.addEventListener('drop', dragDrop);
+        });
+
+        function dragStart() {
+            draggedCard = this;
+            setTimeout(() => this.classList.add('dragging'), 0);
+        }
+
+        function dragEnd() {
+            this.classList.remove('dragging');
+            draggedCard = null;
+            updateCounts(); // Atualiza os números ao soltar
+        }
+
+        function dragOver(e) {
+            e.preventDefault(); // Necessário para permitir o drop
+        }
+
+        function dragEnter(e) {
+            e.preventDefault();
+            this.classList.add('drag-over');
+        }
+
+        function dragLeave() {
+            this.classList.remove('drag-over');
+        }
+
+        function dragDrop(e) {
+            this.classList.remove('drag-over');
+            // Adiciona o card à coluna onde foi solto
+            this.appendChild(draggedCard);
+
+            // Efeito visual extra (muda a cor da borda baseado na coluna)
+            if (this.id === 'col-validado') {
+                draggedCard.style.borderLeftColor = 'var(--success)';
+                draggedCard.style.opacity = '0.8';
+            } else if (this.id === 'col-analise') {
+                draggedCard.style.borderLeftColor = 'var(--warning)';
+                draggedCard.style.opacity = '1';
+            } else {
+                draggedCard.style.borderLeftColor = 'var(--primary)';
+                draggedCard.style.opacity = '1';
+            }
+        }
+
+        // Função para atualizar os números no cabeçalho
+        function updateCounts() {
+            columns.forEach(col => {
+                const count = col.querySelectorAll('.k-card').length;
+                const badge = col.querySelector('.count-badge');
+                if (badge) badge.innerText = count;
+            });
+        }
+
+        // Inicializa contagem
+        updateCounts();
+
+    </script>
+</body>
+
+</html>

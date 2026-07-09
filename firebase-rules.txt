@@ -1,0 +1,115 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ========================================================================
+    // FUNCTIONS
+    // ========================================================================
+    
+    // Check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Check if user is owner of the document
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Check if user is admin (based on custom claims)
+    function isAdmin() {
+      return isAuthenticated() && request.auth.token.admin == true;
+    }
+
+    // ========================================================================
+    // COLLECTIONS
+    // ========================================================================
+
+    // 0. Permissões de Módulos (MIME)
+    match /module_permissions/{moduleId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated(); 
+    }
+
+    // 1. Testimonials (Wall of Love) - CORRIGIDO PARA APROVAÇÃO
+    match /testimonials/{document} {
+      allow read: if isAuthenticated();
+      allow create: if true;
+      allow update, delete: if isAuthenticated();  // MUDOU DE isAdmin() PARA isAuthenticated()
+    }
+
+    // 2. Users Collection
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isOwner(userId) || isAdmin();
+    }
+
+    // 2. Kanban Tasks
+    match /tasks/{taskId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // 10. Analytics
+    match /analytics/{document=**} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // 11. Audit Logs
+    match /audit_logs/{logId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // 12. User Analytics (New V2)
+    match /user_analytics/{docId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // 13. Gamification Points (New V2)
+    match /points/{docId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // Todas as outras collections usadas no admin
+    match /reports/{reportId} { allow read, write: if isAuthenticated(); }
+    match /vacations/{vacationId} { allow read, write: if isAuthenticated(); }
+    match /deliveries/{deliveryId} { allow read, write: if isAuthenticated(); }
+    match /okrs/{okrId} { allow read, write: if isAuthenticated(); }
+
+    // 12. Entregas Legado
+    match /entregas/{entregaId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // 13. Vacation Requests Legado
+    match /vacation_requests/{requestId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // 14. Courses
+    match /courses/{courseId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+    match /course_progress/{progressId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // 15. Avisos (Announcements)
+    match /announcements/{avisoId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+
+    // 16. Notificações
+    match /notifications/{notificationId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // ========================================================================
+    // DEFAULT DENY
+    // ========================================================================
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

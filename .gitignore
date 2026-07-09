@@ -1,0 +1,35 @@
+# Dependências
+node_modules/
+
+# Build
+dist/
+.vite/
+
+# Firebase (cache local e credenciais)
+.firebase/
+firebase-debug.log
+firestore-debug.log
+
+# Ambiente e segredos
+.env
+.env.*
+*.local
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+npm-debug.log*
+
+# Editor
+.vscode/
+.idea/
+
+# Arquivos temporários e mídia pesada fora do versionamento
+temporario implantações/
+podcast/*.mp3
+*.rar
+*.zip

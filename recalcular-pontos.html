@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEP - Recalculação Retroativa de Pontos</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+            background: #0a0e1a;
+            color: #e5e7eb;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-size: 28px;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, #f59e0b, #ef4444);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            color: #64748b;
+            margin-bottom: 30px;
+        }
+
+        .warning-box {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+
+        .warning-box h3 {
+            color: #ef4444;
+            margin-bottom: 8px;
+        }
+
+        .warning-box p {
+            color: #94a3b8;
+            font-size: 14px;
+        }
+
+        .card {
+            background: #0f1729;
+            border: 1px solid rgba(47, 111, 237, 0.15);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+
+        .card h3 {
+            margin-bottom: 16px;
+            color: #fff;
+            font-size: 18px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border-radius: 10px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: #fff;
+        }
+
+        .btn-warning:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: #fff;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: #fff;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: #1e293b;
+            border-radius: 4px;
+            margin: 12px 0;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+            border-radius: 4px;
+            transition: width 0.3s;
+            width: 0;
+        }
+
+        .log-container {
+            background: #0a0e1a;
+            border: 1px solid #1e293b;
+            border-radius: 8px;
+            padding: 16px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'Fira Code', monospace;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        .log-line {
+            padding: 2px 0;
+        }
+
+        .log-line.success {
+            color: #10b981;
+        }
+
+        .log-line.error {
+            color: #ef4444;
+        }
+
+        .log-line.warn {
+            color: #f59e0b;
+        }
+
+        .log-line.info {
+            color: #3b82f6;
+        }
+
+        .log-line.module {
+            color: #8b5cf6;
+            font-weight: 600;
+            margin-top: 8px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 12px;
+            margin: 16px 0;
+        }
+
+        .stat-card {
+            background: rgba(47, 111, 237, 0.1);
+            border-radius: 10px;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: #64748b;
+            margin-top: 4px;
+        }
+
+        .users-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 16px;
+            font-size: 13px;
+        }
+
+        .users-table th {
+            text-align: left;
+            padding: 10px;
+            color: #64748b;
+            border-bottom: 1px solid #1e293b;
+        }
+
+        .users-table td {
+            padding: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+        }
+
+        .users-table tr:hover td {
+            background: rgba(47, 111, 237, 0.05);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .badge-green {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+        }
+
+        .badge-blue {
+            background: rgba(59, 130, 246, 0.2);
+            color: #3b82f6;
+        }
+
+        .badge-yellow {
+            background: rgba(245, 158, 11, 0.2);
+            color: #f59e0b;
+        }
+
+        .actions-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 16px;
+        }
+
+        #step-indicator {
+            display: flex;
+            gap: 4px;
+            margin: 16px 0;
+            flex-wrap: wrap;
+        }
+
+        .step {
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            background: #1e293b;
+            color: #64748b;
+        }
+
+        .step.active {
+            background: #3b82f6;
+            color: #fff;
+        }
+
+        .step.done {
+            background: #10b981;
+            color: #fff;
+        }
+
+        .step.error {
+            background: #ef4444;
+            color: #fff;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1><i class="fa-solid fa-calculator"></i> Recalculação Retroativa de Pontos</h1>
+        <p class="subtitle">Recalcula e aplica pontos retroativos de todos os módulos para todos os usuários</p>
+
+        <div class="warning-box">
+            <h3><i class="fa-solid fa-triangle-exclamation"></i> Atenção</h3>
+            <p>Este script <strong>não exclui nenhum dado</strong>. Ele recalcula os pontos a partir das ações reais dos
+                usuários (tarefas aprovadas, depoimentos, fórum, etc.) e <strong>atualiza o saldo total</strong>. Se o
+                usuário já possui pontos contabilizados, a diferença será ajustada para cima.</p>
+        </div>
+
+        <div class="card">
+            <h3>📊 Módulos que serão recalculados</h3>
+            <div id="step-indicator">
+                <span class="step" id="step-tasks">📋 Kanban</span>
+                <span class="step" id="step-testimonials">❤️ Depoimentos</span>
+                <span class="step" id="step-forum">💬 Fórum</span>
+                <span class="step" id="step-routines">📅 Rotina ADM</span>
+                <span class="step" id="step-reports">📝 Relatórios</span>
+                <span class="step" id="step-courses">📚 Cursos</span>
+                <span class="step" id="step-apply">✅ Aplicar</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill"></div>
+            </div>
+            <p id="progress-text" style="font-size: 13px; color: #64748b;">Pronto para iniciar</p>
+
+            <div class="actions-row">
+                <button class="btn btn-primary" id="btn-simulate" onclick="startRecalculation(false)">
+                    <i class="fa-solid fa-eye"></i> Simular (Somente Leitura)
+                </button>
+                <button class="btn btn-warning" id="btn-apply" onclick="startRecalculation(true)">
+                    <i class="fa-solid fa-bolt"></i> Recalcular e Aplicar Pontos
+                </button>
+            </div>
+        </div>
+
+        <div class="card" id="results-card" style="display: none;">
+            <h3>📈 Resultado</h3>
+            <div class="stats-grid" id="stats-grid"></div>
+            <div style="max-height: 500px; overflow-y: auto;">
+                <table class="users-table" id="users-table">
+                    <thead>
+                        <tr>
+                            <th>Usuário</th>
+                            <th>Pontos Atuais</th>
+                            <th>Pontos Recalculados</th>
+                            <th>Diferença</th>
+                            <th>Nível</th>
+                        </tr>
+                    </thead>
+                    <tbody id="users-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>📋 Log de Execução</h3>
+            <div class="log-container" id="log-container"></div>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+
+    <script>
+        // ═══════════════════════════════════════════════════
+        // FIREBASE CONFIG (same as main app)
+        // ═══════════════════════════════════════════════════
+        const firebaseConfig = {
+            apiKey: "AIzaSyA0MiSEsMqCpfGZWAdRsPJbnqNGOpCwXx8",
+            authDomain: "nep-delivery-control.firebaseapp.com",
+            projectId: "nep-delivery-control",
+            storageBucket: "nep-delivery-control.firebasestorage.app",
+            messagingSenderId: "844522711271",
+            appId: "1:844522711271:web:35694864ba3c66eee48e1d",
+            measurementId: "G-0QVG0SHYML"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // ═══════════════════════════════════════════════════
+        // POINTS CALCULATION (mirrors kanban.js)
+        // ═══════════════════════════════════════════════════
+        const PRIORITY_POINTS = { 'Baixo': 5, 'Médio': 10, 'Alto': 15, 'Urgente': 25 };
+        const COMPLEXITY_MULTIPLIER = { 'Baixa': 1, 'Média': 1.5, 'Alta': 2 };
+        const DELAY_PENALTY = { 1: -5, 2: -10, 3: -15 };
+
+        function calculateTaskPoints(task) {
+            const base = PRIORITY_POINTS[task.priority] || 5;
+            const mult = COMPLEXITY_MULTIPLIER[task.complexity] || 1;
+            let points = Math.round(base * mult);
+
+            if (task.deadline && task.deliveredAt) {
+                const deadline = new Date(task.deadline + 'T23:59:59');
+                const delivered = new Date(task.deliveredAt);
+                const daysLate = Math.floor((delivered - deadline) / (1000 * 60 * 60 * 24));
+                if (daysLate > 0) {
+                    if (daysLate === 1) points += DELAY_PENALTY[1];
+                    else if (daysLate === 2) points += DELAY_PENALTY[2];
+                    else points += DELAY_PENALTY[3];
+                    points = Math.max(1, points);
+                }
+            }
+            return points;
+        }
+
+        function calculateLevel(points) {
+            if (!points) return 1;
+            if (points < 50) return 1;
+            if (points < 150) return 2;
+            if (points < 300) return 3;
+            if (points < 500) return 4;
+            if (points < 800) return 5;
+            if (points < 1200) return 6;
+            if (points < 1700) return 7;
+            if (points < 2500) return 8;
+            if (points < 3500) return 9;
+            return 10;
+        }
+
+        // ═══════════════════════════════════════════════════
+        // LOGGING
+        // ═══════════════════════════════════════════════════
+        function log(msg, type = '') {
+            const container = document.getElementById('log-container');
+            const line = document.createElement('div');
+            line.className = `log-line ${type}`;
+            line.textContent = `[${new Date().toLocaleTimeString('pt-BR')}] ${msg}`;
+            container.appendChild(line);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function setStep(stepId, status) {
+            const el = document.getElementById(stepId);
+            if (el) { el.className = `step ${status}`; }
+        }
+
+        function setProgress(pct, text) {
+            document.getElementById('progress-fill').style.width = pct + '%';
+            document.getElementById('progress-text').textContent = text;
+        }
+
+        // ═══════════════════════════════════════════════════
+        // MAIN RECALCULATION
+        // ═══════════════════════════════════════════════════
+        async function startRecalculation(applyChanges) {
+            const btnSim = document.getElementById('btn-simulate');
+            const btnApp = document.getElementById('btn-apply');
+            btnSim.disabled = true;
+            btnApp.disabled = true;
+            document.getElementById('log-container').innerHTML = '';
+
+            const mode = applyChanges ? '🔥 APLICAR' : '👁️ SIMULAÇÃO';
+            log(`═══ INÍCIO: ${mode} ═══`, 'module');
+            log(`Modo: ${applyChanges ? 'ESCRITA (vai atualizar o Firestore)' : 'SOMENTE LEITURA (nada será alterado)'}`, applyChanges ? 'warn' : 'info');
+
+            // Accumulator: { uid: { nome, kanban, testimonials_sent, testimonials_received, forum, routines, reports, courses, achievements, total } }
+            const userPoints = {};
+
+            function addPts(uid, category, pts, nome = null) {
+                if (!uid || uid.includes(' ') || uid.length > 128) return; // Reject invalid UIDs
+                if (!userPoints[uid]) userPoints[uid] = { nome: nome || uid, kanban: 0, task_created: 0, testimonials_sent: 0, testimonials_received: 0, forum: 0, routines: 0, reports: 0, courses: 0, achievements: 0, total: 0 };
+                if (nome && nome !== uid) userPoints[uid].nome = nome;
+                userPoints[uid][category] = (userPoints[uid][category] || 0) + pts;
+                userPoints[uid].total += pts;
+            }
+
+            try {
+                // ═══ STEP 1: KANBAN ═══
+                setStep('step-tasks', 'active');
+                setProgress(5, 'Carregando tarefas do Kanban...');
+                log('📋 KANBAN: Carregando tarefas...', 'module');
+
+                const tasksSnap = await db.collection('tasks').get();
+                const tasks = tasksSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+                log(`  Encontradas ${tasks.length} tarefas total`, 'info');
+
+                // 1a. Tasks validated → COMPLETE_TASK points to ownerUid
+                const validatedTasks = tasks.filter(t => t.validated === true && t.status === 'done');
+                log(`  ${validatedTasks.length} tarefas validadas (approved)`, 'info');
+
+                let tasksWithoutUid = 0;
+                for (const task of validatedTasks) {
+                    let ownerUid = task.ownerUid;
+                    if (!ownerUid && task.owner) {
+                        // Try to find UID by name
+                        const usersSnap = await db.collection('users').where('nome', '==', task.owner).limit(1).get();
+                        if (!usersSnap.empty) {
+                            ownerUid = usersSnap.docs[0].id;
+                        }
+                    }
+                    if (ownerUid && !ownerUid.includes(' ')) {
+                        const pts = calculateTaskPoints(task);
+                        addPts(ownerUid, 'kanban', pts, task.owner);
+                    } else {
+                        tasksWithoutUid++;
+                    }
+                }
+                if (tasksWithoutUid > 0) log(`  ⚠️ ${tasksWithoutUid} tarefas sem UID válido (owner não encontrado)`, 'warn');
+
+                // 1b. Tasks created → CreateTask 2 pts to creatorUid
+                const createdTasks = tasks.filter(t => t.creatorUid);
+                for (const task of createdTasks) {
+                    if (task.creatorUid && !task.creatorUid.includes(' ')) {
+                        addPts(task.creatorUid, 'task_created', 2, task.creatorName);
+                    }
+                }
+                log(`  ${createdTasks.length} tarefas com criador identificado (+2 pts cada)`, 'info');
+
+                // 1c. Validations → 5 pts to validatedBy (need to find UID)
+                const validatedByTasks = validatedTasks.filter(t => t.validatedBy);
+                // We'll skip validatedBy points since canSeeTask doesn't track validatorUid
+
+                setStep('step-tasks', 'done');
+                setProgress(20, 'Kanban concluído. Carregando depoimentos...');
+
+                // ═══ STEP 2: TESTIMONIALS ═══
+                setStep('step-testimonials', 'active');
+                log('❤️ DEPOIMENTOS: Carregando...', 'module');
+
+                const tmSnap = await db.collection('testimonials').get();
+                const testimonials = tmSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+                const approvedTm = testimonials.filter(t => t.approved === true);
+                log(`  ${testimonials.length} depoimentos total, ${approvedTm.length} aprovados`, 'info');
+
+                for (const tm of approvedTm) {
+                    // Receiver gets 50 pts
+                    if (tm.toUid && !tm.toUid.includes(' ')) {
+                        addPts(tm.toUid, 'testimonials_received', 50, tm.toName);
+                    }
+                    // Sender gets 10 pts
+                    if (tm.fromUid && !tm.fromUid.includes(' ')) {
+                        addPts(tm.fromUid, 'testimonials_sent', 10, tm.fromName);
+                    }
+                }
+
+                setStep('step-testimonials', 'done');
+                setProgress(35, 'Depoimentos concluídos. Carregando fórum...');
+
+                // ═══ STEP 3: FORUM ═══
+                setStep('step-forum', 'active');
+                log('💬 FÓRUM: Carregando tópicos...', 'module');
+
+                let forumTopicsCount = 0, forumRepliesCount = 0;
+                try {
+                    const topicsSnap = await db.collection('forum_topics').get();
+                    const topics = topicsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+                    log(`  ${topics.length} tópicos encontrados`, 'info');
+
+                    for (const topic of topics) {
+                        if (topic.authorUid && !topic.authorUid.includes(' ')) {
+                            addPts(topic.authorUid, 'forum', 5, topic.authorName);
+                            forumTopicsCount++;
+
+                            // Check for solution marked
+                            if (topic.solutionReplyId && topic.solutionAuthorUid) {
+                                addPts(topic.solutionAuthorUid, 'forum', 15);
+                            }
+                        }
+
+                        // Load replies
+                        try {
+                            const repliesSnap = await db.collection('forum_topics').doc(topic.id).collection('replies').get();
+                            for (const reply of repliesSnap.docs) {
+                                const replyData = reply.data();
+                                if (replyData.authorUid && !replyData.authorUid.includes(' ')) {
+                                    addPts(replyData.authorUid, 'forum', 3, replyData.authorName);
+                                    forumRepliesCount++;
+                                }
+                            }
+                        } catch (e) { /* no replies subcollection */ }
+                    }
+                    log(`  ${forumTopicsCount} tópicos (+5pts), ${forumRepliesCount} respostas (+3pts)`, 'info');
+                } catch (e) {
+                    log(`  Coleção forum_topics não encontrada ou vazia`, 'warn');
+                }
+
+                setStep('step-forum', 'done');
+                setProgress(50, 'Fórum concluído. Carregando rotina administrativa...');
+
+                // ═══ STEP 4: ROTINA ADM ═══
+                setStep('step-routines', 'active');
+                log('📅 ROTINA ADM: Carregando checklists...', 'module');
+
+                let routineCount = 0;
+                try {
+                    const routineSnap = await db.collection('rotina_checklist').get();
+                    const routines = routineSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+                    log(`  ${routines.length} registros de rotina encontrados`, 'info');
+
+                    for (const r of routines) {
+                        const uid = r.uid || r.userId;
+                        if (uid && !uid.includes(' ') && r.completed) {
+                            addPts(uid, 'routines', 15, r.userName);
+                            routineCount++;
+                        }
+                    }
+                    log(`  ${routineCount} rotinas completadas (+15pts cada)`, 'info');
+                } catch (e) {
+                    log(`  Coleção rotina_checklist não encontrada`, 'warn');
+                    // Try alternative collection name
+                    try {
+                        const routineSnap2 = await db.collection('daily_routines').get();
+                        for (const doc of routineSnap2.docs) {
+                            const r = doc.data();
+                            const uid = r.uid || r.userId;
+                            if (uid && !uid.includes(' ') && r.completed) {
+                                addPts(uid, 'routines', 15, r.userName);
+                                routineCount++;
+                            }
+                        }
+                        log(`  (alt) ${routineCount} rotinas em daily_routines`, 'info');
+                    } catch (e2) { log('  Nenhuma coleção de rotinas encontrada', 'warn'); }
+                }
+
+                setStep('step-routines', 'done');
+                setProgress(65, 'Rotinas concluídas. Carregando relatórios...');
+
+                // ═══ STEP 5: REPORTS ═══
+                setStep('step-reports', 'active');
+                log('📝 RELATÓRIOS: Carregando...', 'module');
+
+                let reportCount = 0;
+                try {
+                    const reportsSnap = await db.collection('reports').get();
+                    for (const doc of reportsSnap.docs) {
+                        const r = doc.data();
+                        const uid = r.authorUid || r.uid || r.creatorUid;
+                        if (uid && !uid.includes(' ')) {
+                            addPts(uid, 'reports', 10, r.authorName || r.creatorName);
+                            reportCount++;
+                        }
+                    }
+                    log(`  ${reportCount} relatórios encontrados (+10pts cada)`, 'info');
+                } catch (e) {
+                    log(`  Coleção reports não encontrada`, 'warn');
+                }
+
+                setStep('step-reports', 'done');
+                setProgress(80, 'Relatórios concluídos. Carregando cursos...');
+
+                // ═══ STEP 6: COURSES ═══
+                setStep('step-courses', 'active');
+                log('📚 CURSOS: Carregando progresso...', 'module');
+
+                let courseCount = 0, moduleCount = 0;
+                try {
+                    const progressSnap = await db.collection('course_progress').get();
+                    for (const doc of progressSnap.docs) {
+                        const p = doc.data();
+                        const uid = p.uid || p.userId;
+                        if (!uid || uid.includes(' ')) continue;
+
+                        // Modules completed
+                        if (p.completedModules && Array.isArray(p.completedModules)) {
+                            const mods = p.completedModules.length;
+                            addPts(uid, 'courses', mods * 5);
+                            moduleCount += mods;
+                        }
+
+                        // Course completed
+                        if (p.completed || p.courseCompleted) {
+                            const coursePts = p.coursePoints || 20;
+                            addPts(uid, 'courses', coursePts);
+                            courseCount++;
+                        }
+                    }
+                    log(`  ${moduleCount} módulos (+5pts) e ${courseCount} cursos completos`, 'info');
+                } catch (e) {
+                    log(`  Coleção course_progress não encontrada`, 'warn');
+                }
+
+                // Also check user_courses
+                try {
+                    const ucSnap = await db.collection('user_courses').get();
+                    for (const doc of ucSnap.docs) {
+                        const uc = doc.data();
+                        const uid = uc.uid || uc.userId || doc.id.split('_')[0];
+                        if (!uid || uid.includes(' ')) continue;
+                        if (uc.completed && !uc._counted) {
+                            addPts(uid, 'courses', uc.points || 20);
+                            courseCount++;
+                        }
+                    }
+                } catch (e) { /* no user_courses */ }
+
+                setStep('step-courses', 'done');
+                setProgress(90, 'Cursos concluídos. Preparando resultados...');
+
+                // ═══ STEP 7: LOAD CURRENT POINTS AND COMPARE ═══
+                setStep('step-apply', 'active');
+                log('', '');
+                log('═══ COMPARANDO COM PONTOS ATUAIS ═══', 'module');
+
+                // Also load user names from users collection
+                const usersSnap = await db.collection('users').get();
+                const usersMap = {};
+                usersSnap.docs.forEach(d => {
+                    usersMap[d.id] = d.data().nome || d.data().name || d.data().displayName || d.id;
+                });
+
+                // Load current points
+                const currentPointsSnap = await db.collection('user_points').get();
+                const currentPoints = {};
+                currentPointsSnap.docs.forEach(d => {
+                    currentPoints[d.id] = d.data();
+                });
+
+                // Fill user names
+                for (const uid of Object.keys(userPoints)) {
+                    if (usersMap[uid]) userPoints[uid].nome = usersMap[uid];
+                }
+
+                // Calculate differences
+                let totalUsersAffected = 0;
+                let totalPointsAdded = 0;
+                let totalPointsKept = 0;
+                const results = [];
+
+                for (const [uid, data] of Object.entries(userPoints)) {
+                    const current = currentPoints[uid]?.total_points || 0;
+                    const recalculated = data.total;
+                    // Use the GREATER of: current points or recalculated (never reduce)
+                    const finalPoints = Math.max(current, recalculated);
+                    const diff = finalPoints - current;
+
+                    results.push({
+                        uid,
+                        nome: data.nome,
+                        current,
+                        recalculated,
+                        final: finalPoints,
+                        diff,
+                        level: calculateLevel(finalPoints),
+                        breakdown: data
+                    });
+
+                    if (diff > 0) {
+                        totalUsersAffected++;
+                        totalPointsAdded += diff;
+                    }
+                    totalPointsKept += finalPoints;
+                }
+
+                // Also include users with current points but no recalculated (keep them)
+                for (const [uid, data] of Object.entries(currentPoints)) {
+                    if (!userPoints[uid]) {
+                        results.push({
+                            uid,
+                            nome: data.name || data.nome || usersMap[uid] || uid,
+                            current: data.total_points || 0,
+                            recalculated: 0,
+                            final: data.total_points || 0,
+                            diff: 0,
+                            level: calculateLevel(data.total_points || 0),
+                            breakdown: {}
+                        });
+                    }
+                }
+
+                // Sort by diff descending
+                results.sort((a, b) => b.diff - a.diff);
+
+                log(`Total: ${results.length} usuários analisados`, 'info');
+                log(`${totalUsersAffected} usuários receberão pontos retroativos`, 'success');
+                log(`${totalPointsAdded.toLocaleString()} pontos serão adicionados no total`, 'success');
+
+                // ═══ RENDER RESULTS ═══
+                document.getElementById('results-card').style.display = 'block';
+
+                document.getElementById('stats-grid').innerHTML = `
+          <div class="stat-card"><div class="stat-value">${results.length}</div><div class="stat-label">Usuários</div></div>
+          <div class="stat-card"><div class="stat-value">${totalUsersAffected}</div><div class="stat-label">Afetados</div></div>
+          <div class="stat-card"><div class="stat-value">+${totalPointsAdded.toLocaleString()}</div><div class="stat-label">Pontos Novos</div></div>
+          <div class="stat-card"><div class="stat-value">${validatedTasks.length}</div><div class="stat-label">Tasks OK</div></div>
+          <div class="stat-card"><div class="stat-value">${approvedTm.length}</div><div class="stat-label">Depoimentos</div></div>
+          <div class="stat-card"><div class="stat-value">${forumTopicsCount + forumRepliesCount}</div><div class="stat-label">Fórum Posts</div></div>
+        `;
+
+                const tbody = document.getElementById('users-tbody');
+                tbody.innerHTML = results.map(r => `
+          <tr>
+            <td><strong>${r.nome}</strong><br><span style="font-size:10px;color:#64748b;">${r.uid.substring(0, 12)}...</span></td>
+            <td>${r.current.toLocaleString()}</td>
+            <td>${r.recalculated.toLocaleString()}</td>
+            <td>${r.diff > 0 ? `<span class="badge badge-green">+${r.diff.toLocaleString()}</span>` : r.diff === 0 ? '<span class="badge badge-blue">sem mudança</span>' : `<span class="badge badge-yellow">${r.diff.toLocaleString()} (mantido)</span>`}</td>
+            <td>Nv.${r.level}</td>
+          </tr>
+        `).join('');
+
+                // ═══ APPLY CHANGES ═══
+                if (applyChanges && totalUsersAffected > 0) {
+                    log('', '');
+                    log('═══ APLICANDO PONTOS NO FIRESTORE ═══', 'module');
+                    setProgress(92, 'Aplicando pontos...');
+
+                    let applied = 0;
+                    const batch_size = 400; // Firestore batch limit is 500
+                    let batch = db.batch();
+                    let batchCount = 0;
+
+                    for (const r of results) {
+                        if (r.diff <= 0) continue;
+
+                        const userRef = db.collection('user_points').doc(r.uid);
+                        batch.set(userRef, {
+                            uid: r.uid,
+                            name: r.nome,
+                            nome: r.nome,
+                            total_points: r.final,
+                            level: r.level,
+                            last_updated: firebase.firestore.FieldValue.serverTimestamp(),
+                            retroactive_recalc: true,
+                            retroactive_date: new Date().toISOString()
+                        }, { merge: true });
+
+                        // Create transaction record
+                        const txRef = db.collection('points_transactions').doc();
+                        batch.set(txRef, {
+                            uid: r.uid,
+                            amount: r.diff,
+                            points: r.diff,
+                            type: 'RETROACTIVE_RECALC',
+                            action_type: 'RETROACTIVE_RECALC',
+                            action_label: `Recalculação retroativa de pontos (+${r.diff} pts)`,
+                            description: `Recalculação retroativa: Kanban(${r.breakdown.kanban || 0}), Depoimentos(${(r.breakdown.testimonials_sent || 0) + (r.breakdown.testimonials_received || 0)}), Fórum(${r.breakdown.forum || 0}), Outros(${(r.breakdown.routines || 0) + (r.breakdown.reports || 0) + (r.breakdown.courses || 0)})`,
+                            balance_after: r.final,
+                            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                            created_at: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+
+                        batchCount += 2;
+                        applied++;
+
+                        // Commit batch if near limit
+                        if (batchCount >= batch_size) {
+                            await batch.commit();
+                            log(`  Batch commitado: ${applied} usuários processados`, 'info');
+                            batch = db.batch();
+                            batchCount = 0;
+                        }
+                    }
+
+                    // Commit remaining
+                    if (batchCount > 0) {
+                        await batch.commit();
+                    }
+
+                    log(`✅ ${applied} usuários atualizados com sucesso!`, 'success');
+                    log(`✅ ${totalPointsAdded.toLocaleString()} pontos retroativos aplicados!`, 'success');
+
+                    // Also update achievement stats
+                    log('', '');
+                    log('🏅 Atualizando estatísticas de conquistas...', 'module');
+                    let achBatch = db.batch();
+                    let achCount = 0;
+
+                    for (const r of results) {
+                        if (!r.breakdown || Object.keys(r.breakdown).length === 0) continue;
+                        const statsRef = db.collection('user_achievements').doc(r.uid);
+                        const stats = {};
+                        if (r.breakdown.kanban > 0) stats['stats.tasks_completed'] = firebase.firestore.FieldValue.increment(0); // Don't overwrite, just ensure exists
+                        // Set actual computed stats
+                        const computedStats = {
+                            'stats.retroactive_recalc': true,
+                            'stats.last_recalc': new Date().toISOString()
+                        };
+
+                        achBatch.set(statsRef, computedStats, { merge: true });
+                        achCount++;
+
+                        if (achCount >= 400) {
+                            await achBatch.commit();
+                            achBatch = db.batch();
+                            achCount = 0;
+                        }
+                    }
+                    if (achCount > 0) await achBatch.commit();
+                    log(`  ${Object.keys(userPoints).length} registros de conquistas atualizados`, 'success');
+
+                    setStep('step-apply', 'done');
+                } else if (!applyChanges) {
+                    log('', '');
+                    log('ℹ️ Modo SIMULAÇÃO — nenhuma alteração foi feita no Firestore', 'info');
+                    log('ℹ️ Clique em "Recalcular e Aplicar Pontos" para aplicar as mudanças', 'info');
+                    setStep('step-apply', 'done');
+                } else {
+                    log('ℹ️ Nenhum usuário precisa de ajuste', 'info');
+                    setStep('step-apply', 'done');
+                }
+
+                setProgress(100, applyChanges ? '✅ Recalculação concluída e aplicada!' : '✅ Simulação concluída!');
+                log('', '');
+                log(`═══ FIM: ${mode} ═══`, 'module');
+
+            } catch (err) {
+                console.error(err);
+                log(`❌ ERRO: ${err.message}`, 'error');
+                setProgress(0, 'Erro na execução');
+            } finally {
+                btnSim.disabled = false;
+                btnApp.disabled = false;
+            }
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEP Gamification | Rules & Rewards</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Orbitron:wght@400;700;900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+            --primary: #8b5cf6;
+            --primary-glow: rgba(139, 92, 246, 0.5);
+            --secondary: #06b6d4;
+            --accent: #f59e0b;
+            --text-main: #f8fafc;
+            --text-sec: #94a3b8;
+            --success: #10b981;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: 'Outfit', sans-serif;
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        .ambient-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            background:
+                radial-gradient(circle at 10% 20%, rgba(139, 92, 246, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 90% 80%, rgba(6, 182, 212, 0.15) 0%, transparent 50%);
+            z-index: -1;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* HERO */
+        header {
+            text-align: center;
+            padding: 80px 0 60px;
+        }
+
+        h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 4rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #fff 0%, #a78bfa 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 20px;
+            text-shadow: 0 0 30px var(--primary-glow);
+        }
+
+        .subtitle {
+            font-size: 1.25rem;
+            color: var(--text-sec);
+            max-width: 600px;
+            margin: 0 auto 40px;
+        }
+
+        /* GRID SYSTEM */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+        }
+
+        section {
+            padding: 60px 0;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .section-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.5rem;
+            margin-bottom: 40px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .section-title i {
+            color: var(--accent);
+        }
+
+        /* CARDS */
+        .card {
+            background: rgba(30, 41, 59, 0.6);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 30px;
+            transition: transform 0.3s;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary);
+            box-shadow: 0 10px 30px -10px var(--primary-glow);
+        }
+
+        .point-source {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .point-source:last-child {
+            border-bottom: none;
+        }
+
+        .source-name {
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .source-val {
+            font-family: 'Orbitron';
+            color: var(--success);
+            font-weight: bold;
+        }
+
+        /* LEVELS */
+        .level-progress {
+            background: var(--bg-card);
+            padding: 40px;
+            border-radius: 24px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .level-progress::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+        }
+
+        /* ACHIEVEMENTS GRID */
+        .achievements-wrapper {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .achievement-item {
+            background: #1e293b;
+            padding: 24px;
+            border-radius: 16px;
+            text-align: center;
+            border: 1px solid transparent;
+            transition: 0.3s;
+        }
+
+        .achievement-item:hover {
+            background: #25334d;
+            border-color: var(--accent);
+        }
+
+        .ach-icon {
+            font-size: 3rem;
+            margin-bottom: 16px;
+            display: block;
+        }
+
+        .ach-title {
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: #fff;
+        }
+
+        .ach-desc {
+            font-size: 0.85rem;
+            color: var(--text-sec);
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.5rem;
+            }
+
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="ambient-bg"></div>
+
+    <header>
+        <div class="container">
+            <h1>NEP GAMIFICATION</h1>
+            <p class="subtitle">Guia oficial de pontuação, níveis e conquistas do ecossistema.</p>
+            <div style="display: flex; gap: 16px; justify-content: center;">
+                <span class="badg"
+                    style="background: rgba(139,92,246,0.2); color:#a78bfa; padding:8px 16px; border-radius:30px; font-weight:600;">v2.0
+                    System</span>
+                <span class="badg"
+                    style="background: rgba(16,185,129,0.2); color:#10b981; padding:8px 16px; border-radius:30px; font-weight:600;">Live
+                    Now</span>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- POINTS SOURCES -->
+        <section>
+            <h2 class="section-title"><i class="fa-solid fa-coins"></i> Como Ganhar Pontos</h2>
+            <div class="grid-2">
+                <!-- Kanban -->
+                <div class="card">
+                    <h3 style="margin-bottom: 20px; color: var(--secondary);"><i class="fa-solid fa-list-check"></i>
+                        Kanban & Demandas</h3>
+                    <p style="margin-bottom: 20px; font-size: 0.9rem; color: var(--text-sec);">Pontos calculados na
+                        validação da entrega. Fórmula: <code>(Prioridade * Complexidade)</code></p>
+
+                    <div class="point-source">
+                        <span class="source-name"><span style="color:#94a3b8;">●</span> Prioridade Baixa</span>
+                        <span class="source-val">5 XP * Comp.</span>
+                    </div>
+                    <div class="point-source">
+                        <span class="source-name"><span style="color:#60a5fa;">●</span> Prioridade Média</span>
+                        <span class="source-val">10 XP * Comp.</span>
+                    </div>
+                    <div class="point-source">
+                        <span class="source-name"><span style="color:#fbbf24;">●</span> Prioridade Alta</span>
+                        <span class="source-val">15 XP * Comp.</span>
+                    </div>
+                    <div class="point-source">
+                        <span class="source-name"><span style="color:#f87171;">●</span> Prioridade Urgente</span>
+                        <span class="source-val">25 XP * Comp.</span>
+                    </div>
+                    <div
+                        style="margin-top: 16px; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                        <div style="font-size: 0.8rem; margin-bottom: 4px;">MULTIPLICADORES DE COMPLEXIDADE:</div>
+                        <div
+                            style="display: flex; justify-content: space-between; font-size: 0.9rem; font-weight: bold;">
+                            <span>Baixa (x1)</span>
+                            <span>Média (x1.5)</span>
+                            <span>Alta (x2)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Others -->
+                <div class="card">
+                    <h3 style="margin-bottom: 20px; color: var(--accent);"><i class="fa-solid fa-star"></i> Interação &
+                        Aprendizado</h3>
+
+                    <div class="point-source">
+                        <span class="source-name"><i class="fa-solid fa-graduation-cap"></i> Concluir Curso</span>
+                        <span class="source-val">80 - 150 XP</span>
+                    </div>
+                    <div class="point-source">
+                        <span class="source-name"><i class="fa-solid fa-heart"></i> Receber Elogio</span>
+                        <span class="source-val">50 XP</span>
+                    </div>
+                    <div class="point-source">
+                        <span class="source-name"><i class="fa-solid fa-check-circle"></i> Solução no Fórum</span>
+                        <span class="source-val">15 XP</span>
+                    </div>
+                    <div class="point-source">
+                        <span class="source-name"><i class="fa-regular fa-paper-plane"></i> Enviar Elogio</span>
+                        <span class="source-val">10 XP</span>
+                    </div>
+                    <div class="point-source">
+                        <span class="source-name"><i class="fa-solid fa-pen"></i> Criar Tópico Fórum</span>
+                        <span class="source-val">5 XP</span>
+                    </div>
+                    <div class="point-source">
+                        <span class="source-name"><i class="fa-regular fa-comment"></i> Responder Fórum</span>
+                        <span class="source-val">3 XP</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- LEVELS -->
+        <section>
+            <h2 class="section-title"><i class="fa-solid fa-layer-group"></i> Níveis e Progressão</h2>
+            <div class="level-progress">
+                <div style="font-size: 1.2rem; margin-bottom: 20px;">O nível é calculado automaticamente:
+                    <code>Nível = √ (Pontos / 100)</code></div>
+
+                <div class="grid-3" style="text-align: left;">
+                    <div>
+                        <h4 style="color: var(--success); margin-bottom: 10px;">Nível 1 (Iniciante)</h4>
+                        <p style="font-size: 0.9rem; color: var(--text-sec);">0 - 399 XP</p>
+                    </div>
+                    <div>
+                        <h4 style="color: var(--secondary); margin-bottom: 10px;">Nível 2 (Intermediário)</h4>
+                        <p style="font-size: 0.9rem; color: var(--text-sec);">400 - 899 XP</p>
+                    </div>
+                    <div>
+                        <h4 style="color: var(--primary); margin-bottom: 10px;">Nível 3 (Avançado)</h4>
+                        <p style="font-size: 0.9rem; color: var(--text-sec);">900 - 1599 XP</p>
+                    </div>
+                    <div>
+                        <h4 style="color: var(--accent); margin-bottom: 10px;">Nível 5 (Mestre)</h4>
+                        <p style="font-size: 0.9rem; color: var(--text-sec);">2500+ XP</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ACHIEVEMENTS -->
+        <section>
+            <h2 class="section-title"><i class="fa-solid fa-trophy"></i> Lista de Conquistas</h2>
+            <div class="achievements-wrapper">
+                <div class="achievement-item">
+                    <span class="ach-icon">🚀</span>
+                    <div class="ach-title">Primeiro Passo</div>
+                    <div class="ach-desc">Complete sua 1ª demanda no Kanban.</div>
+                </div>
+                <div class="achievement-item">
+                    <span class="ach-icon">⭐</span>
+                    <div class="ach-title">Cinco Estrelas</div>
+                    <div class="ach-desc">Acumule 5 demandas concluídas.</div>
+                </div>
+                <div class="achievement-item">
+                    <span class="ach-icon">🔟</span>
+                    <div class="ach-title">Top 10</div>
+                    <div class="ach-desc">Marca de 10 entregas de sucesso.</div>
+                </div>
+                <div class="achievement-item">
+                    <span class="ach-icon">💬</span>
+                    <div class="ach-title">Comunicador</div>
+                    <div class="ach-desc">Faça sua primeira postagem no fórum.</div>
+                </div>
+                <div class="achievement-item">
+                    <span class="ach-icon">🎓</span>
+                    <div class="ach-title">Estudioso</div>
+                    <div class="ach-desc">Conclua um curso completo na plataforma.</div>
+                </div>
+                <div class="achievement-item">
+                    <span class="ach-icon">💯</span>
+                    <div class="ach-title">Centenário</div>
+                    <div class="ach-desc">Acumule seus primeiros 100 pontos totais.</div>
+                </div>
+                <div class="achievement-item" style="border-color: var(--accent); background: rgba(245, 158, 11, 0.1);">
+                    <span class="ach-icon">👑</span>
+                    <div class="ach-title">Mestre</div>
+                    <div class="ach-desc">Alcance o Nível 5 na hierarquia de XP.</div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <footer
+        style="text-align: center; padding: 40px; color: var(--text-sec); border-top: 1px solid rgba(255,255,255,0.05); margin-top: 40px;">
+        <p>Acesse seu <strong>Perfil</strong> para ver seu progresso em tempo real.</p>
+        <p style="font-size: 0.8rem; margin-top: 10px;">&copy; 2024 Ecossistema NEP</p>
+    </footer>
+</body>
+
+</html>

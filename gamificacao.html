@@ -1,0 +1,1206 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEP | Guia de Gamificação</title>
+    <meta name="description"
+        content="Guia completo do sistema de gamificação do NEP Delivery Control — pontos, níveis, conquistas e ranking.">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Orbitron:wght@500;700;900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg: #020408;
+            --surface: rgba(255, 255, 255, 0.04);
+            --surface-hover: rgba(255, 255, 255, 0.07);
+            --border: rgba(255, 255, 255, 0.08);
+            --text: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-tertiary: #64748b;
+            --primary: #3b82f6;
+            --accent: #8b5cf6;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Inter', sans-serif;
+            line-height: 1.7;
+            overflow-x: hidden;
+        }
+
+        /* ═══ BG EFFECTS ═══ */
+        .bg-grid {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            background-image:
+                linear-gradient(rgba(59, 130, 246, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(59, 130, 246, 0.03) 1px, transparent 1px);
+            background-size: 60px 60px;
+        }
+
+        .orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(100px);
+            opacity: .4;
+            pointer-events: none;
+            animation: drift 20s ease-in-out infinite;
+        }
+
+        .orb-1 {
+            width: 500px;
+            height: 500px;
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            top: -150px;
+            left: -100px;
+        }
+
+        .orb-2 {
+            width: 400px;
+            height: 400px;
+            background: linear-gradient(135deg, #a855f7, #7c3aed);
+            bottom: -100px;
+            right: -100px;
+            animation-delay: 5s;
+        }
+
+        .orb-3 {
+            width: 300px;
+            height: 300px;
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            top: 50%;
+            left: 60%;
+            animation-delay: 10s;
+        }
+
+        @keyframes drift {
+
+            0%,
+            100% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            33% {
+                transform: translate(30px, -40px) scale(1.08);
+            }
+
+            66% {
+                transform: translate(-20px, 30px) scale(0.95);
+            }
+        }
+
+        /* ═══ LAYOUT ═══ */
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 24px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ═══ HERO ═══ */
+        .hero {
+            text-align: center;
+            padding: 80px 0 60px;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(59, 130, 246, 0.12);
+            border: 1px solid rgba(59, 130, 246, 0.25);
+            padding: 6px 16px;
+            border-radius: 100px;
+            font-size: 13px;
+            font-weight: 500;
+            color: #60a5fa;
+            margin-bottom: 24px;
+        }
+
+        .hero h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(32px, 5vw, 56px);
+            font-weight: 900;
+            letter-spacing: -1px;
+            background: linear-gradient(135deg, #fff 0%, #60a5fa 50%, #a78bfa 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 16px;
+        }
+
+        .hero p {
+            font-size: 18px;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* ═══ NAV PILLS ═══ */
+        .nav-pills {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 60px;
+            padding: 0 20px;
+        }
+
+        .nav-pill {
+            padding: 8px 18px;
+            border-radius: 100px;
+            font-size: 13px;
+            font-weight: 500;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: .2s;
+            text-decoration: none;
+        }
+
+        .nav-pill:hover {
+            background: var(--surface-hover);
+            color: var(--text);
+            border-color: rgba(255, 255, 255, .15);
+        }
+
+        /* ═══ SECTIONS ═══ */
+        .section {
+            margin-bottom: 80px;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 32px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .section-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+
+        .section-header h2 {
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .section-header p {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+
+        /* ═══ CARDS ═══ */
+        .card-grid {
+            display: grid;
+            gap: 16px;
+        }
+
+        .card-grid.cols-2 {
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+        }
+
+        .card-grid.cols-3 {
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        }
+
+        .card-grid.cols-4 {
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        }
+
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            transition: .25s;
+        }
+
+        .card:hover {
+            border-color: rgba(255, 255, 255, .12);
+            transform: translateY(-2px);
+        }
+
+        /* ═══ POINTS TABLE ═══ */
+        .points-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .points-table th {
+            text-align: left;
+            padding: 14px 20px;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-tertiary);
+            background: rgba(255, 255, 255, .02);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .points-table td {
+            padding: 14px 20px;
+            border-bottom: 1px solid var(--border);
+            font-size: 14px;
+        }
+
+        .points-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .points-table tr:hover td {
+            background: rgba(255, 255, 255, .02);
+        }
+
+        .pts-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: rgba(59, 130, 246, .12);
+            color: #60a5fa;
+            padding: 3px 10px;
+            border-radius: 100px;
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        /* ═══ LEVELS ═══ */
+        .level-formula {
+            background: linear-gradient(135deg, rgba(139, 92, 246, .08), rgba(59, 130, 246, .08));
+            border: 1px solid rgba(139, 92, 246, .2);
+            border-radius: 16px;
+            padding: 32px;
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .formula {
+            font-family: 'Orbitron', monospace;
+            font-size: clamp(18px, 3vw, 28px);
+            font-weight: 700;
+            color: #a78bfa;
+            margin-bottom: 12px;
+        }
+
+        .formula sub {
+            font-size: .6em;
+            color: var(--text-tertiary);
+        }
+
+        .level-examples {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        .level-chip {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 8px 16px;
+            border-radius: 100px;
+            font-size: 13px;
+        }
+
+        .level-chip strong {
+            color: #a78bfa;
+        }
+
+        /* ═══ LEAGUES ═══ */
+        .league-card {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 20px 24px;
+            border-radius: 16px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            transition: .2s;
+        }
+
+        .league-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .league-icon {
+            font-size: 36px;
+        }
+
+        .league-name {
+            font-weight: 700;
+            font-size: 16px;
+        }
+
+        .league-req {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        /* ═══ ACHIEVEMENTS ═══ */
+        .ach-category-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            margin: 32px 0 14px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .ach-category-title:first-child {
+            margin-top: 0;
+        }
+
+        .ach-card {
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            padding: 16px;
+            border-radius: 12px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+        }
+
+        .ach-icon {
+            font-size: 28px;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .ach-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .ach-name {
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 2px;
+        }
+
+        .ach-desc {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .ach-meta {
+            display: flex;
+            gap: 8px;
+            margin-top: 6px;
+        }
+
+        .ach-rarity {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 100px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+        }
+
+        .ach-pts {
+            font-size: 11px;
+            color: #60a5fa;
+            font-weight: 600;
+        }
+
+        /* Rarity Colors */
+        .rarity-comum {
+            background: rgba(156, 163, 175, .15);
+            color: #9CA3AF;
+        }
+
+        .rarity-incomum {
+            background: rgba(16, 185, 129, .15);
+            color: #10B981;
+        }
+
+        .rarity-raro {
+            background: rgba(59, 130, 246, .15);
+            color: #3B82F6;
+        }
+
+        .rarity-épico {
+            background: rgba(139, 92, 246, .15);
+            color: #8B5CF6;
+        }
+
+        .rarity-lendário {
+            background: rgba(245, 158, 11, .15);
+            color: #F59E0B;
+        }
+
+        /* ═══ FOOTER ═══ */
+        .footer {
+            text-align: center;
+            padding: 48px 0;
+            border-top: 1px solid var(--border);
+            color: var(--text-tertiary);
+            font-size: 13px;
+        }
+
+        .footer a {
+            color: #60a5fa;
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+        .footer .brand {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 8px;
+        }
+
+        /* ═══ RESPONSIVE ═══ */
+        @media (max-width:768px) {
+            .hero {
+                padding: 48px 0 40px;
+            }
+
+            .card-grid.cols-3,
+            .card-grid.cols-4 {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .points-table {
+                font-size: 13px;
+            }
+
+            .points-table th,
+            .points-table td {
+                padding: 10px 14px;
+            }
+        }
+
+        @media (max-width:500px) {
+
+            .card-grid.cols-2,
+            .card-grid.cols-3,
+            .card-grid.cols-4 {
+                grid-template-columns: 1fr;
+            }
+
+            .level-examples {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+
+        /* Smooth scroll */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        /* Animate in */
+        .animate-in {
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeUp .6s ease forwards;
+        }
+
+        @keyframes fadeUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .delay-1 {
+            animation-delay: .1s;
+        }
+
+        .delay-2 {
+            animation-delay: .2s;
+        }
+
+        .delay-3 {
+            animation-delay: .3s;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="bg-grid"></div>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+
+    <div class="container">
+
+        <!-- ═══ HERO ═══ -->
+        <section class="hero animate-in">
+            <div class="hero-badge">🏆 Guia Completo</div>
+            <h1>SISTEMA DE GAMIFICAÇÃO</h1>
+            <p>Entenda como ganhar pontos, subir de nível, desbloquear conquistas e alcançar o topo do ranking.</p>
+        </section>
+
+        <!-- ═══ NAV ═══ -->
+        <nav class="nav-pills animate-in delay-1">
+            <a href="#pontos" class="nav-pill">⭐ Pontos</a>
+            <a href="#niveis" class="nav-pill">📈 Níveis</a>
+            <a href="#ligas" class="nav-pill">🏅 Ligas</a>
+            <a href="#conquistas" class="nav-pill">🏆 44 Conquistas</a>
+            <a href="#dicas" class="nav-pill">💡 Dicas</a>
+        </nav>
+
+        <!-- ═══ 1. PONTOS ═══ -->
+        <section class="section animate-in delay-2" id="pontos">
+            <div class="section-header">
+                <div class="section-icon" style="background:rgba(59,130,246,.12);">⭐</div>
+                <div>
+                    <h2>Como Ganhar Pontos</h2>
+                    <p>Cada ação no sistema vale pontos. Acumule para subir de nível e desbloquear conquistas.</p>
+                </div>
+            </div>
+
+            <table class="points-table">
+                <thead>
+                    <tr>
+                        <th>Ação</th>
+                        <th>Módulo</th>
+                        <th>Pontos</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Criar tópico no fórum</td>
+                        <td>💬 Fórum</td>
+                        <td><span class="pts-badge">+5</span></td>
+                    </tr>
+                    <tr>
+                        <td>Responder tópico</td>
+                        <td>💬 Fórum</td>
+                        <td><span class="pts-badge">+3</span></td>
+                    </tr>
+                    <tr>
+                        <td>Resposta marcada como solução</td>
+                        <td>💬 Fórum</td>
+                        <td><span class="pts-badge">+15</span></td>
+                    </tr>
+                    <tr>
+                        <td>Enviar depoimento/elogio</td>
+                        <td>❤️ Depoimentos</td>
+                        <td><span class="pts-badge">+10</span></td>
+                    </tr>
+                    <tr>
+                        <td>Receber um elogio</td>
+                        <td>❤️ Depoimentos</td>
+                        <td><span class="pts-badge">+50</span></td>
+                    </tr>
+                    <tr>
+                        <td>Completar tarefa no Kanban</td>
+                        <td>📋 Kanban</td>
+                        <td><span class="pts-badge">+20</span></td>
+                    </tr>
+                    <tr>
+                        <td>Checklist diário 100% completo</td>
+                        <td>📅 Rotina ADM</td>
+                        <td><span class="pts-badge">+15</span></td>
+                    </tr>
+                    <tr>
+                        <td>Concluir relatório</td>
+                        <td>📊 Relatórios</td>
+                        <td><span class="pts-badge">+10</span></td>
+                    </tr>
+                    <tr>
+                        <td>Desbloquear conquista</td>
+                        <td>🏆 Conquistas</td>
+                        <td><span class="pts-badge">+10~150</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- ═══ 2. NÍVEIS ═══ -->
+        <section class="section animate-in" id="niveis">
+            <div class="section-header">
+                <div class="section-icon" style="background:rgba(139,92,246,.12);">📈</div>
+                <div>
+                    <h2>Níveis</h2>
+                    <p>Seu nível é calculado automaticamente com base nos pontos acumulados.</p>
+                </div>
+            </div>
+
+            <div class="level-formula">
+                <div class="formula">Nível = ⌊ √(pontos ÷ 100) ⌋</div>
+                <p style="color:var(--text-secondary);font-size:14px;margin-bottom:20px;">
+                    Quanto mais pontos, mais difícil subir — cada nível exige mais que o anterior.
+                </p>
+                <div class="level-examples">
+                    <div class="level-chip"><strong>Nível 1</strong> → 100 pts</div>
+                    <div class="level-chip"><strong>Nível 2</strong> → 400 pts</div>
+                    <div class="level-chip"><strong>Nível 3</strong> → 900 pts</div>
+                    <div class="level-chip"><strong>Nível 5</strong> → 2.500 pts</div>
+                    <div class="level-chip"><strong>Nível 7</strong> → 4.900 pts</div>
+                    <div class="level-chip"><strong>Nível 10</strong> → 10.000 pts</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══ 3. LIGAS ═══ -->
+        <section class="section animate-in" id="ligas">
+            <div class="section-header">
+                <div class="section-icon" style="background:rgba(245,158,11,.12);">🏅</div>
+                <div>
+                    <h2>Ligas</h2>
+                    <p>Sua liga depende do total de pontos acumulados. Quanto mais pontos, maior seu prestígio.</p>
+                </div>
+            </div>
+
+            <div class="card-grid cols-3">
+                <div class="league-card" style="border-left:3px solid #CD7F32;">
+                    <span class="league-icon">🥉</span>
+                    <div>
+                        <div class="league-name">Bronze</div>
+                        <div class="league-req">0 pontos</div>
+                    </div>
+                </div>
+                <div class="league-card" style="border-left:3px solid #C0C0C0;">
+                    <span class="league-icon">🥈</span>
+                    <div>
+                        <div class="league-name">Prata</div>
+                        <div class="league-req">500+ pontos</div>
+                    </div>
+                </div>
+                <div class="league-card" style="border-left:3px solid #FFD700;">
+                    <span class="league-icon">🥇</span>
+                    <div>
+                        <div class="league-name">Ouro</div>
+                        <div class="league-req">1.500+ pontos</div>
+                    </div>
+                </div>
+                <div class="league-card" style="border-left:3px solid #E5E4E2;">
+                    <span class="league-icon">💎</span>
+                    <div>
+                        <div class="league-name">Platina</div>
+                        <div class="league-req">3.500+ pontos</div>
+                    </div>
+                </div>
+                <div class="league-card" style="border-left:3px solid #B9F2FF;">
+                    <span class="league-icon">💠</span>
+                    <div>
+                        <div class="league-name">Diamante</div>
+                        <div class="league-req">7.000+ pontos</div>
+                    </div>
+                </div>
+                <div class="league-card" style="border-left:3px solid #9B59B6;">
+                    <span class="league-icon">👑</span>
+                    <div>
+                        <div class="league-name">Mestre</div>
+                        <div class="league-req">15.000+ pontos</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══ 4. CONQUISTAS ═══ -->
+        <section class="section animate-in" id="conquistas">
+            <div class="section-header">
+                <div class="section-icon" style="background:rgba(245,158,11,.12);">🏆</div>
+                <div>
+                    <h2>44 Conquistas</h2>
+                    <p>Desbloqueie conquistas ao atingir marcos. Cada conquista dá pontos bônus!</p>
+                </div>
+            </div>
+
+            <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:24px;">
+                <span class="ach-rarity rarity-comum">● Comum</span>
+                <span class="ach-rarity rarity-incomum">● Incomum</span>
+                <span class="ach-rarity rarity-raro">● Raro</span>
+                <span class="ach-rarity rarity-épico">● Épico</span>
+                <span class="ach-rarity rarity-lendário">● Lendário</span>
+            </div>
+
+            <!-- KANBAN -->
+            <div class="ach-category-title" style="color:#3B82F6;">📋 Kanban <span
+                    style="font-size:12px;color:var(--text-tertiary);font-weight:400;">(8 conquistas)</span></div>
+            <div class="card-grid cols-2">
+                <div class="ach-card"><span class="ach-icon">🎯</span>
+                    <div class="ach-info">
+                        <div class="ach-name">Primeiro Passo</div>
+                        <div class="ach-desc">Completar sua primeira demanda no Kanban</div>
+                        <div class="ach-meta"><span class="ach-rarity rarity-comum">Comum</span><span
+                                class="ach-pts">+10 pts</span></div>
+                    </div>
+                </div>
+                <div class="ach-card"><span class="ach-icon">📋</span>
+                    <div class="ach-info">
+                        <div class="ach-name">Executor</div>
+                        <div class="ach-desc">Completar 5 demandas</div>
+                        <div class="ach-meta"><span class="ach-rarity rarity-comum">Comum</span><span
+                                class="ach-pts">+20 pts</span></div>
+                    </div>
+                </div>
+                <div class="ach-card"><span class="ach-icon">⚙️</span>
+                    <div class="ach-info">
+                        <div class="ach-name">Máquina de Demandas</div>
+                        <div class="ach-desc">Completar 25 demandas</div>
+                        <div class="ach-meta"><span class="ach-rarity rarity-raro">Raro</span><span class="ach-pts">+40
+                                pts</span></div>
+                    </div>
+                </div>
+                <div class="ach-card"><span class="ach-icon">🏛️</span>
+                    <div class="ach-info">
+                        <div class="ach-name">Centurião</div>
+                        <div class="ach-desc">Completar 100 demandas</div>
+                        <div class="ach-meta"><span class="ach-rarity rarity-épico">Épico</span><span
+                                class="ach-pts">+80 pts</span></div>
+                    </div>
+                </div>
+                <div class="ach-card"><span class="ach-icon">📝</span>
+                    <div class="ach-info">
+                        <div class="ach-name">Criador Nato</div>
+                        <div class="ach-desc">Criar 50 demandas no sistema</div>
+                        <div class="ach-meta"><span class="ach-rarity rarity-incomum">Incomum</span><span
+                                class="ach-pts">+30 pts</span></div>
+                    </div>
+                </div>
+                <div class="ach-card"><span class="ach-icon">⏰</span>
+                    <div class="ach-info">
+                        <div class="ach-name">Pontualidade</div>
+                        <div class="ach-desc">Entregar 10 tarefas dentro do prazo</div>
+                        <div class="ach-meta"><span class="ach-rarity rarity-incomum">Incomum</span><span
+                                class="ach-pts">+35 pts</span></div>
+                    </div>
+                </div>
+                <div class="ach-card"><span class="ach-icon">⚡</span>
+                    <div class="ach-info">
+                        <div class="ach-name">Relâmpago</div>
+                        <div class="ach-desc">Entregar uma tarefa em menos de 24 horas</div>
+                        <div class="ach-meta"><span class="ach-rarity rarity-incomum">Incomum</span><span
+                                class="ach-pts">+25 pts</span></div>
+                    </div>
+                </div>
+                <div class="ach-card"><span class="ach-icon">✅</span>
+                    <div class="ach-info">
+                        <div class="ach-name">Validador</div>
+                        <div class="ach-desc">Validar 25 entregas como gestor</div>
+                        <div class="ach-meta"><span class="ach-rarity rarity-raro">Raro</span><span class="ach-pts">+50
+                                pts</span></div>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- FÓRUM -->
+            <div class="ach-category-title" style="color:#10B981;">💬 Fórum <span
+                    style="font-size:12px;color:var(--text-tertiary);font-weight:400;">(6 conquistas)</span></div>
+            <div class="card-grid cols-2">
+                <div class="ach-card"><span class="ach-icon">💬</span>
+                    <div class="ach-info">
+                        <div class="ach-name">Comunicador</div>
+                        <div class="ach-desc">Criar seu primeiro tópico no fórum</div>
+                        <div class="ach-meta"><span class="ach-rarity rarity-comum">Comum</span><span
+                                class="ach-pts">+10 pts</span></div>
+                    </div>
+                </div>
+                <div class="ach-card"><span class="ach-icon">📢</span>
+                    <div class="ach-info">
+                        <div class="ach-name">Debatedor</div>
+                        <div class="ach-desc">Criar 10 tópicos no fórum</div>
+                        <div class="ach-meta"><span class="ach-rarity rarity-incomum">Incomum</span><span
+                                class="ach-pts">+30 pts</span></div>
+                    </div>
+                </div>
+                <div class="ach-card"><span class="ach-icon">📣</span>
+                    <div class="ach-info">
+                        <div class="ach-name">Influencer</div>
+                        <div class="ach-desc">Criar 50 tópicos no fórum</div>
+                        <div class="ach-meta"><span class="ach-rarity rarity-épico">Épico</span><span
+                                class="ach-pts">+60 pts</span></div>
+                    </div>
+                </div>
+                <div class="ach-card"><span class="ach-icon">💡</span>
+                    <div class="ach-info">
+                        <div class="ach-name">Solucionador</div>
+                        <div class="ach-desc">Ter uma resposta marcada como solução</div>
+                        <div class="ach-meta"><span class="ach-rarity rarity-incomum">Incomum</span><span
+                                class="ach-pts">+20 pts</span></div>
+                    </div>
+                </div>
+                <div class="ach-card"><span class="ach-icon">🧩</span>
+                    <div class="ach-info">
+                        <div class="ach-name">Guru do Fórum</div>
+                        <div class="ach-desc">Ter 5 respostas marcadas como solução</div>
+                        <div class="ach-meta"><span class="ach-rarity rarity-raro">Raro</span><span class="ach-pts">+50
+                                pts</span></div>
+                    </div>
+                </div>
+                <div class="ach-card"><span class="ach-icon">📚</span>
+                    <div class="ach-info">
+                        <div class="ach-name">Enciclopédia</div>
+                        <div class="ach-desc">Escrever 100 respostas no fórum</div>
+                        <div class="ach-meta"><span class="ach-rarity rarity-épico">Épico</span><span
+                                class="ach-pts">+70 pts</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SOCIAL -->
+            <div class="ach-category-title" style="color:#EC4899;">❤️ Social <span
+                    style="font-size:12px;color:var(--text-tertiary);font-weight:400;">(5 conquistas)</span></div>
+            <div class="card-grid cols-2">
+                <div class="ach-card"><span class="ach-icon">❤️</span>
+                    <div class="ach-info">
+                        <div class="ach-name">Colega Legal</div>
+                        <div class="ach-desc">Enviar seu primeiro depoimento</div>
+                        <div class="ach-meta"><span class="ach-rarity rarity-comum">Comum</span><span
+                                class="ach-pts">+10 pts</span></div>
+                    </div>
+                </div>
+                <div class="ach-card"><span class="ach-icon">🌟</span>
+                    <div class="ach-info">
+                        <div class="ach-name">Popular</div>
+                        <div class="ach-desc">Receber seu primeiro depoimento</div>
+                        <div class="ach-meta"><span class="ach-rarity rarity-comum">Comum</span><span
+                                class="ach-pts">+15 pts</span></div>
+                    </div>
+                </div>
+                <div class="ach-card"><span class="ach-icon">🤩</span>
+                    <div class="ach-info">
+                        <div class="ach-name">Celebridade</div>
+                        <div class="ach-desc">Receber 5 depoimentos</div>
+                        <div class="ach-meta"><span class="ach-rarity rarity-raro">Raro</span><span class="ach-pts">+40
+                                pts</span></div>
+                    </div>
+                </div>
+                <div class="ach-card"><span class="ach-icon">💌</span>
+                    <div class="ach-info">
+                        <div class="ach-name">Motivador</div>
+                        <div class="ach-desc">Enviar 10 depoimentos para colegas</div>
+                        <div class="ach-meta"><span class="ach-rarity rarity-incomum">Incomum</span><span
+                                class="ach-pts">+35 pts</span></div>
+                    </div>
+                </div>
+                <div class="ach-card"><span class="ach-icon">👏</span>
+                    <div class="ach-info">
+                        <div class="ach-name">Influenciador Social</div>
+                        <div class="ach-desc">Receber 25 depoimentos</div>
+                        <div class="ach-meta"><span class="ach-rarity rarity-épico">Épico</span><span
+                                class="ach-pts">+80 pts</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STREAK -->
+            <div class="ach-category-title" style="color:#F97316;">🔥 Streak <span
+                    style="font-size:12px;color:var(--text-tertiary);font-weight:400;">(5 conquistas)</span></div>
+            <div class="card-grid cols-2">
+                <div class="ach-card"><span class="ach-icon">🔥</span>
+                    <div class="ach-info">
+                        <div class="ach-name">Aquecendo</div>
+                        <div class="ach-desc">Manter um streak de 3 dias consecutivos</div>
+                        <div class="ach-meta"><span class="ach-rarity rarity-comum">Comum</span><span
+                                class="ach-pts">+15 pts</span></div>
+                    </div>
+                </div>
+                <div class="ach-card"><span class="ach-icon">🔥🔥</span>
+                    <div class="ach-info">
+                        <div class="ach-name">Semana de Fogo</div>
+                        <div class="ach-desc">Manter um streak de 7 dias consecutivos</div>
+                        <div class="ach-meta"><span class="ach-rarity rarity-incomum">Incomum</span><span
+                                class="ach-pts">+35 pts</span></div>
+                    </div>
+                </div>
+                <div class="ach-card"><span class="ach-icon">🌋</span>
+                    <div class="ach-info">
+                        <div class="ach-name">Quinzenista</div>
+                        <div class="ach-desc">Manter um streak de 15 dias consecutivos</div>
+                        <div class="ach-meta"><span class="ach-rarity rarity-raro">Raro</span><span class="ach-pts">+60
+                                pts</span></div>
+                    </div>
+                </div>
+                <div class="ach-card"><span class="ach-icon">🔥🔥🔥</span>
+                    <div class="ach-info">
+                        <div class="ach-name">Mês Insano</div>
+                        <div class="ach-desc">Manter um streak de 30 dias consecutivos</div>
+                        <div class="ach-meta"><span class="ach-rarity rarity-lendário">Lendário</span><span
+                                class="ach-pts">+100 pts</span></div>
+                    </div>
+                </div>
+                <div class="ach-card"><span class="ach-icon">👑</span>
+                    <div class="ach-info">
+                        <div class="ach-name">Rei do Retorno</div>
+                        <div class="ach-desc">Recuperar um streak perdido</div>
+                        <div class="ach-meta"><span class="ach-rarity rarity-incomum">Incomum</span><span
+                                class="ach-pts">+20 pts</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PONTOS & NÍVEIS -->
+            <div class="ach-category-title" style="color:#F59E0B;">🏆 Pontos & Níveis <span
+                    style="font-size:12px;color:var(--text-tertiary);font-weight:400;">(6 conquistas)</span></div>
+            <div class="card-grid cols-2">
+                <div class="ach-card"><span class="ach-icon">💯</span>
+                    <div class="ach-info">
+                        <div class="ach-name">Centenário</div>
+                        <div class="ach-desc">Alcançar 100 pontos</div>
+                        <div class="ach-meta"><span class="ach-rarity rarity-comum">Comum</span><span
+                                class="ach-pts">+10 pts</span></div>
+                    </div>
+                </div>
+                <div class="ach-card"><span class="ach-icon">🥈</span>
+                    <div class="ach-info">
+                        <div class="ach-name">Quinhentos</div>
+                        <div class="ach-desc">Alcançar 500 pontos</div>
+                        <div class="ach-meta"><span class="ach-rarity rarity-incomum">Incomum</span><span
+                                class="ach-pts">+25 pts</span></div>
+                    </div>
+                </div>
+                <div class="ach-card"><span class="ach-icon">🥇</span>
+                    <div class="ach-info">
+                        <div class="ach-name">Milhar</div>
+                        <div class="ach-desc">Alcançar 1.000 pontos</div>
+                        <div class="ach-meta"><span class="ach-rarity rarity-raro">Raro</span><span class="ach-pts">+50
+                                pts</span></div>
+                    </div>
+                </div>
+                <div class="ach-card"><span class="ach-icon">💎</span>
+                    <div class="ach-info">
+                        <div class="ach-name">Veterano</div>
+                        <div class="ach-desc">Alcançar 2.500 pontos</div>
+                        <div class="ach-meta"><span class="ach-rarity rarity-épico">Épico</span><span
+                                class="ach-pts">+75 pts</span></div>
+                    </div>
+                </div>
+                <div class="ach-card"><span class="ach-icon">🌟</span>
+                    <div class="ach-info">
+                        <div class="ach-name">Lendário</div>
+                        <div class="ach-desc">Alcançar 5.000 pontos</div>
+                        <div class="ach-meta"><span class="ach-rarity rarity-lendário">Lendário</span><span
+                                class="ach-pts">+100 pts</span></div>
+                    </div>
+                </div>
+                <div class="ach-card"><span class="ach-icon">🌌</span>
+                    <div class="ach-info">
+                        <div class="ach-name">Transcendente</div>
+                        <div class="ach-desc">Alcançar 10.000 pontos</div>
+                        <div class="ach-meta"><span class="ach-rarity rarity-lendário">Lendário</span><span
+                                class="ach-pts">+150 pts</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- EXPLORADOR -->
+            <div class="ach-category-title" style="color:#06B6D4;">🔍 Explorador <span
+                    style="font-size:12px;color:var(--text-tertiary);font-weight:400;">(6 conquistas)</span></div>
+            <div class="card-grid cols-2">
+                <div class="ach-card"><span class="ach-icon">🔍</span>
+                    <div class="ach-info">
+                        <div class="ach-name">Curioso</div>
+                        <div class="ach-desc">Acessar 3 módulos diferentes</div>
+                        <div class="ach-meta"><span class="ach-rarity rarity-comum">Comum</span><span
+                                class="ach-pts">+10 pts</span></div>
+                    </div>
+                </div>
+                <div class="ach-card"><span class="ach-icon">🗺️</span>
+                    <div class="ach-info">
+                        <div class="ach-name">Aventureiro</div>
+                        <div class="ach-desc">Acessar 5 módulos diferentes</div>
+                        <div class="ach-meta"><span class="ach-rarity rarity-comum">Comum</span><span
+                                class="ach-pts">+20 pts</span></div>
+                    </div>
+                </div>
+                <div class="ach-card"><span class="ach-icon">🧭</span>
+                    <div class="ach-info">
+                        <div class="ach-name">Desbravador</div>
+                        <div class="ach-desc">Acessar 8 módulos diferentes</div>
+                        <div class="ach-meta"><span class="ach-rarity rarity-incomum">Incomum</span><span
+                                class="ach-pts">+35 pts</span></div>
+                    </div>
+                </div>
+                <div class="ach-card"><span class="ach-icon">🌍</span>
+                    <div class="ach-info">
+                        <div class="ach-name">Explorador Master</div>
+                        <div class="ach-desc">Acessar todos os 10+ módulos do sistema</div>
+                        <div class="ach-meta"><span class="ach-rarity rarity-raro">Raro</span><span class="ach-pts">+60
+                                pts</span></div>
+                    </div>
+                </div>
+                <div class="ach-card"><span class="ach-icon">🔧</span>
+                    <div class="ach-info">
+                        <div class="ach-name">Multitarefa</div>
+                        <div class="ach-desc">Usar 5 ferramentas diferentes</div>
+                        <div class="ach-meta"><span class="ach-rarity rarity-incomum">Incomum</span><span
+                                class="ach-pts">+25 pts</span></div>
+                    </div>
+                </div>
+                <div class="ach-card"><span class="ach-icon">🛠️</span>
+                    <div class="ach-info">
+                        <div class="ach-name">Super Ferramenteiro</div>
+                        <div class="ach-desc">Usar 15 ferramentas diferentes</div>
+                        <div class="ach-meta"><span class="ach-rarity rarity-épico">Épico</span><span
+                                class="ach-pts">+60 pts</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- GESTÃO -->
+            <div class="ach-category-title" style="color:#6366F1;">📊 Gestão <span
+                    style="font-size:12px;color:var(--text-tertiary);font-weight:400;">(5 conquistas)</span></div>
+            <div class="card-grid cols-2">
+                <div class="ach-card"><span class="ach-icon">📝</span>
+                    <div class="ach-info">
+                        <div class="ach-name">Disciplinado</div>
+                        <div class="ach-desc">Enviar 5 relatórios</div>
+                        <div class="ach-meta"><span class="ach-rarity rarity-incomum">Incomum</span><span
+                                class="ach-pts">+25 pts</span></div>
+                    </div>
+                </div>
+                <div class="ach-card"><span class="ach-icon">📊</span>
+                    <div class="ach-info">
+                        <div class="ach-name">Relatador Profissional</div>
+                        <div class="ach-desc">Enviar 20 relatórios</div>
+                        <div class="ach-meta"><span class="ach-rarity rarity-raro">Raro</span><span class="ach-pts">+50
+                                pts</span></div>
+                    </div>
+                </div>
+                <div class="ach-card"><span class="ach-icon">📅</span>
+                    <div class="ach-info">
+                        <div class="ach-name">Rotineiro</div>
+                        <div class="ach-desc">Completar 10 checklists diários</div>
+                        <div class="ach-meta"><span class="ach-rarity rarity-incomum">Incomum</span><span
+                                class="ach-pts">+30 pts</span></div>
+                    </div>
+                </div>
+                <div class="ach-card"><span class="ach-icon">🗓️</span>
+                    <div class="ach-info">
+                        <div class="ach-name">Rotineiro Master</div>
+                        <div class="ach-desc">Completar 30 checklists diários</div>
+                        <div class="ach-meta"><span class="ach-rarity rarity-raro">Raro</span><span class="ach-pts">+60
+                                pts</span></div>
+                    </div>
+                </div>
+                <div class="ach-card"><span class="ach-icon">📌</span>
+                    <div class="ach-info">
+                        <div class="ach-name">Organizador</div>
+                        <div class="ach-desc">Criar 5 eventos na agenda</div>
+                        <div class="ach-meta"><span class="ach-rarity rarity-incomum">Incomum</span><span
+                                class="ach-pts">+20 pts</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RANKING -->
+            <div class="ach-category-title" style="color:#EF4444;">👑 Ranking <span
+                    style="font-size:12px;color:var(--text-tertiary);font-weight:400;">(3 conquistas)</span></div>
+            <div class="card-grid cols-2">
+                <div class="ach-card"><span class="ach-icon">🏅</span>
+                    <div class="ach-info">
+                        <div class="ach-name">Top 10</div>
+                        <div class="ach-desc">Entrar no Top 10 do ranking</div>
+                        <div class="ach-meta"><span class="ach-rarity rarity-incomum">Incomum</span><span
+                                class="ach-pts">+30 pts</span></div>
+                    </div>
+                </div>
+                <div class="ach-card"><span class="ach-icon">🥉</span>
+                    <div class="ach-info">
+                        <div class="ach-name">Pódio</div>
+                        <div class="ach-desc">Entrar no Top 3 do ranking</div>
+                        <div class="ach-meta"><span class="ach-rarity rarity-raro">Raro</span><span class="ach-pts">+60
+                                pts</span></div>
+                    </div>
+                </div>
+                <div class="ach-card"><span class="ach-icon">🥇</span>
+                    <div class="ach-info">
+                        <div class="ach-name">Campeão</div>
+                        <div class="ach-desc">Ser o #1 do ranking</div>
+                        <div class="ach-meta"><span class="ach-rarity rarity-épico">Épico</span><span
+                                class="ach-pts">+100 pts</span></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══ 5. DICAS ═══ -->
+        <section class="section animate-in" id="dicas">
+            <div class="section-header">
+                <div class="section-icon" style="background:rgba(16,185,129,.12);">💡</div>
+                <div>
+                    <h2>Dicas de Ouro</h2>
+                    <p>Estratégias para maximizar seus pontos e subir no ranking rapidamente.</p>
+                </div>
+            </div>
+
+            <div class="card-grid cols-2">
+                <div class="card">
+                    <div style="font-size:28px;margin-bottom:12px;">📋</div>
+                    <div style="font-weight:600;margin-bottom:6px;">Complete Demandas</div>
+                    <div style="font-size:14px;color:var(--text-secondary);">Cada tarefa concluída no Kanban vale +20
+                        pts, além de desbloquear conquistas poderosas como Centurião (+80 pts).</div>
+                </div>
+                <div class="card">
+                    <div style="font-size:28px;margin-bottom:12px;">🔥</div>
+                    <div style="font-weight:600;margin-bottom:6px;">Mantenha seu Streak</div>
+                    <div style="font-size:14px;color:var(--text-secondary);">Acesse o sistema diariamente. Um streak de
+                        30 dias vale 100 pontos bônus + conquista Lendária!</div>
+                </div>
+                <div class="card">
+                    <div style="font-size:28px;margin-bottom:12px;">💬</div>
+                    <div style="font-weight:600;margin-bottom:6px;">Responda no Fórum</div>
+                    <div style="font-size:14px;color:var(--text-secondary);">Tenha suas respostas marcadas como solução
+                        (+15 pts cada) e desbloqueie conquistas raras.</div>
+                </div>
+                <div class="card">
+                    <div style="font-size:28px;margin-bottom:12px;">❤️</div>
+                    <div style="font-weight:600;margin-bottom:6px;">Elogie Colegas</div>
+                    <div style="font-size:14px;color:var(--text-secondary);">Envie elogios (+10 pts) e os colegas
+                        recebem +50 pts. Todos ganham e desbloqueiam conquistas sociais!</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══ FOOTER ═══ -->
+        <footer class="footer">
+            <div class="brand">NEP DELIVERY CONTROL</div>
+            <p>Sistema de Gamificação v2.0 — 44 Conquistas • 6 Ligas • Ranking em Tempo Real</p>
+            <p style="margin-top:8px;">
+                <a href="index.html">← Voltar ao Sistema</a>
+            </p>
+        </footer>
+
+    </div>
+
+</body>
+
+</html>

@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEP | Limpeza do Sistema</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Orbitron:wght@700&display=swap"
+        rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0f172a;
+            color: #f8fafc;
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 32px;
+            color: #ef4444;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #94a3b8;
+        }
+
+        .card {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 20px;
+        }
+
+        .checkbox-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .checkbox-item {
+            background: #0f172a;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #334155;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .checkbox-item:hover {
+            border-color: #ef4444;
+        }
+
+        .checkbox-item input {
+            accent-color: #ef4444;
+            width: 18px;
+            height: 18px;
+        }
+
+        .checkbox-item label {
+            cursor: pointer;
+            flex: 1;
+            font-weight: 500;
+        }
+
+        .danger-zone {
+            border: 1px solid #ef4444;
+            background: rgba(239, 68, 68, 0.1);
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 30px;
+        }
+
+        .danger-zone h3 {
+            color: #ef4444;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .btn-danger:disabled {
+            background: #475569;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        .log {
+            background: #0f172a;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 13px;
+            height: 300px;
+            overflow-y: auto;
+            display: none;
+            margin-top: 20px;
+            border: 1px solid #334155;
+        }
+
+        .log div {
+            margin-bottom: 5px;
+        }
+
+        .text-success {
+            color: #22c55e;
+        }
+
+        .text-error {
+            color: #ef4444;
+        }
+
+        .text-warning {
+            color: #f59e0b;
+        }
+
+        .user-preserve {
+            background: #0f172a;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #22c55e;
+            margin-top: 15px;
+        }
+
+        .user-preserve strong {
+            color: #22c55e;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-trash-alt"></i> Limpeza Total do Sistema</h1>
+            <p>Prepare o ambiente para o lançamento oficial</p>
+        </div>
+
+        <div class="card">
+            <h3>Selecione o que deseja apagar:</h3>
+
+            <div class="checkbox-group">
+                <div class="checkbox-item">
+                    <input type="checkbox" id="users" checked>
+                    <label for="users">Usuários (Firestore)</label>
+                </div>
+                <div class="checkbox-item">
+                    <input type="checkbox" id="reports" checked>
+                    <label for="reports">Relatórios</label>
+                </div>
+                <div class="checkbox-item">
+                    <input type="checkbox" id="tasks" checked>
+                    <label for="tasks">Tarefas Kanban</label>
+                </div>
+                <div class="checkbox-item">
+                    <input type="checkbox" id="vacations" checked>
+                    <label for="vacations">Férias</label>
+                </div>
+                <div class="checkbox-item">
+                    <input type="checkbox" id="deliveries" checked>
+                    <label for="deliveries">Entregas OKR</label>
+                </div>
+                <div class="checkbox-item">
+                    <input type="checkbox" id="analytics" checked>
+                    <label for="analytics">Analytics</label>
+                </div>
+                <div class="checkbox-item">
+                    <input type="checkbox" id="audit" checked>
+                    <label for="audit">Logs de Auditoria</label>
+                </div>
+                <div class="checkbox-item">
+                    <input type="checkbox" id="notifications" checked>
+                    <label for="notifications">Notificações</label>
+                </div>
+            </div>
+
+            <div class="user-preserve">
+                <i class="fas fa-shield-alt"></i>
+                Manter usuário ADMIN: <strong>fernandoxw98@gmail.com</strong>
+            </div>
+
+            <div class="danger-zone">
+                <h3><i class="fas fa-exclamation-triangle"></i> ZONA DE PERIGO</h3>
+                <p style="margin-bottom: 20px; color: #cbd5e1;">Esta ação é irreversível. Todos os dados selecionados
+                    serão apagados permanentemente.</p>
+
+                <div style="margin-bottom: 20px;">
+                    <input type="checkbox" id="confirm1"> <label for="confirm1">Eu entendo que vou perder os
+                        dados</label><br><br>
+                    <input type="checkbox" id="confirm2"> <label for="confirm2">Eu quero resetar o sistema para
+                        lançamento</label>
+                </div>
+
+                <button class="btn btn-danger" id="btn-wipe" disabled onclick="startWipe()">
+                    <i class="fas fa-radiation"></i> INICIAR LIMPEZA TOTAL
+                </button>
+            </div>
+
+            <div class="log" id="log"></div>
+        </div>
+    </div>
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyCqwJ64SjXQf_ekZhRZcF4nN_Fqhwvxi_Q",
+            authDomain: "ecossistema-nep.firebaseapp.com",
+            projectId: "ecossistema-nep",
+            storageBucket: "ecossistema-nep.firebasestorage.app",
+            messagingSenderId: "1041112586342",
+            appId: "1:1041112586342:web:0b7dc02b242cd3dbe635a7"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+
+        const ADMIN_EMAIL = 'fernando.pevangelista@gmail.com';
+
+        // Checkbox confirmation logic
+        const updateBtn = () => {
+            const c1 = document.getElementById('confirm1').checked;
+            const c2 = document.getElementById('confirm2').checked;
+            document.getElementById('btn-wipe').disabled = !(c1 && c2);
+        };
+
+        document.getElementById('confirm1').addEventListener('change', updateBtn);
+        document.getElementById('confirm2').addEventListener('change', updateBtn);
+
+        function log(msg, type = 'info') {
+            const el = document.getElementById('log');
+            el.style.display = 'block';
+            el.innerHTML += `<div class="text-${type}">[${new Date().toLocaleTimeString()}] ${msg}</div>`;
+            el.scrollTop = el.scrollHeight;
+        }
+
+        async function deleteCollection(collectionPath, keepEmails = []) {
+            const batchSize = 500;
+            const collectionRef = db.collection(collectionPath);
+            const query = collectionRef.orderBy('__name__').limit(batchSize);
+
+            return new Promise((resolve, reject) => {
+                deleteQueryBatch(db, query, resolve).catch(reject);
+            });
+
+            async function deleteQueryBatch(db, query, resolve) {
+                const snapshot = await query.get();
+
+                const batchSize = snapshot.size;
+                if (batchSize === 0) {
+                    resolve();
+                    return;
+                }
+
+                const batch = db.batch();
+                let deletedCount = 0;
+
+                snapshot.docs.forEach((doc) => {
+                    const data = doc.data();
+
+                    // Lógica de preservação de ADMIN
+                    if (collectionPath === 'users') {
+                        if (data.email === ADMIN_EMAIL || keepEmails.includes(data.email)) {
+                            log(`⚠️ Preservando ADMIN: ${data.email}`, 'warning');
+                            return;
+                        }
+                    }
+
+                    batch.delete(doc.ref);
+                    deletedCount++;
+                });
+
+                await batch.commit();
+                log(`🗑️ Deletados ${deletedCount} docs em ${collectionPath}`);
+
+                if (batchSize < 500) { // Se trouxe menos que o limite, acabou
+                    resolve();
+                } else {
+                    // Recurse
+                    process.nextTick(() => {
+                        deleteQueryBatch(db, query, resolve);
+                    });
+                }
+            }
+        }
+
+        window.startWipe = async function () {
+            const btn = document.getElementById('btn-wipe');
+            btn.disabled = true;
+            btn.textContent = 'LIMPANDO SISTEMA...';
+
+            // Collections map
+            const targets = [
+                { id: 'users', path: 'users', name: 'Usuários' },
+                { id: 'reports', path: 'reports', name: 'Relatórios' },
+                { id: 'tasks', path: 'tasks', name: 'Tarefas' },
+                { id: 'vacations', path: 'vacations', name: 'Férias' },
+                { id: 'deliveries', path: 'deliveries', name: 'Entregas OKR' },
+                { id: 'analytics', path: 'analytics', name: 'Analytics' },
+                { id: 'audit', path: 'audit_logs', name: 'Logs' },
+                { id: 'notifications', path: 'notifications', name: 'Notificações' }
+            ];
+
+            try {
+                // Verificar login
+                if (!auth.currentUser) {
+                    log('⚠️ Você precisa estar logado para fazer limpeza!', 'warning');
+                    // Tentar login silencioso se possível ou alertar
+                }
+
+                log('🚀 INICIANDO LIMPEZA TOTAL...', 'warning');
+
+                for (const target of targets) {
+                    if (document.getElementById(target.id).checked) {
+                        log(`⏳ Iniciando limpeza de: ${target.name}...`);
+                        await deleteCollection(target.path);
+                        log(`✅ ${target.name} limpo com sucesso!`, 'success');
+                    }
+                }
+
+                // Limpar também collections secundárias se necessário
+                if (document.getElementById('deliveries').checked) {
+                    await deleteCollection('okrs'); // Legacy
+                    await deleteCollection('entregas'); // Legacy
+                }
+
+                log('✨ LIMPEZA CONCLUÍDA! O SISTEMA ESTÁ ZERADO.', 'success');
+                btn.innerHTML = '<i class="fas fa-check"></i> SISTEMA LIMPO';
+
+            } catch (e) {
+                log(`❌ ERRO FATAL: ${e.message}`, 'error');
+                btn.disabled = false;
+                btn.textContent = 'TENTAR NOVAMENTE';
+            }
+        };
+
+        // Forçar verificação de login na carga
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                if (user.email !== ADMIN_EMAIL) {
+                    log(`⚠️ Logado como ${user.email}. Certifique-se de ser o Admin correto!`, 'warning');
+                } else {
+                    log(`👤 Logado como Admin: ${user.email}`, 'success');
+                }
+            } else {
+                log('❌ Não logado. O script pode falhar por permissões.', 'error');
+                log('Por favor, faça login no sistema em outra aba e recarregue.', 'info');
+            }
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <title>NEP System - Fluxograma Mestre V2</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: #0b1121;
+            color: #e2e8f0;
+            overflow: hidden;
+        }
+
+        #app-layout {
+            display: flex;
+            height: 100vh;
+        }
+
+        /* SIDEBAR */
+        #sidebar {
+            width: 250px;
+            background: #1e293b;
+            border-right: 1px solid #334155;
+            display: flex;
+            flex-direction: column;
+            padding: 20px 0;
+            z-index: 10;
+            overflow-y: auto;
+        }
+
+        .sidebar-header {
+            padding: 0 20px 20px;
+            border-bottom: 1px solid #334155;
+            margin-bottom: 10px;
+        }
+
+        .sidebar-header h1 {
+            font-size: 18px;
+            font-weight: 700;
+            color: #fff;
+            line-height: 1.2;
+        }
+
+        .sidebar-header span {
+            font-size: 11px;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .menu-category {
+            padding: 10px 20px 5px;
+            font-size: 11px;
+            color: #64748b;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-top: 10px;
+        }
+
+        .menu-item {
+            padding: 10px 20px;
+            cursor: pointer;
+            color: #cbd5e1;
+            font-size: 14px;
+            border-left: 3px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .menu-item:hover {
+            background: #334155;
+            color: #fff;
+        }
+
+        .menu-item.active {
+            background: #334155;
+            color: #3b82f6;
+            border-left-color: #3b82f6;
+            font-weight: 600;
+        }
+
+        .menu-item i {
+            margin-right: 8px;
+            width: 20px;
+            text-align: center;
+        }
+
+        /* MAIN CONTENT */
+        #main {
+            flex: 1;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #toolbar {
+            height: 50px;
+            background: #1e293b;
+            border-bottom: 1px solid #334155;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+        }
+
+        #current-view {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .zoom-controls button {
+            background: #334155;
+            color: #e2e8f0;
+            border: 1px solid #475569;
+            width: 30px;
+            height: 30px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-left: 5px;
+        }
+
+        .zoom-controls button:hover {
+            background: #475569;
+        }
+
+        #diagram-container {
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+            background: #0b1121;
+            background-image: radial-gradient(#1e293b 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        .mermaid {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .mermaid.loaded {
+            opacity: 1;
+        }
+
+        /* OVERLAY LOADING */
+        #loading {
+            position: absolute;
+            inset: 0;
+            background: rgba(11, 17, 33, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #3b82f6;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+
+    <div id="app-layout">
+        <div id="sidebar">
+            <div class="sidebar-header">
+                <h1>NEP ECOSYSTEM</h1>
+                <span>Flowchart Master V2</span>
+            </div>
+
+            <div class="menu-category">Geral</div>
+            <div class="menu-item active" onclick="loadDiagram('macro')"><i class="fa-solid fa-sitemap"></i> Visão Macro
+            </div>
+
+            <div class="menu-category">Operação Core</div>
+            <div class="menu-item" onclick="loadDiagram('kanban')"><i class="fa-solid fa-list-check"></i> Kanban &
+                Tarefas</div>
+            <div class="menu-item" onclick="loadDiagram('ferramentas')"><i class="fa-solid fa-screwdriver-wrench"></i>
+                Ferramentas LEAN</div>
+            <div class="menu-item" onclick="loadDiagram('agendas')"><i class="fa-solid fa-calendar"></i> Agendas & Atas
+            </div>
+            <div class="menu-item" onclick="loadDiagram('okr')"><i class="fa-solid fa-bullseye"></i> OKR & Entregas
+            </div>
+            <div class="menu-item" onclick="loadDiagram('ferias')"><i class="fa-solid fa-umbrella-beach"></i> Controle
+                de Férias</div>
+
+            <div class="menu-category">Engajamento</div>
+            <div class="menu-item" onclick="loadDiagram('gamificacao')"><i class="fa-solid fa-trophy"></i> Gamificação
+            </div>
+            <div class="menu-item" onclick="loadDiagram('aprendizado')"><i class="fa-solid fa-graduation-cap"></i>
+                Ensino (LMS)</div>
+            <div class="menu-item" onclick="loadDiagram('ia')"><i class="fa-solid fa-robot"></i> Estagiário IA</div>
+            <div class="menu-item" onclick="loadDiagram('app')"><i class="fa-solid fa-mobile-screen-button"></i>
+                Aplicativo Móvel</div>
+            <div class="menu-item" onclick="loadDiagram('database')"><i class="fa-solid fa-database"></i> Banco de Dados
+            </div>
+
+            <div class="menu-category">Gestão & Pessoas</div>
+            <div class="menu-item" onclick="loadDiagram('dashboard')"><i class="fa-solid fa-chart-line"></i> Dashboard
+            </div>
+            <div class="menu-item" onclick="loadDiagram('depoimentos')"><i class="fa-solid fa-heart"></i> Depoimentos
+            </div>
+            <div class="menu-item" onclick="loadDiagram('forum')"><i class="fa-solid fa-comments"></i> Fórum</div>
+            <div class="menu-item" onclick="loadDiagram('courses')"><i class="fa-solid fa-graduation-cap"></i> Cursos
+                Detalhado</div>
+            <div class="menu-item" onclick="loadDiagram('profile')"><i class="fa-solid fa-user"></i> Meu Perfil</div>
+
+            <div class="menu-item" onclick="loadDiagram('rotinas')"><i class="fa-solid fa-clipboard-check"></i> Rotinas
+                Adm</div>
+            <div class="menu-category">Sistema</div>
+            <div class="menu-item" onclick="loadDiagram('admin')"><i class="fa-solid fa-lock"></i> Admin & Regras</div>
+            <div class="menu-item" onclick="loadDiagram('seguranca')"><i class="fa-solid fa-shield-halved"></i>
+                Segurança & Acesso</div>
+            <div class="menu-item" onclick="loadDiagram('notificacoes')"><i class="fa-solid fa-bell"></i> Notificações
+            </div>
+        </div>
+
+        <div id="main">
+            <div id="toolbar">
+                <span id="current-view">Visão Macro do Sistema</span>
+                <div class="zoom-controls">
+                    <button onclick="zoomOut()"><i class="fa-solid fa-minus"></i></button>
+                    <button onclick="resetZoom()"><i class="fa-solid fa-arrows-rotate"></i></button>
+                    <button onclick="zoomIn()"><i class="fa-solid fa-plus"></i></button>
+                </div>
+            </div>
+
+            <div id="diagram-container">
+                <div id="loading">
+                    <div class="spinner"></div>
+                </div>
+                <div id="mermaid-render" class="mermaid"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        mermaid.initialize({
+            startOnLoad: false,
+            theme: 'dark',
+            securityLevel: 'loose',
+            flowchart: { curve: 'basis', htmlLabels: true }
+        });
+
+        let currentZoom = null;
+        let currentDiagramCode = '';
+
+        const diagrams = {
+            macro: `flowchart TB
+            subgraph FRONT [💻 FRONTEND SPA]
+                USER((Usuário)) --> LOGIN[Auth Login]
+                LOGIN --> ROUTER{Roteador do Sistema}
+                ROUTER --> DASH[Dashboard Principal]
+                
+                DASH --> MOD_OP[Módulos Operacionais]
+                DASH --> MOD_ENG[Módulos Engajamento]
+                DASH --> MOD_SYS[Módulos Sistema]
+                
+                subgraph OPER [Operação]
+                    MOD_OP --> KAN[Kanban]
+                    MOD_OP --> TOOLS[Ferramentas]
+                    MOD_OP --> OKR[OKR & PDI]
+                    MOD_OP --> AGENDA[Agendas]
+                    MOD_OP --> FERIAS[Férias]
+                end
+                
+                subgraph ENGAJ [Engajamento]
+                    MOD_ENG --> GAM[Gamificação Rank]
+                    MOD_ENG --> LEARN[Cursos & Podcast]
+                    MOD_ENG --> FORUM[Fórum]
+                    MOD_ENG --> IA[Estagiário IA]
+                end
+            end
+            
+            subgraph BACK [☁️ BACKEND FIREBASE]
+                KAN <--> FS_TASKS[(Tasks)]
+                GAM <--> FS_POINTS[(Points)]
+                LOGIN <--> AUTH[Auth Service]
+                AGENDA <--> FS_ATA[(Atas)]
+                TOOLS <--> API[External APIs]
+            end
+            
+            style FRONT fill:#1e293b,stroke:#3b82f6
+            style BACK fill:#0f172a,stroke:#8b5cf6`,
+
+            kanban: `flowchart LR
+            subgraph FLOW [Fluxo da Tarefa]
+                NEW((Nova)) --> VALIC{Validar?}
+                VALIC -->|Erro| NEW
+                VALIC -->|Ok| BACK[Backlog]
+                BACK --> TODO[A Fazer]
+                TODO --> DOING[Em Andamento]
+                DOING --> PENDING[Revisão/Entrega]
+                PENDING --> VALID{Aprovado?}
+                VALID -->|Não| DOING
+                VALID -->|Sim| DONE[Concluído]
+                DONE --> ARCHIVE[Arquivado]
+            end
+            
+            subgraph ACTIONS [Ações Automáticas]
+                NEW -.->|Criação| LOG1[Log Audit]
+                NEW -.->|Atribuição| NOTIF1[Notificar Dono]
+                PENDING -.->|Entrega| NOTIF2[Notificar Gestor]
+                VALID -.->|Rejeição| NOTIF3[Notificar Correção]
+                VALID -.->|Aprovação| PTS[Calculadora Pontos]
+                PTS -->|Soma XP| LEVEL[Verificar Nível]
+            end
+            
+            subgraph CALC [Cálculo Pontos]
+                PTS --> P_PRIO[Base Prioridade]
+                PTS --> P_COMP[Mult. Complexidade]
+                PTS --> P_TIME[Penalidade Atraso]
+            end`,
+
+            ferramentas: `flowchart TB
+            MENU((Menu)) --> CAT1{Qual Categoria?}
+            
+            subgraph QUAL [Qualidade & Melhoria]
+                CAT1 --> PDCA[PDCA Struct]
+                CAT1 --> DMAIC[DMAIC SixSigma]
+                CAT1 --> GUT[Matriz GUT]
+                CAT1 --> ISHI[Ishikawa 6M]
+                CAT1 --> PARETO[Pareto 80/20]
+                CAT1 --> 5PQ[5 Porquês]
+                CAT1 --> CEP[Carta Controle]
+            end
+            
+            subgraph ANALISE [Análise de Dados]
+                CAT1 --> CORR[Correlação Pearson]
+                CAT1 --> FACT[Factibilidade Z]
+                CAT1 --> GRAPH[Gerador Gráficos]
+                CAT1 --> FLUX[Fluxograma IA]
+            end
+            
+            subgraph UTIL [Utilitários]
+                CAT1 --> PROD[Pomodoro]
+                CAT1 --> PASS[Gerador Senha]
+                CAT1 --> API[APIs Externas]
+                API --> CLIMA[Clima]
+                API --> NEWS[Notícias]
+                API --> DICT[Dicionário]
+                API --> BR[Brasil Data]
+            end`,
+
+            agendas: `flowchart TB
+            subgraph PRE ["Pré-Reunião"]
+                NEW(("Nova")) --> FIELDS["Definir Escopo"]
+                FIELDS --> INVITE["Convidar (Email)"]
+                INVITE --> MAIL["SendGrid/SMTP"]
+                FIELDS --> AGENDA_DOC[("Doc Agenda")]
+            end
+            
+            subgraph EXEC ["Execução"]
+                AGENDA_DOC --> TIMER["Timer Reunião"]
+                TIMER --> TOPICS["Check Tópicos"]
+                TOPICS --> DISC["Registro Discussão"]
+                DISC --> DECIS["Registro Decisões"]
+                DECIS --> PEND["Atribuir Pendências"]
+            end
+            
+            subgraph POS ["Pós-Reunião"]
+                PEND --> GEN_ATA["Gerar Ata"]
+                GEN_ATA --> IA_SUM{"Usar IA?"}
+                IA_SUM -->|"Sim"| PPLX["Perplexity API"]
+                PPLX --> ATA_TEXT["Texto Resumido"]
+                IA_SUM -->|"Não"| ATA_TEXT
+                ATA_TEXT --> PDF["Gerar PDF"]
+                PDF --> EMAIL_ALL["Enviar Participantes"]
+            end`,
+
+            okr: `flowchart LR
+            subgraph HIERARCHY [Hierarquia]
+                OBJ_CO[Objetivo Corporativo] --> OBJ_TM[Objetivo Time]
+                OBJ_TM --> OBJ_IND[Objetivo Individual]
+            end
+            
+            subgraph KR_FLOW [Fluxo Key Result]
+                KR_DEF[Definir KR] --> KR_CHECK[Check-in Semanal]
+                KR_CHECK --> KR_PROG[Cálculo % Progresso]
+                KR_PROG --> KR_STATUS{Status}
+                KR_STATUS -->|On Track| KR_GREEN[🟢]
+                KR_STATUS -->|At Risk| KR_YELLOW[🟡]
+                KR_STATUS -->|Off Track| KR_RED[🔴]
+            end
+            
+            subgraph PDI [Plano Desenvolvimento]
+                PDI_DEF[Definir Skills] --> PDI_AC[Ações Desenvolvimento]
+                PDI_AC --> PDI_EVAL[Avaliação 1:1]
+                PDI_EVAL --> PDI_FB[Feedback 360]
+            end`,
+
+            ferias: `flowchart TB
+            REQ((Solicitar)) --> VALID_DAYS{Saldo Dias >= Pedido?}
+            VALID_DAYS -->|Não| ERR[Bloqueio]
+            VALID_DAYS -->|Sim| CALC[Simular Retorno/Abono]
+            CALC --> SUBMIT[Enviar Gestor]
+            
+            SUBMIT --> PENDING[Aguardando Aprovação]
+            PENDING --> ACTION{Decisão}
+            ACTION -->|Reprovar| REJ[Notificar Motivo]
+            ACTION -->|Aprovar| APPR[Agendar Férias]
+            
+            APPR --> UPD_SALDO[Deduzir Saldo]
+            UPD_SALDO --> CAL_BLK[Bloquear Agenda]
+            CAL_BLK --> NOTIF_TEAM[Avisar Time]`,
+
+            gamificacao: `flowchart TB
+            ACTION((Ação)) --> RULE{Regra Pontos}
+            RULE -->|Tarefa| PTS_TASK[20 + Bônus]
+            RULE -->|Elogio| PTS_KUDOS[50]
+            RULE -->|Login| PTS_STREAK[5]
+            
+            PTS_TASK --> SUM[Soma Total]
+            PTS_KUDOS --> SUM
+            PTS_STREAK --> SUM
+            
+            SUM --> LEVEL_CALC[Calc Nível: √pts/100]
+            LEVEL_CALC --> DIFF{Mudou Nível?}
+            DIFF -->|Sim| CELEB[🎉 Confete + Badge]
+            DIFF -->|Não| BAR[Update Barra XP]
+            
+            SUM --> RANK[Ranking Global]
+            RANK --> SORT[Sort DESC]
+            SORT --> PODIUM[Top 3 Ouro/Prata/Bronze]`,
+
+            aprendizado: `flowchart LR
+            subgraph LMS [Learning System]
+                CAT[Catálogo] --> COURSE[Curso]
+                COURSE --> MOD[Módulos]
+                MOD --> CLASS[Aula Vídeo/Texto]
+                CLASS --> PROG[Tracking %]
+                PROG --> EXAM{Prova Final}
+                EXAM -->|Fail| RETRY[Revisar]
+                EXAM -->|Pass| CERT[Gerar Certificado]
+                CERT --> BADGE[Badge Perfil]
+            end
+            
+            subgraph POD [Podcast]
+                P_HOME[Lista Episódios] --> P_PLAY[Player Áudio]
+                P_PLAY --> P_QUIZ[Quiz Rápido]
+                P_QUIZ --> P_PTS[Pontos Extra]
+            end`,
+
+            ia: `flowchart TB
+            USER[Usuário] --> INPUT[Chat Input]
+            INPUT --> FILE{Tem Arquivo?}
+            FILE -->|Sim| PARSE[Parse CSV/JSON/PDF]
+            FILE -->|Não| CTX[Contexto Sistema]
+            
+            PARSE --> PROMPT[Montar Prompt Engenharia]
+            CTX --> PROMPT
+            
+            PROMPT --> API[Perplexity/OpenAI API]
+            API --> RESP[Resposta JSON]
+            
+            RESP --> TYPE{Tipo Resp?}
+            TYPE -->|Texto| R_TXT[Render Markdown]
+            TYPE -->|Gráfico| R_CHART[Render Chart.js]
+            TYPE -->|Slide| R_PPT[Gerar PPTx]
+            TYPE -->|Insight| R_ALERT[Card Insight]`,
+
+            admin: `flowchart TB
+            subgraph DASH ["📊 Analytics 360°"]
+                DATA["Carregar Dados"] --> KPIS["KPIs Principais"]
+                DATA --> CHARTS["Gráficos Atividade"]
+                KPIS --> USER_STATS["Usuários Ativos"]
+                KPIS --> TASK_STATS["Tarefas Concluídas"]
+                KPIS --> SYS_HEALTH["Saúde Sistema"]
+            end
+
+            subgraph USERS ["👥 Gestão de Usuários"]
+                LIST_U["Listar Todos"] --> ACTION{Ação}
+                ACTION -->|"Novo"| CREATE_U["Criar (Email/Cargo)"]
+                ACTION -->|"Editar"| EDIT_U["Alterar Cargo/Time"]
+                ACTION -->|"Banir"| BAN_U["Bloquear Acesso"]
+                ACTION -->|"Reset"| PASS_U["Reset Senha"]
+                
+                CREATE_U --> FIREBASE_AUTH["Firebase Create"]
+                FIREBASE_AUTH --> FIRESTORE_DOC["Criar Perfil"]
+            end
+            
+            subgraph PERMS ["👮 Permissões (MIME)"]
+                ROLES["Listar Cargos"] --> SEL_ROLE["Selecionar Cargo"]
+                SEL_ROLE --> TOGGLES["Checkboxes Módulos"]
+                TOGGLES --> SAVE_P["Salvar Regras JSON"]
+                SAVE_P --> REALTIME["Atualizar Clients"]
+            end
+            
+            subgraph AUDIT ["📝 Auditoria & Logs"]
+                LISTEN_LOGS["Listener Realtime"] --> TABLE_LOGS["Tabela Logs"]
+                TABLE_LOGS --> FILTER_LOG["Filtros (Data/User)"]
+                FILTER_LOG --> EXPORT_LOG["Exportar CSV"]
+            end
+            
+            subgraph CONFIG ["⚙️ Configurações"]
+                SEASONS["Gamification Seasons"] --> NEW_SEASON["Nova Temporada"]
+                SEASONS --> END_SEASON["Encerrar Atual (Calc Prêmios)"]
+                SYSTEM["Variáveis Sistema"] --> MAINTENANCE["Modo Manutenção"]
+            end
+
+            subgraph REPORTS ["📑 Relatórios"]
+                GEN_REP["Gerar Relatório"] --> TEMPLATE["Selecionar Template"]
+                TEMPLATE --> PDF_EXPORT["Exportar PDF"]
+            end
+            
+            style DASH fill:#1e293b,stroke:#3b82f6
+            style USERS fill:#0f172a,stroke:#22c55e
+            style PERMS fill:#1e293b,stroke:#f59e0b
+            style AUDIT fill:#0f172a,stroke:#8b5cf6
+            style CONFIG fill:#1e293b,stroke:#ec4899
+            style REPORTS fill:#0f172a,stroke:#14b8a6`,
+
+            notificacoes: `flowchart TB
+            EVENT((Evento)) --> BUILD[Build Payload]
+            BUILD --> PUSH[Salvar Firestore]
+            PUSH --> LISTEN[Snapshot Listener]
+            LISTEN --> FILTER{Relevante?}
+            FILTER -->|Sim| BADGE[Update Badge Sino]
+            FILTER -->|Não| IGNORE((.))
+            
+            BADGE --> LIST[Dropdown Lista]
+            LIST --> CLICK[Click Item]
+            CLICK --> READ[Mark Read]
+            READ --> REDIR[Redirecionar]
+            
+            subgraph TYPES [Tipos]
+                T1[Demanda]
+                T2[Aviso]
+                T3[Menção]
+                T4[Sistema]
+            end`,
+
+            seguranca: `flowchart TB
+            subgraph LOGIN ["🔐 Autenticação"]
+                USER(("Usuário")) -->|Email/Senha| INPUT["Formulário Login"]
+                INPUT --> VALID_F{"Campos Válidos?"}
+                VALID_F -->|"Não"| ERR_UI["Feedback Visual"]
+                VALID_F -->|"Sim"| FIREBASE["Firebase Auth SDK"]
+                
+                FIREBASE --> CHECK_BRUTE{"Rate Limit?"}
+                CHECK_BRUTE -->|"Excedido"| LOCK["Bloqueio Temporário"]
+                CHECK_BRUTE -->|"Ok"| CRED_CHK{"Credenciais?"}
+                
+                CRED_CHK -->|"Inválido"| FAIL["Registrar Falha"]
+                FAIL --> COUNT["Contador Tentativas++"]
+                
+                CRED_CHK -->|"Válido"| TOKEN["Gerar JWT Token"]
+                TOKEN --> SESSION["Sessão Local/Persistência"]
+            end
+            
+            subgraph PROTECT ["🛡️ Proteção & Criptografia"]
+                TOKEN --> HTTPS["Canal TLS 1.3"]
+                FIREBASE --> HASH["Hash Senha (Scrypt/Bcrypt)"]
+                SESSION --> STORAGE["LocalStorage (Não Sensível)"]
+            end
+            
+            subgraph RECOVER ["📧 Recuperação Senha"]
+                FORGOT(("Esqueci")) --> REQ_EMAIL["Input Email"]
+                REQ_EMAIL --> SEND_LINK["Firebase SendPasswordReset"]
+                SEND_LINK --> EMAIL_USER["Email com Link Seguro"]
+                EMAIL_USER --> NEW_PASS["Definir Nova Senha"]
+                NEW_PASS --> UPDATE_HASH["Atualizar Hash"]
+            end
+            
+            subgraph RBAC ["👮 Hierarquia Acesso"]
+                SESSION --> GET_USER["Carregar Perfil Firestore"]
+                GET_USER --> CHECK_ROLE{"Nível Acesso"}
+                
+                CHECK_ROLE -->|"0"| MON["Monitor"]
+                CHECK_ROLE -->|"1"| ANA["Analista"]
+                CHECK_ROLE -->|"2"| COORD["Coordenador"]
+                CHECK_ROLE -->|"5"| SUP["Superintendente"]
+                CHECK_ROLE -->|"99"| ADMIN["Admin Sistema"]
+                
+                ADMIN --> ALL["Acesso Total"]
+                SUP --> ALL
+            end
+            
+            style LOGIN fill:#1e293b,stroke:#3b82f6
+            style PROTECT fill:#0f172a,stroke:#22c55e
+            style RECOVER fill:#1e293b,stroke:#f59e0b
+            style RBAC fill:#0f172a,stroke:#8b5cf6`,
+
+            app: `flowchart TB
+            subgraph INSTALL ["📲 Instalação (PWA)"]
+                BROWSER(("Navegador")) --> CHECK_SP{"Suporta SW?"}
+                CHECK_SP -->|"Não"| WEB["Versão Web Padrão"]
+                CHECK_SP -->|"Sim"| REG_SW["Registrar Service Worker"]
+                
+                REG_SW --> EVENT{"Evento Install?"}
+                EVENT -->|"Sim"| SAVE_EVT["Salvar 'beforeinstallprompt'"]
+                SAVE_EVT --> SHOW_BTN["Mostrar Botão Instalar"]
+                
+                SHOW_BTN --> USER_CLK["Clique Usuário"]
+                USER_CLK --> PROMPT["Prompt Nativo OS"]
+                PROMPT -->|"Aceite"| HOME_SCREEN["Adicionar à Tela Inicial"]
+                PROMPT -->|"Recusa"| DISMISS["Ocultar Banner"]
+            end
+            
+            subgraph OFFLINE ["📡 Modo Offline (Cache First)"]
+                REQ(("Request")) --> SW{"Service Worker"}
+                SW --> CHECK_CACHE{"Cache Hit?"}
+                
+                CHECK_CACHE -->|"Sim"| RETURN_CACHE["Retornar 'nep-cache-v3'"]
+                CHECK_CACHE -->|"Não"| NET{"Network?"}
+                
+                NET -->|"Online"| FETCH["Buscar Nuvem"]
+                FETCH --> CACHE_ADD["Atualizar Cache"]
+                
+                NET -->|"Offline"| FALLBACK{"É Navegação?"}
+                FALLBACK -->|"Sim"| OFF_PAGE["Página Offline"]
+                FALLBACK -->|"Não"| ERR["Erro Conexão"]
+            end
+            
+            subgraph SYNC ["🔄 Sincronização"]
+                ACTION(("Ação Offline")) --> IDB[("IndexedDB Queue")]
+                IDB --> BG_SYNC{"Background Sync"}
+                BG_SYNC -->|"Recuperou Conexão"| FLUSH["Enviar Pendências"]
+                FLUSH --> API["Firestore API"]
+            end
+
+            subgraph PUSH ["🔔 Notificações Push"]
+                PERM(("Permissão")) -->|"Concedida"| SUB["Subscrever FCM"]
+                SUB --> TOKEN["Gerar Token Push"]
+                TOKEN --> USER_DB[("User Profile")]
+                
+                CLOUD(("Cloud msg")) --> SW_PUSH["SW Push Event"]
+                SW_PUSH --> SHOW_NOTIF["Exibir Notificação"]
+                SHOW_NOTIF --> CLICK{"Clique?"}
+                CLICK --> OPEN_URL["Abrir Módulo Específico"]
+            end
+            
+            style INSTALL fill:#1e293b,stroke:#3b82f6
+            style OFFLINE fill:#0f172a,stroke:#22c55e
+            style SYNC fill:#1e293b,stroke:#f59e0b
+            style SYNC fill:#1e293b,stroke:#f59e0b
+            style PUSH fill:#0f172a,stroke:#8b5cf6`,
+
+            database: `erDiagram
+            USERS ||--o{ TASKS : "Atribuído"
+            USERS ||--o{ POINTS_TRANSACTIONS : "Ganhou"
+            USERS ||--o{ AGENDAS : "Participa"
+            USERS ||--o{ VACATIONS : "Solicitou"
+            USERS ||--o{ FORUM_TOPICS : "Criou"
+            
+            USERS {
+                string uid PK
+                string email
+                string role "Key: admin, gerente..."
+                int level
+                int currentPoints
+                string avatarUri
+            }
+            
+            TASKS {
+                string id PK
+                string title
+                string status "backlog, doing, done"
+                string priority
+                string assigneeId FK
+                timestamp dueDate
+            }
+            
+            USER_POINTS {
+                string userId PK
+                int total
+                int level
+                json badges
+            }
+            
+            AGENDAS {
+                string id PK
+                string title
+                timestamp date
+                array participants
+                string ataContent "HTML/Markdown"
+            }
+            
+            FORUM_TOPICS {
+                string id PK
+                string title
+                string category
+                string authorId FK
+                int replyCount
+            }
+            
+            VACATIONS {
+                string id PK
+                date startDate
+                date endDate
+                string status "pending, approved"
+            }
+            
+            AUDIT_LOGS {
+                string id PK
+                string actionType
+                string collection
+                string documentId
+                timestamp createdAt
+                string userId FK
+            }
+            
+            MODULE_PERMISSIONS {
+                string roleKey PK
+                boolean canViewKanban
+                boolean canViewAdmin
+            }
+            
+            PUSH_SUBSCRIPTIONS {
+                string token PK
+                string userId FK
+                string deviceType
+            }
+            
+            COURSES {
+                string id PK
+                string title
+                array modules
+            }
+
+            COURSE_PROGRESS {
+                string id PK
+                string userId FK
+                string courseId FK
+                int percentage
+                boolean completed
+            }
+            
+            ANALYTICS {
+                string id PK
+                string metricType
+                int value
+                timestamp recordedAt
+            }
+        }`,
+
+            depoimentos: `flowchart TB
+            subgraph UI ["Interface Usuário"]
+                BTN(("Enviar")) --> FORM["Formulário Elogio"]
+                FORM --> DATA["Texto + Tags"]
+                DATA --> SUBMIT["Submeter"]
+            end
+            
+            subgraph FLOW ["Fluxo Aprovação"]
+                SUBMIT --> PENDING[("Firestore: status='pending'")]
+                PENDING --> NOTIF_ADM["Notificar Admin"]
+                NOTIF_ADM --> REVIEW{"Revisão Admin"}
+                
+                REVIEW -->|"Rejeitar"| DELETE["Marcar 'rejected'"]
+                REVIEW -->|"Aprovar"| PUBLISH["Marcar 'approved'"]
+            end
+            
+            subgraph WALL ["Wall of Love"]
+                PUBLISH --> LIVE[("Firestore: Lista Pública")]
+                LIVE --> RENDER["Grid de Cards"]
+                RENDER --> ANIM["Animação Fade-in"]
+            end`,
+
+            forum: `flowchart LR
+            subgraph TOPIC ["Novo Tópico"]
+                USER(("Usuário")) --> NEW_T["Criar Tópico"]
+                NEW_T --> CAT{"Categoria"}
+                CAT -->|"Dúvida"| T_DUV["Tag: Dúvida"]
+                CAT -->|"Sugestão"| T_SUG["Tag: Sugestão"]
+                T_DUV --> SAVE_T[("Salvar Firestore")]
+            end
+            
+            subgraph INTERACTION ["Interação"]
+                SAVE_T --> READ["Lista Tópicos"]
+                READ --> OPEN["Ler Detalhes"]
+                OPEN --> REPLY["Responder"]
+                REPLY --> SAVE_R[("Salvar Resposta")]
+                
+                SAVE_R --> NOTIF_OWNER["Notificar Autor"]
+            end
+            
+            subgraph REWARD ["Recompensa"]
+                SAVE_R --> LIKE{"Outros Curtiram?"}
+                LIKE -->|"Sim"| PTS["+ Pontos"]
+                
+                SAVE_R --> SOL{"É Solução?"}
+                SOL -->|"Autor Marca"| BEST["Melhor Resposta"]
+                BEST --> XP_BOOST["Bônus XP"]
+                BEST --> CLOSE["Fechar Tópico"]
+            end`,
+
+            courses: `flowchart TB
+            subgraph LMS ["Learning Management System"]
+                LIST(("Catálogo")) --> CLK["Selecionar Curso"]
+                CLK --> MODS["Listar Módulos"]
+                MODS --> LESSON["Assistir Aula"]
+                LESSON --> PROG["Update Progresso %"]
+                
+                PROG --> CHECK_100{"100%?"}
+                CHECK_100 -->|"Sim"| EXAM_UNLOCK["Liberar Prova"]
+                CHECK_100 -->|"Não"| CONTINUE["Continuar"]
+            end
+            
+            subgraph EXAM ["Sistema de Provas"]
+                EXAM_UNLOCK --> START_EXAM["Iniciar Quiz"]
+                START_EXAM --> QUEST["Responder Questões"]
+                QUEST --> CALC["Calcular Nota"]
+                
+                CALC --> RESULT{"Nota >= 70?"}
+                RESULT -->|"Não"| RETRY["Tentar Novamente"]
+                RESULT -->|"Sim"| PASSED["Aprovado"]
+            end
+            
+            subgraph CERT ["Certificação"]
+                PASSED --> GEN_CERT["Gerar Certificado PDF"]
+                PASSED --> ADD_BADGE["Adicionar Badge Perfil"]
+                PASSED --> ADD_XP["Adicionar +X Pontos"]
+            end`,
+
+            dashboard: `flowchart TB
+            subgraph DATA ["Camada de Dados"]
+                LOAD(("Carregar")) --> FETCH_TASKS["Fetch Tasks"]
+                LOAD --> FETCH_USER["Fetch User Stats"]
+                FETCH_TASKS --> CACHE["Cache Local"]
+            end
+            
+            subgraph CALC ["Motor de Cálculo"]
+                CACHE --> PROC_KPIS["Processar KPIs"]
+                PROC_KPIS --> CALC_NPS["NPS Score"]
+                PROC_KPIS --> CALC_DELAY["Taxa Atraso"]
+                PROC_KPIS --> CALC_DONE["Entregas Totais"]
+            end
+            
+            subgraph VIZ ["Visualização"]
+                CALC_NPS --> CHART_STATUS["Gráfico Status (Pie)"]
+                CALC_DELAY --> CHART_TREND["Gráfico Tendência (Line)"]
+                CALC_DONE --> CHART_PRIO["Gráfico Prioridade (Bar)"]
+                
+                CHART_STATUS --> RENDER["Renderizar Canvas"]
+            end`,
+
+            profile: `flowchart LR
+            subgraph HEADER ["Cabeçalho"]
+                USER(("User")) --> VIEW["Ver Perfil"]
+                VIEW --> BANNER["Banner Personalizado"]
+                VIEW --> LEVEL["Nível & Barra XP"]
+                VIEW --> EDIT_AV["Editar Avatar"]
+            end
+            
+            subgraph CUSTOM ["Customização"]
+                BANNER --> PICKER["Galeria Banners"]
+                PICKER --> SELECT["Selecionar Tema"]
+                SELECT --> SAVE_PREF[("Salvar Preferência")]
+            end
+            
+            subgraph STATS ["Estatísticas"]
+                VIEW --> HIST["Histórico Pontos"]
+                VIEW --> BADGES["Conquistas/Badges"]
+                VIEW --> RANK["Posição Ranking"]
+            end
+            
+            subgraph SETTINGS ["Ajustes"]
+                VIEW --> TOGGLE_NOTIF["Push Notifications O/I"]
+                TOGGLE_NOTIF --> UPDATE_SW["Update ServiceWorker"]
+            end`,
+
+            rotinas: `flowchart TB
+            subgraph DAILY ["Rotinas Diárias"]
+                START(("Início Dia")) --> LOGIN["Login Admin"]
+                LOGIN --> DASH["Checar Dashboard"]
+                DASH --> AUDIT["Revisar Audit Logs"]
+                AUDIT --> APPR["Aprovar Cadastros/Férias"]
+            end
+            
+            subgraph WEEKLY ["Rotinas Semanais"]
+                WEEK(("Semanal")) --> OKR_REV["Revisão OKRs"]
+                OKR_REV --> FEEDBACK["Enviar Feedbacks"]
+                FEEDBACK --> FORUM_MOD["Moderar Fórum"]
+            end
+            
+            subgraph MONTHLY ["Rotinas Mensais"]
+                MONTH(("Mensal")) --> CLOSE_SEASON["Fechar Temporada"]
+                CLOSE_SEASON --> CALC_WIN["Calcular Vencedores"]
+                CALC_WIN --> RESET_W["Resetar Rank Mensal"]
+                RESET_W --> EXPORT["Exportar Relatórios PDF"]
+            end`
+        };
+
+        function loadDiagram(key) {
+            const loading = document.getElementById('loading');
+            const render = document.getElementById('mermaid-render');
+            const items = document.querySelectorAll('.menu-item');
+            const titleSpan = document.getElementById('current-view');
+
+            // Update menu active state
+            items.forEach(i => i.classList.remove('active'));
+            event.currentTarget.classList.add('active'); // Nota: event is global here in inline handler logic context
+
+            // Update Title
+            titleSpan.textContent = event.currentTarget.textContent.trim();
+
+            // Show loading
+            loading.style.display = 'flex';
+            render.classList.remove('loaded');
+
+            setTimeout(async () => {
+                // Reset PanZoom
+                if (currentZoom) { currentZoom.destroy(); currentZoom = null; }
+
+                // Render Mermaid
+                render.innerHTML = diagrams[key];
+                render.removeAttribute('data-processed');
+
+                try {
+                    await mermaid.run({ nodes: [render] });
+
+                    // Initialize PanZoom on the rendered SVG
+                    const svg = render.querySelector('svg');
+                    if (svg) {
+                        svg.style.height = '100%';
+                        svg.style.width = '100%';
+                        currentZoom = svgPanZoom(svg, {
+                            zoomEnabled: true,
+                            controlIconsEnabled: false,
+                            fit: true,
+                            center: true,
+                            minZoom: 0.1,
+                            maxZoom: 10
+                        });
+                    }
+                    render.classList.add('loaded');
+                } catch (e) {
+                    console.error(e);
+                    render.innerHTML = '<div style="color:red;text-align:center">Erro ao renderizar diagrama</div>';
+                }
+
+                loading.style.display = 'none';
+            }, 100);
+        }
+
+        // Zoom Controls
+        window.zoomIn = () => currentZoom?.zoomIn();
+        window.zoomOut = () => currentZoom?.zoomOut();
+        window.resetZoom = () => { currentZoom?.reset(); currentZoom?.fit(); currentZoom?.center(); };
+
+        // Initial Load
+        document.querySelector('.menu-item.active').click();
+    </script>
+
+</body>
+
+</html>

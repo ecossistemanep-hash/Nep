@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NEP DELIVERY CONTROL - SECURE ACCESS</title>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+
+  <style>
+    :root {
+      --bg-deep: #0a0f1e;
+      --bg-darker: #050a14;
+      --primary: #2f6fed;
+      --primary-dark: #1c4ed8;
+      --accent: #8b5cf6;
+      --accent-light: #a78bfa;
+      --glass: rgba(15, 23, 41, 0.75);
+      --border: rgba(47, 111, 237, 0.2);
+      --border-light: rgba(47, 111, 237, 0.4);
+      --text-primary: #e5e7eb;
+      --text-sec: #8fa6c6;
+      --text-muted: #64748b;
+      --error: #e5533d;
+      --success: #2ecc71;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Inter', sans-serif;
+    }
+
+    body {
+      background: linear-gradient(135deg, var(--bg-deep) 0%, var(--bg-darker) 100%);
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      color: var(--text-primary);
+      position: relative;
+    }
+
+    /* 🔥 PARTICLES BACKGROUND */
+    #particles-js {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(ellipse at top, #1a2642 0%, #0a0f1e 50%, #020510 100%);
+      z-index: 1;
+    }
+
+    /* 🔥 LOGIN CARD - GLASS MORPHISM */
+    .login-card {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 440px;
+      padding: 50px 45px;
+      background: var(--glass);
+      backdrop-filter: blur(24px) saturate(180%);
+      -webkit-backdrop-filter: blur(24px) saturate(180%);
+      border: 2px solid var(--border);
+      border-radius: 20px;
+      box-shadow: 
+        0 0 60px rgba(47, 111, 237, 0.15),
+        0 20px 80px rgba(0, 0, 0, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      animation: floatIn 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes floatIn {
+      from {
+        opacity: 0;
+        transform: translateY(30px) scale(0.95);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    /* 🔥 BRAND */
+    .brand {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .brand h1 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 56px;
+      font-weight: 900;
+      background: linear-gradient(135deg, #ffffff 0%, #2f6fed 50%, #8b5cf6 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: -3px;
+      margin-bottom: 8px;
+      filter: drop-shadow(0 0 30px rgba(47, 111, 237, 0.5));
+      animation: glow 3s ease-in-out infinite alternate;
+    }
+
+    @keyframes glow {
+      from { filter: drop-shadow(0 0 20px rgba(47, 111, 237, 0.4)); }
+      to { filter: drop-shadow(0 0 40px rgba(139, 92, 246, 0.6)); }
+    }
+
+    .brand p {
+      color: var(--primary);
+      font-size: 11px;
+      letter-spacing: 4px;
+      font-weight: 700;
+      text-transform: uppercase;
+      opacity: 0.9;
+    }
+
+    /* 🔥 INPUTS */
+    .input-group {
+      margin-bottom: 24px;
+    }
+
+    .label {
+      display: block;
+      font-size: 11px;
+      color: var(--text-sec);
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+    }
+
+    .field-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .input-field {
+      width: 100%;
+      background: rgba(10, 15, 30, 0.6) !important;
+      border: 2px solid var(--border) !important;
+      padding: 16px 18px;
+      padding-right: 50px;
+      border-radius: 12px;
+      color: var(--text-primary) !important;
+      font-size: 14px;
+      font-weight: 500;
+      outline: none;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    .input-field::placeholder {
+      color: var(--text-muted);
+      opacity: 0.6;
+    }
+
+    .input-field:hover {
+      border-color: var(--border-light) !important;
+      background: rgba(10, 15, 30, 0.8) !important;
+    }
+
+    .input-field:focus {
+      border-color: var(--primary) !important;
+      box-shadow: 
+        0 0 0 4px rgba(47, 111, 237, 0.15),
+        inset 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+      background: rgba(20, 29, 51, 0.8) !important;
+      transform: translateY(-2px);
+    }
+
+    /* 🔥 AUTOFILL FIX */
+    .input-field:-webkit-autofill,
+    .input-field:-webkit-autofill:hover,
+    .input-field:-webkit-autofill:focus {
+      -webkit-box-shadow: 0 0 0 1000px rgba(10, 15, 30, 0.9) inset !important;
+      -webkit-text-fill-color: var(--text-primary) !important;
+      box-shadow: 0 0 0 1000px rgba(10, 15, 30, 0.9) inset !important;
+      transition: background-color 5000s ease-in-out 0s !important;
+    }
+
+    /* 🔥 SELECT */
+    select.input-field {
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+    }
+
+    select.input-field option {
+      background: #0a0f1e;
+      color: var(--text-primary);
+      padding: 10px;
+    }
+
+    /* 🔥 FIELD ICON */
+    .field-icon {
+      position: absolute;
+      right: 18px;
+      color: var(--text-muted);
+      font-size: 14px;
+      transition: all 0.3s ease;
+      pointer-events: none;
+    }
+
+    .field-icon.clickable {
+      cursor: pointer;
+      pointer-events: all;
+    }
+
+    .field-icon.clickable:hover {
+      color: var(--primary);
+      transform: scale(1.15);
+    }
+
+    /* 🔥 BUTTON */
+    .btn-submit {
+      width: 100%;
+      padding: 18px;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+      border: none;
+      border-radius: 12px;
+      color: #ffffff;
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      font-size: 14px;
+      letter-spacing: 2px;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      margin-top: 10px;
+      box-shadow: 
+        0 10px 30px rgba(47, 111, 237, 0.3),
+        0 0 0 0 rgba(139, 92, 246, 0);
+      position: relative;
+      overflow: hidden;
+      text-transform: uppercase;
+    }
+
+    .btn-submit::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.2);
+      transform: translate(-50%, -50%);
+      transition: width 0.6s, height 0.6s;
+    }
+
+    .btn-submit:hover::before {
+      width: 400px;
+      height: 400px;
+    }
+
+    .btn-submit:hover {
+      transform: translateY(-3px);
+      box-shadow: 
+        0 15px 40px rgba(139, 92, 246, 0.5),
+        0 0 0 6px rgba(139, 92, 246, 0.1);
+    }
+
+    .btn-submit:active {
+      transform: translateY(-1px);
+    }
+
+    .btn-submit i,
+    .btn-submit span {
+      position: relative;
+      z-index: 1;
+    }
+
+    /* 🔥 FOOTER */
+    .footer {
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+      text-align: center;
+      font-size: 10px;
+      color: var(--text-muted);
+      font-family: 'Courier New', monospace;
+      letter-spacing: 1px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .footer i {
+      color: var(--success);
+      font-size: 12px;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    /* 🔥 ERROR TOAST */
+    .error-toast {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%) translateY(30px);
+      background: rgba(229, 83, 61, 0.2);
+      border: 2px solid rgba(229, 83, 61, 0.5);
+      color: #fca5a5;
+      padding: 14px 24px;
+      border-radius: 30px;
+      font-size: 13px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      backdrop-filter: blur(12px);
+      z-index: 100;
+      white-space: nowrap;
+      box-shadow: 0 10px 30px rgba(229, 83, 61, 0.3);
+    }
+
+    .error-toast.visible {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .error-toast i {
+      font-size: 16px;
+    }
+
+    /* 🔥 RESPONSIVE */
+    @media (max-width: 768px) {
+      .login-card {
+        max-width: 95%;
+        padding: 40px 30px;
+      }
+
+      .brand h1 {
+        font-size: 44px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="particles-js"></div>
+
+  <div class="login-card">
+    <div class="brand">
+      <h1>NEP</h1>
+      <p>DELIVERY CONTROL SYSTEM</p>
+    </div>
+
+    <div class="input-group">
+      <label class="label">Seu nome</label>
+      <div class="field-wrapper">
+        <input type="text" id="user-name" class="input-field" placeholder="Ex: Fernando" autocomplete="name" />
+        <i class="fa-solid fa-user field-icon"></i>
+      </div>
+    </div>
+
+    <div class="input-group">
+      <label class="label">Nível de Acesso</label>
+      <div class="field-wrapper">
+        <select id="user-role" class="input-field">
+          <option value="" disabled selected>Selecione sua patente...</option>
+          <option value="superintendente">Superintendente</option>
+          <option value="gerente">Gerente</option>
+          <option value="consultor">Consultor</option>
+          <option value="coordenador">Coordenador</option>
+          <option value="analista">Analista</option>
+          <option value="monitor">Monitor</option>
+        </select>
+        <i class="fa-solid fa-chevron-down field-icon"></i>
+      </div>
+    </div>
+
+    <div class="input-group">
+      <label class="label">Chave de Segurança</label>
+      <div class="field-wrapper">
+        <input type="password" id="access-key" class="input-field" placeholder="••••••••" autocomplete="current-password" />
+        <i class="fa-solid fa-eye field-icon clickable" id="toggle-pass"></i>
+      </div>
+    </div>
+
+    <button id="btn-login" class="btn-submit">
+      <i class="fa-solid fa-right-to-bracket"></i>
+      <span>INICIAR SESSÃO</span>
+    </button>
+
+    <div class="footer">
+      <i class="fa-solid fa-shield-halved"></i>
+      SECURE CONNECTION v3.0 | ENCRYPTED
+    </div>
+  </div>
+
+  <div id="error-msg" class="error-toast">
+    <i class="fa-solid fa-triangle-exclamation"></i>
+    <span id="error-text">Acesso negado. Verifique suas credenciais.</span>
+  </div>
+
+  <script>
+    // ===================================
+    // 🔥 PARTICLES.JS CONFIG
+    // ===================================
+    particlesJS("particles-js", {
+      particles: {
+        number: {
+          value: 80,
+          density: {
+            enable: true,
+            value_area: 800
+          }
+        },
+        color: {
+          value: "#2f6fed"
+        },
+        shape: {
+          type: "circle",
+          stroke: {
+            width: 0,
+            color: "#000000"
+          }
+        },
+        opacity: {
+          value: 0.4,
+          random: true,
+          anim: {
+            enable: true,
+            speed: 1,
+            opacity_min: 0.1,
+            sync: false
+          }
+        },
+        size: {
+          value: 3,
+          random: true,
+          anim: {
+            enable: true,
+            speed: 2,
+            size_min: 0.5,
+            sync: false
+          }
+        },
+        line_linked: {
+          enable: true,
+          distance: 150,
+          color: "#2f6fed",
+          opacity: 0.25,
+          width: 1.5
+        },
+        move: {
+          enable: true,
+          speed: 1.8,
+          direction: "none",
+          random: true,
+          straight: false,
+          out_mode: "out",
+          bounce: false,
+          attract: {
+            enable: true,
+            rotateX: 600,
+            rotateY: 1200
+          }
+        }
+      },
+      interactivity: {
+        detect_on: "canvas",
+        events: {
+          onhover: {
+            enable: true,
+            mode: "grab"
+          },
+          onclick: {
+            enable: true,
+            mode: "push"
+          },
+          resize: true
+        },
+        modes: {
+          grab: {
+            distance: 160,
+            line_linked: {
+              opacity: 0.6
+            }
+          },
+          push: {
+            particles_nb: 3
+          }
+        }
+      },
+      retina_detect: true
+    });
+
+    // ===================================
+    // 🔥 DOM ELEMENTS
+    // ===================================
+    const nameInput = document.getElementById("user-name");
+    const roleInput = document.getElementById("user-role");
+    const passInput = document.getElementById("access-key");
+    const btnLogin = document.getElementById("btn-login");
+    const togglePass = document.getElementById("toggle-pass");
+    const errorMsg = document.getElementById("error-msg");
+    const errorText = document.getElementById("error-text");
+
+    // ===================================
+    // 🔥 TOGGLE PASSWORD
+    // ===================================
+    togglePass.addEventListener("click", () => {
+      const type = passInput.getAttribute("type") === "password" ? "text" : "password";
+      passInput.setAttribute("type", type);
+      togglePass.classList.toggle("fa-eye");
+      togglePass.classList.toggle("fa-eye-slash");
+    });
+
+    // ===================================
+    // 🔥 SHOW ERROR
+    // ===================================
+    function showError(msg) {
+      errorText.textContent = msg;
+      errorMsg.classList.add("visible");
+
+      const card = document.querySelector(".login-card");
+      if (card) {
+        card.animate(
+          [
+            { transform: "translateX(0)" },
+            { transform: "translateX(-8px)" },
+            { transform: "translateX(8px)" },
+            { transform: "translateX(-5px)" },
+            { transform: "translateX(5px)" },
+            { transform: "translateX(0)" }
+          ],
+          { duration: 400 }
+        );
+      }
+
+      setTimeout(() => errorMsg.classList.remove("visible"), 3500);
+    }
+
+    // ===================================
+    // 🔥 LOGIN HANDLER
+    // ===================================
+    function handleLogin() {
+      const name = (nameInput.value || "").trim();
+      const roleKey = roleInput.value;
+      const pass = passInput.value;
+
+      if (name.length < 2) {
+        showError("Informe seu nome (mín. 2 caracteres).");
+        nameInput.focus();
+        return;
+      }
+
+      if (!roleKey) {
+        showError("Selecione seu nível de acesso.");
+        roleInput.focus();
+        return;
+      }
+
+      if (!pass) {
+        showError("Informe a chave de segurança.");
+        passInput.focus();
+        return;
+      }
+
+      // 🔑 SENHAS POR CARGO
+      const passwords = {
+        superintendente: "nep@super2025",
+        gerente: "nep@gerente2025",
+        consultor: "nep@consultor2025",
+        coordenador: "nep@coord2025",
+        analista: "nep@analista2025",
+        monitor: "nep@monitor2025"
+      };
+
+      if (passwords[roleKey] && pass === passwords[roleKey]) {
+        // ✅ LOGIN VÁLIDO
+        localStorage.setItem("nep_user_name", name);
+        localStorage.setItem("nep_user_role_key", roleKey);
+
+        // Compatibilidade legado
+        const legacyMap = {
+          superintendente: "4",
+          gerente: "3",
+          coordenador: "2",
+          analista: "1",
+          monitor: "0"
+        };
+        if (legacyMap[roleKey]) {
+          localStorage.setItem("nep_user_role", legacyMap[roleKey]);
+        }
+
+        btnLogin.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> <span>AUTENTICANDO...</span>`;
+        btnLogin.style.background = "linear-gradient(135deg, #2ecc71, #27ae60)";
+        btnLogin.style.pointerEvents = "none";
+
+        setTimeout(() => {
+          window.location.href = "index.html";
+        }, 1000);
+      } else {
+        // ❌ LOGIN INVÁLIDO
+        showError("Chave de segurança inválida para este cargo.");
+        passInput.value = "";
+        passInput.focus();
+      }
+    }
+
+    // ===================================
+    // 🔥 EVENT LISTENERS
+    // ===================================
+    nameInput.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") handleLogin();
+    });
+
+    roleInput.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") handleLogin();
+    });
+
+    passInput.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") handleLogin();
+    });
+
+    btnLogin.addEventListener("click", handleLogin);
+  </script>
+</body>
+</html>

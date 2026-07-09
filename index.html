@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="NEP Delivery Control - Sistema Enterprise de Governança de Qualidade">
+  <meta name="theme-color" content="#0a0f1e">
+
+  <title>NEP | Delivery Control</title>
+
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" href="NEP. IMAGEM.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+
+  <!-- iOS PWA Meta Tags -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="NEP">
+
+  <link rel="stylesheet" href="css/design-system.css">
+  <link rel="stylesheet" href="css/vacation-enterprise.css">
+  <link rel="stylesheet" href="css/okr-enterprise.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@500;700;900&display=swap"
+    rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+
+  <!-- PDF/Image Export Libraries -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+
+  <link rel="stylesheet" href="css/design-system.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/kanban.css">
+  <link rel="stylesheet" href="css/tools-ace.css">
+  <link rel="stylesheet" href="css/tools-api.css">
+  <link rel="stylesheet" href="css/nep-help.css">
+  <link rel="stylesheet" href="css/light-mode-fixes.css">
+  <link rel="stylesheet" href="css/tickets.css">
+  <link rel="stylesheet" href="css/pwa.css">
+
+
+  <!-- Supabase SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-client.js"></script>
+  <script src="js/storage-service.js"></script>
+
+  <!-- Firebase Compat SDK (para scripts não-módulos) -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
+  <script>
+    // Inicializar Firebase globalmente
+    const firebaseConfig = {
+      apiKey: "AIzaSyCqwJ64SjXQf_ekZhRZcF4nN_Fqhwvxi_Q",
+      authDomain: "ecossistema-nep.firebaseapp.com",
+      projectId: "ecossistema-nep",
+      storageBucket: "ecossistema-nep.firebasestorage.app",
+      messagingSenderId: "1041112586342",
+      appId: "1:1041112586342:web:0b7dc02b242cd3dbe635a7"
+    };
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+    window.db = firebase.firestore();
+    window.auth = firebase.auth();
+    try {
+      window.messaging = firebase.messaging();
+    } catch (e) {
+      console.warn('[Firebase] Messaging não suportado neste navegador/contexto');
+    }
+    console.log('[Firebase] Inicializado globalmente');
+  </script>
+</head>
+
+<body>
+  <div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">
+          <span class="sidebar-logo-text"
+            style="font-family: 'Orbitron', sans-serif; font-size: 28px; font-weight: 700; color: #38bdf8; letter-spacing: 2px;">NEP</span>
+          <span style="font-size: 11px; color: #64748b; letter-spacing: 1px; margin-top: 2px;">DELIVERY CONTROL</span>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <!-- 1. MINHA JORNADA -->
+        <div class="nav-section">
+          <div class="nav-section-title">Minha Jornada</div>
+          <div class="nav-item" data-page="profile">
+            <span class="nav-item-icon">👤</span>
+            <span class="nav-item-text">Meu Perfil</span>
+          </div>
+          <div class="nav-item active" data-page="dashboard">
+            <span class="nav-item-icon">📊</span>
+            <span class="nav-item-text">Dashboard</span>
+          </div>
+          <div class="nav-item" data-page="calendar">
+            <span class="nav-item-icon">📅</span>
+            <span class="nav-item-text">Agendas</span>
+          </div>
+          <div class="nav-item" data-page="announcements">
+            <span class="nav-item-icon">📢</span>
+            <span class="nav-item-text">Avisos</span>
+          </div>
+        </div>
+
+        <!-- 2. EXECUÇÃO & ROTINA -->
+        <div class="nav-section">
+          <div class="nav-section-title">Execução & Rotina</div>
+          <div class="nav-item" data-page="kanban">
+            <span class="nav-item-icon">📋</span>
+            <span class="nav-item-text">Kanban</span>
+          </div>
+          <div class="nav-item" data-page="checklist">
+            <span class="nav-item-icon">✅</span>
+            <span class="nav-item-text">Rotina ADM</span>
+          </div>
+          <div class="nav-item" data-page="tools">
+            <span class="nav-item-icon">🧰</span>
+            <span class="nav-item-text">Ferramentas</span>
+          </div>
+          <div class="nav-item" data-page="tickets">
+            <span class="nav-item-icon">🎫</span>
+            <span class="nav-item-text">Chamados</span>
+          </div>
+        </div>
+
+        <!-- 3. PERFORMANCE & RESULTADOS -->
+        <div class="nav-section">
+          <div class="nav-section-title">Performance & Resultados</div>
+          <div class="nav-item" data-page="results">
+            <span class="nav-item-icon">📈</span>
+            <span class="nav-item-text">Resultados</span>
+          </div>
+          <div class="nav-item" data-page="ranking">
+            <span class="nav-item-icon">🏆</span>
+            <span class="nav-item-text">Ranking</span>
+          </div>
+          <div class="nav-item" data-page="okr">
+            <span class="nav-item-icon">🎯</span>
+            <span class="nav-item-text">OKR / Entregas</span>
+          </div>
+
+        </div>
+
+        <!-- 4. GESTÃO & GOVERNANÇA -->
+        <div class="nav-section">
+          <div class="nav-section-title">Gestão & Governança</div>
+          <div class="nav-item" data-page="teams-calendar">
+            <span class="nav-item-icon">📅</span>
+            <span class="nav-item-text">Calendário</span>
+          </div>
+          <div class="nav-item" data-page="vacation">
+            <span class="nav-item-icon">🏖️</span>
+            <span class="nav-item-text">Férias</span>
+          </div>
+          <div class="nav-item" data-page="admin">
+            <span class="nav-item-icon">🛡️</span>
+            <span class="nav-item-text">Admin</span>
+          </div>
+        </div>
+
+        <!-- 5. APRENDIZADO & EVOLUÇÃO -->
+        <div class="nav-section">
+          <div class="nav-section-title">Aprendizado & Evolução</div>
+
+          <div class="nav-item" data-page="testimonials">
+            <span class="nav-item-icon">💙</span>
+            <span class="nav-item-text">Depoimentos</span>
+          </div>
+          <div class="nav-item" data-page="forum">
+            <span class="nav-item-icon">💬</span>
+            <span class="nav-item-text">Fórum</span>
+          </div>
+          <div class="nav-item" data-page="estagiario">
+            <span class="nav-item-icon">🤖</span>
+            <span class="nav-item-text">Neuronyo</span>
+          </div>
+        </div>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="sidebar-user" id="sidebar-user">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <header class="header">
+        <div class="header-left">
+          <button class="mobile-menu-toggle" id="mobile-menu-toggle">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 12h18M3 6h18M3 18h18"></path>
+            </svg>
+          </button>
+          <h1 class="header-title" id="header-title">Dashboard</h1>
+        </div>
+        <div class="header-right">
+          <div class="search-input-wrapper">
+            <span class="search-icon">🔍</span>
+            <input type="text" class="form-input search-input" placeholder="Buscar... (Ctrl+K)" style="width: 240px;">
+          </div>
+          <button class="btn btn-icon btn-ghost" id="btn-theme-toggle" title="Tema">
+            <i class="fa-solid fa-sun"></i>
+          </button>
+          <button class="btn btn-icon btn-ghost" id="btn-feedback-header" title="Reportar Bug / Melhoria"
+            onclick="NexusFeedbackWidget.open()">
+            <i class="fa-solid fa-bug"></i>
+          </button>
+          <button class="btn btn-icon btn-ghost notification-btn" id="btn-notifications" title="Notificações">
+            🔔
+            <span id="notification-badge" style="display: none;">0</span>
+          </button>
+        </div>
+      </header>
+
+      <div class="page-content" id="page-content">
+        <!-- Dynamic content -->
+      </div>
+    </main>
+  </div>
+
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- Auth check -->
+  <script>
+    // Verificar login antes de carregar a aplicação
+    if (localStorage.getItem('nep_logged_in') !== 'true') {
+      window.location.href = 'login.html';
+    }
+  </script>
+
+  <!-- Scripts Base -->
+  <script src="js/auth.js"></script>
+  <script src="js/store.js"></script>
+
+  <!-- Firebase Modules - Carrega e espera antes de continuar -->
+  <script type="module">
+    console.log('[Firebase Modules] Iniciando carregamento...');
+
+    try {
+      const { NexusAuthService } = await import('./js/auth-firebase.js?v=2');
+      console.log('[Firebase Modules] ✅ auth-firebase.js carregado');
+
+      const { AuditService } = await import('./js/audit-service.js?v=2');
+      console.log('[Firebase Modules] ✅ audit-service.js carregado');
+
+      const { UserManagement } = await import('./js/user-management.js?v=2');
+      console.log('[Firebase Modules] ✅ user-management.js carregado');
+
+      const { PointsService } = await import('./js/points-service.js?v=2');
+      console.log('[Firebase Modules] ✅ points-service.js carregado');
+
+      const { ModulePermissionService } = await import('./js/module-permission-service.js?v=3');
+      console.log('[Firebase Modules] ✅ module-permission-service.js carregado');
+
+      const { AnalyticsService } = await import('./js/analytics-service.js?v=2');
+      console.log('[Firebase Modules] ✅ analytics-service.js carregado');
+
+      // Expor globalmente
+      window.NexusAuthService = NexusAuthService;
+      window.AuditService = AuditService;
+      window.UserManagement = UserManagement;
+      window.PointsService = PointsService;
+      window.ModulePermissionService = ModulePermissionService;
+      window.AnalyticsService = AnalyticsService;
+
+      // Inicializar permissões padrão (se necessário)
+      await ModulePermissionService.initializeDefaultPermissions();
+
+      // Disparar evento quando módulos estiverem prontos
+      window.firebaseModulesLoaded = true;
+      window.dispatchEvent(new Event('firebaseModulesReady'));
+      console.log('[Firebase Modules] ✅ Todos os módulos carregados e expostos globalmente!');
+
+    } catch (error) {
+      console.error('[Firebase Modules] ❌ Erro ao carregar módulos:', error);
+      console.error('[Firebase Modules] Arquivo que falhou:', error.message);
+    }
+  </script>
+
+  <!-- Demais Scripts -->
+  <script src="js/logo-service.js"></script>
+  <script src="js/kanban.js"></script>
+  <script src="js/scoring.js"></script>
+  <script src="js/achievements.js"></script>
+  <script src="js/forum.js?v=4"></script>
+  <script src="js/podcast.js"></script>
+  <script src="js/dashboard.js"></script>
+  <script src="js/admin.js"></script>
+  <script src="js/notifications.js"></script>
+  <script src="js/calendar.js"></script>
+  <!-- External Libs for Estagiário -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/gitbrent/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
+
+  <!-- PPT Engine & Data Analyzer (v2.0) -->
+  <script src="js/ppt-engine.js"></script>
+  <script src="js/data-analyzer.js"></script>
+
+  <!-- Modules -->
+  <script src="js/ai-service.js"></script>
+  <script src="js/estagiario.js"></script>
+  <script src="js/reports.js"></script>
+  <script src="js/profile.js"></script>
+  <script src="js/results.js"></script>
+  <script src="js/tools-chart-generator.js"></script>
+  <script src="js/tools-api.js"></script>
+  <script src="js/nep-help.js"></script>
+  <script src="js/tools-service.js"></script>
+
+  <!-- Quality Tools Pro -->
+  <link rel="stylesheet" href="css/tools-quality-pro.css">
+  <script src="js/tools-pdca-pro.js"></script>
+  <script src="js/tools-dmaic-pro.js"></script>
+  <script src="js/tools-ishikawa-pro.js"></script>
+  <script src="js/tools-gut-pro.js"></script>
+  <script src="js/tools-pareto-pro.js"></script>
+  <script src="js/tools-cincoporques-pro.js"></script>
+  <script src="js/tools-html-creator.js"></script>
+  <script src="js/tools-grafo.js"></script>
+  <script src="js/tools.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/announcements.js?v=2"></script>
+  <script src="js/testimonials.js?v=2"></script>
+  <script src="js/gamification.js?v=1"></script>
+  <script src="js/teams-calendar.js?v=2"></script>
+  <script src="js/vacation-control.js?v=2"></script>
+  <script src="js/okr-management.js?v=2"></script>
+  <script src="js/ticket-management.js?v=1"></script>
+  <script src="js/rotina-adm.js?v=1"></script>
+  <script src="js/pwa.js?v=2"></script>
+  <script src="js/supabase-sync.js"></script>
+  <script src="/js/factibility-engine.js"></script>
+  <script src="/js/factibility-processing.js"></script>
+  <script src="/js/admin-analytics.js"></script>
+  <script src="/js/global-search.js"></script>
+  <script src="js/fix-retroactive-points.js"></script>
+  <script src="js/feedback-widget.js"></script>
+  <script src="js/seed-updates.js"></script>
+  <script src="js/migrate-logos.js" defer></script>
+</body>
+
+</html>

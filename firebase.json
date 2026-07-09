@@ -1,0 +1,23 @@
+{
+    "hosting": {
+        "public": "dist",
+        "ignore": [
+            "firebase.json",
+            "**/.*",
+            "**/node_modules/**",
+            "**/*.exe",
+            "**/*.bat",
+            "**/*.sh",
+            "**/*.cmd",
+            "**/*.ps1",
+            "**/*.dll",
+            "**/ENGENHARIA_BOAS_PRATICAS.md",
+            "**/CONFIGURACAO_DOMINIO.md",
+            "**/README.md"
+        ]
+    },
+    "firestore": {
+        "rules": "firestore.rules",
+        "indexes": "firestore.indexes.json"
+    }
+}

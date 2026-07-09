@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <title>NEP | Gerador de Dados Analytics</title>
+    <style>
+        body {
+            background: #0f172a;
+            color: #fff;
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .card {
+            background: #1e293b;
+            padding: 2rem;
+            border-radius: 1rem;
+            width: 400px;
+            text-align: center;
+            border: 1px solid #334155;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+        }
+
+        h1 {
+            margin-bottom: 1rem;
+            color: #38bdf8;
+        }
+
+        p {
+            color: #94a3b8;
+            margin-bottom: 2rem;
+        }
+
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: bold;
+            transition: 0.2s;
+            width: 100%;
+        }
+
+        button:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
+        }
+
+        button:disabled {
+            background: #64748b;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        #log {
+            margin-top: 1rem;
+            font-family: monospace;
+            font-size: 0.8rem;
+            color: #22c55e;
+            height: 150px;
+            overflow-y: auto;
+            text-align: left;
+            background: #020617;
+            padding: 10px;
+            border-radius: 6px;
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card">
+        <h1>📊 Popular Analytics</h1>
+        <p>Gere dados fictícios para testar o Dashboard do Admin.</p>
+        <button id="btn-seed" onclick="seedAnalytics()">
+            <i class="fa-solid fa-play"></i> Gerar Dados de Teste
+        </button>
+        <div id="log"></div>
+    </div>
+
+    <!-- Firebase -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getFirestore, collection, addDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCqwJ64SjXQf_ekZhRZcF4nN_Fqhwvxi_Q",
+            authDomain: "ecossistema-nep.firebaseapp.com",
+            projectId: "ecossistema-nep"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        const MODULES = ['dashboard', 'kanban', 'forum', 'vacation', 'admin', 'profile', 'courses', 'reports', 'okr'];
+        const USERS = ['User A', 'User B', 'User C', 'Admin', 'Manager'];
+
+        function randomDate(start, end) {
+            return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
+        }
+
+        window.seedAnalytics = async function () {
+            const btn = document.getElementById('btn-seed');
+            const log = document.getElementById('log');
+
+            btn.disabled = true;
+            btn.textContent = 'Gerando...';
+            log.style.display = 'block';
+
+            let count = 0;
+            const TOTAL = 50; // Gera 50 eventos
+
+            log.innerHTML += `🚀 Iniciando geração de ${TOTAL} eventos...\n`;
+
+            try {
+                for (let i = 0; i < TOTAL; i++) {
+                    const module = MODULES[Math.floor(Math.random() * MODULES.length)];
+                    const user = USERS[Math.floor(Math.random() * USERS.length)];
+                    const date = randomDate(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), new Date()); // Últimos 7 dias
+
+                    await addDoc(collection(db, 'user_analytics'), {
+                        uid: 'seed_' + Math.random().toString(36).substr(2, 9),
+                        user_name: user,
+                        event_type: 'MODULE_VIEW',
+                        module_id: module,
+                        timestamp: date,
+                        date: date.toISOString().split('T')[0],
+                        user_agent: 'Seed Script'
+                    });
+
+                    count++;
+                    log.innerHTML += `✅ Evento ${count}: ${module} por ${user}\n`;
+                    log.scrollTop = log.scrollHeight;
+
+                    // Pequeno delay para não travar
+                    if (count % 10 === 0) await new Promise(r => setTimeout(r, 200));
+                }
+
+                log.innerHTML += `\n✨ CONCLUÍDO! ${count} eventos gerados.`;
+                btn.textContent = 'Sucesso! Recarregue o Admin';
+
+            } catch (e) {
+                console.error(e);
+                log.innerHTML += `\n❌ ERRO: ${e.message}`;
+                btn.disabled = false;
+                btn.textContent = 'Tentar Novamente';
+            }
+        }
+    </script>
+</body>
+
+</html>

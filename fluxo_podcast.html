@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Podcast IA - Arquitetura e Fluxos</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --sidebar-bg: #1e293b;
+            --accent-color: #6366f1;
+            --text-color: #e2e8f0;
+            --border-color: #334155;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-color);
+            color: var(--text-color);
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 260px;
+            background: var(--sidebar-bg);
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid var(--border-color);
+        }
+
+        .brand {
+            padding: 24px;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: white;
+            border-bottom: 1px solid var(--border-color);
+            background: linear-gradient(to right, #6366f1, #a855f7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-items {
+            flex: 1;
+            padding: 20px 10px;
+            overflow-y: auto;
+        }
+
+        .nav-btn {
+            width: 100%;
+            text-align: left;
+            background: transparent;
+            color: #94a3b8;
+            border: none;
+            padding: 12px 16px;
+            margin-bottom: 4px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-btn:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+        }
+
+        .nav-btn.active {
+            background: var(--accent-color);
+            color: white;
+        }
+
+        .footer-info {
+            padding: 20px;
+            font-size: 0.75rem;
+            color: #64748b;
+            border-top: 1px solid var(--border-color);
+            text-align: center;
+        }
+
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .toolbar {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 8px;
+            z-index: 10;
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(8px);
+            padding: 8px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+
+        .tool-btn {
+            background: #334155;
+            color: white;
+            border: none;
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .tool-btn:hover {
+            background: #475569;
+        }
+
+        #diagram-view {
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg-color);
+            background-image: linear-gradient(#1e293b 1px, transparent 1px), linear-gradient(90deg, #1e293b 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+
+        .mermaid-box {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .status-msg {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 12px;
+            pointer-events: none;
+        }
+
+        .status-loading {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .status-error {
+            background: #ef4444;
+            color: white;
+            max-width: 80%;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="sidebar">
+        <div class="brand">PODCAST NEXT LEVEL</div>
+        <div class="nav-items">
+            <button class="nav-btn active" data-key="ecosystem">🌍 Ecossistema Geral</button>
+            <button class="nav-btn" data-key="content_engine">🎬 Motor de Conteúdo</button>
+            <button class="nav-btn" data-key="gamification">🏆 Ranking e XP</button>
+            <button class="nav-btn" data-key="user_journey">👤 Jornada do Usuário</button>
+            <button class="nav-btn" data-key="admin_ops">⚙️ Operações Admin</button>
+            <button class="nav-btn" data-key="data_model">🗄️ Modelo de Dados</button>
+        </div>
+        <div class="footer-info">v2.0 Professional Edition</div>
+    </div>
+
+    <div class="main">
+        <div class="toolbar">
+            <button class="tool-btn" id="zoom-in" title="Zoom In">+</button>
+            <button class="tool-btn" id="zoom-out" title="Zoom Out">-</button>
+            <button class="tool-btn" id="reset-zoom" title="Reset">⟲</button>
+        </div>
+        <div id="diagram-view"></div>
+        <div id="status" class="status-msg hidden"></div>
+    </div>
+
+    <script>
+        mermaid.initialize({
+            startOnLoad: false,
+            theme: 'dark',
+            securityLevel: 'loose',
+            flowchart: { curve: 'basis', htmlLabels: true },
+            er: { useMaxWidth: false }
+        });
+
+        var panZoom = null;
+
+        var diagrams = {
+            ecosystem: [
+                'flowchart TB',
+                '    subgraph INTERFACE[Camada de Interface]',
+                '        LANDING(Landing Page)',
+                '        WEB_APP(Web App Aluno)',
+                '        ADMIN_PANEL(Painel Admin)',
+                '    end',
+                '    subgraph CORE[Nucleo do Sistema]',
+                '        AUTH[Autenticacao]',
+                '        CONTENT[Motor Conteudo]',
+                '        GAME[Motor Gamificacao]',
+                '    end',
+                '    subgraph DATA[Dados]',
+                '        DB[(PostgreSQL)]',
+                '        STORAGE[(Storage)]',
+                '    end',
+                '    LANDING --> AUTH',
+                '    WEB_APP <--> CONTENT',
+                '    WEB_APP <--> GAME',
+                '    ADMIN_PANEL --> CONTENT',
+                '    AUTH --> DB',
+                '    CONTENT <--> DB',
+                '    CONTENT --> STORAGE',
+                '    GAME <--> DB'
+            ].join('\n'),
+
+            content_engine: [
+                'flowchart LR',
+                '    subgraph INPUT[Entrada Admin]',
+                '        UPLOAD[Upload Arquivo]',
+                '        META[Metadados]',
+                '    end',
+                '    subgraph PROCESS[Processamento]',
+                '        TYPE{Tipo Midia}',
+                '        VIDEO[Processar Video]',
+                '        AUDIO[Processar Audio]',
+                '        DOC[Indexar PDF/Texto]',
+                '        IMG[Otimizar Imagem]',
+                '    end',
+                '    subgraph DELIVERY[Entrega]',
+                '        STREAM[Streaming]',
+                '        DOWNLOAD[Download Seguro]',
+                '    end',
+                '    UPLOAD --> TYPE',
+                '    TYPE -->|MP4/MOV| VIDEO',
+                '    TYPE -->|MP3/WAV| AUDIO',
+                '    TYPE -->|PDF/DOC| DOC',
+                '    TYPE -->|JPG/PNG| IMG',
+                '    VIDEO --> STREAM',
+                '    AUDIO --> STREAM',
+                '    DOC --> DOWNLOAD',
+                '    IMG --> DOWNLOAD'
+            ].join('\n'),
+
+            gamification: [
+                'flowchart TD',
+                '    ACTION((Acao Usuario)) --> EVENT{Tipo Evento}',
+                '    EVENT -->|Assistiu Aula| XP1[+10 XP]',
+                '    EVENT -->|Passou Prova| XP2[+50 XP]',
+                '    EVENT -->|Nota Maxima| XP3[+100 XP]',
+                '    XP1 --> CALC[Recalcular Total]',
+                '    XP2 --> CALC',
+                '    XP3 --> CALC',
+                '    CALC --> UPDATEDB[(Atualizar Usuarios)]',
+                '    UPDATEDB --> LEVEL{Subiu Nivel?}',
+                '    LEVEL -->|Sim| NOTIFY[Notificacao Level Up]',
+                '    LEVEL -->|Nao| UPDATEBAR[Atualizar Barra XP]',
+                '    UPDATEDB --> REFRESH[Recalcular Ranking]',
+                '    REFRESH --> LEADER[Atualizar Leaderboard]'
+            ].join('\n'),
+
+            user_journey: [
+                'flowchart TD',
+                '    S1(Visitante) -->|Acessa| S2{Cadastro/Login}',
+                '    S2 -->|Novo| S3[Preenche Cadastro]',
+                '    S3 --> S4[Status Pendente]',
+                '    S4 --> S5{Admin Aprovou?}',
+                '    S5 -->|Nao| S4',
+                '    S5 -->|Sim| S6[Acesso Liberado]',
+                '    S6 --> S7[Dashboard Principal]',
+                '    S7 --> S8[Escolhe Temporada]',
+                '    S8 --> S9[Consome Conteudos]',
+                '    S9 --> S10{Completou?}',
+                '    S10 -->|Sim| S11[Desbloqueia Prova]',
+                '    S11 --> S12{Nota >= 70?}',
+                '    S12 -->|Sim| S13[Emite Certificado]',
+                '    S12 -->|Nao| S8'
+            ].join('\n'),
+
+            admin_ops: [
+                'flowchart TB',
+                '    ADM((Administrador)) --> PANEL[Dashboard Global]',
+                '    PANEL --> USERS[Gestao Usuarios]',
+                '    PANEL --> CONTENT[Gestao Conteudo]',
+                '    PANEL --> ANALYTICS[Relatorios]',
+                '    USERS --> APPROVE[Aprovar Novos]',
+                '    USERS --> ROLES[Gerir Permissoes]',
+                '    CONTENT --> SEASONS[Criar Temporadas]',
+                '    SEASONS --> EPISODES[Adicionar Episodios]',
+                '    EPISODES --> ASSETS[Vincular Arquivos]',
+                '    EPISODES --> QUIZ[Configurar Prova]'
+            ].join('\n'),
+
+            data_model: [
+                'erDiagram',
+                '    USUARIOS ||--o{ ACESSOS : realiza',
+                '    USUARIOS ||--o{ PROGRESSO : mantem',
+                '    USUARIOS ||--o{ CERTIFICADOS : conquista',
+                '    TEMPORADAS ||--|{ EPISODIOS : possui',
+                '    EPISODIOS ||--o{ MATERIAIS : contem',
+                '    EPISODIOS ||--o{ PROGRESSO : registra',
+                '    TEMPORADAS ||--|{ PROVAS : exige',
+                '    PROVAS ||--|{ QUESTOES : compoe',
+                '    USUARIOS {',
+                '        uuid id PK',
+                '        string nome',
+                '        string email',
+                '        int xp_total',
+                '        string nivel',
+                '    }',
+                '    MATERIAIS {',
+                '        uuid id PK',
+                '        string tipo',
+                '        string url',
+                '    }'
+            ].join('\n')
+        };
+
+        function loadDiagram(key) {
+            var buttons = document.querySelectorAll('.nav-btn');
+            buttons.forEach(function (btn) { btn.classList.remove('active'); });
+            var activeBtn = document.querySelector('.nav-btn[data-key="' + key + '"]');
+            if (activeBtn) activeBtn.classList.add('active');
+
+            var container = document.getElementById('diagram-view');
+            var status = document.getElementById('status');
+
+            status.textContent = 'Renderizando diagrama...';
+            status.className = 'status-msg status-loading';
+
+            if (panZoom) { panZoom.destroy(); panZoom = null; }
+            container.innerHTML = '';
+
+            var graphId = 'graph-' + Date.now();
+            var graphDef = diagrams[key];
+
+            mermaid.render(graphId, graphDef).then(function (result) {
+                var svgCode = result.svg;
+                container.innerHTML = '<div class="mermaid-box">' + svgCode + '</div>';
+
+                var svgEl = container.querySelector('svg');
+                if (svgEl) {
+                    svgEl.style.width = '100%';
+                    svgEl.style.height = '100%';
+                    panZoom = svgPanZoom(svgEl, {
+                        zoomEnabled: true,
+                        controlIconsEnabled: false,
+                        fit: true,
+                        center: true,
+                        minZoom: 0.1,
+                        maxZoom: 5
+                    });
+                }
+                status.className = 'status-msg hidden';
+            }).catch(function (err) {
+                console.error(err);
+                status.innerHTML = '<strong>Erro:</strong> ' + err.message;
+                status.className = 'status-msg status-error';
+            });
+        }
+
+        // Event Listeners
+        document.querySelectorAll('.nav-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                loadDiagram(this.getAttribute('data-key'));
+            });
+        });
+
+        document.getElementById('zoom-in').addEventListener('click', function () { if (panZoom) panZoom.zoomIn(); });
+        document.getElementById('zoom-out').addEventListener('click', function () { if (panZoom) panZoom.zoomOut(); });
+        document.getElementById('reset-zoom').addEventListener('click', function () { if (panZoom) { panZoom.reset(); panZoom.fit(); panZoom.center(); } });
+
+        // Initial load
+        loadDiagram('ecosystem');
+    </script>
+</body>
+
+</html>
