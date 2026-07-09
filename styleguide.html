@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEP | Styleguide do Design System</title>
+    <link rel="stylesheet" href="css/design-system.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/light-mode-fixes.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .sg-wrap {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: var(--space-10) var(--space-6);
+        }
+
+        .sg-section {
+            margin-bottom: var(--space-12);
+        }
+
+        .sg-section>h2 {
+            margin-bottom: var(--space-2);
+        }
+
+        .sg-section>p {
+            color: var(--text-secondary);
+            margin-bottom: var(--space-6);
+        }
+
+        .sg-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-4);
+            align-items: center;
+            margin-bottom: var(--space-4);
+        }
+
+        .sg-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: var(--space-5);
+        }
+
+        .sg-theme-toggle {
+            position: fixed;
+            top: var(--space-4);
+            right: var(--space-4);
+            z-index: 100;
+        }
+    </style>
+</head>
+
+<body>
+    <button class="btn btn-secondary sg-theme-toggle" onclick="toggleTheme()">
+        <i class="fa-solid fa-circle-half-stroke"></i> Alternar tema
+    </button>
+
+    <div class="sg-wrap">
+        <header class="sg-section">
+            <h1 class="text-gradient">Design System NEP</h1>
+            <p style="color: var(--text-secondary); font-size: var(--text-lg); max-width: 640px;">
+                Referência viva dos componentes do Ecossistema NEP — identidade roxo neon + ciano,
+                refinada para uma estética premium nos modos claro e escuro.
+            </p>
+        </header>
+
+        <section class="sg-section">
+            <h2>Tipografia</h2>
+            <p>Hierarquia com tracking negativo em títulos e line-height confortável no corpo.</p>
+            <h1>Título H1 — Visão executiva</h1>
+            <h2>Título H2 — Seção de módulo</h2>
+            <h3>Título H3 — Bloco de conteúdo</h3>
+            <h4>Título H4 — Card ou painel</h4>
+            <p style="max-width: 560px;">Parágrafo de corpo: o Ecossistema NEP concentra gestão de demandas,
+                qualidade e desenvolvimento das equipes em uma única plataforma, com gamificação e
+                governança integradas.</p>
+        </section>
+
+        <section class="sg-section">
+            <h2>Botões</h2>
+            <p>Estados completos: default, hover, active (pressione), disabled e loading.</p>
+            <div class="sg-row">
+                <button class="btn btn-primary"><i class="fa-solid fa-plus"></i> Primário</button>
+                <button class="btn btn-secondary">Secundário</button>
+                <button class="btn btn-ghost">Ghost</button>
+                <button class="btn btn-success"><i class="fa-solid fa-check"></i> Sucesso</button>
+                <button class="btn btn-danger"><i class="fa-solid fa-trash"></i> Perigo</button>
+            </div>
+            <div class="sg-row">
+                <button class="btn btn-primary" disabled>Desabilitado</button>
+                <button class="btn btn-primary btn-loading">Carregando</button>
+                <button class="btn btn-primary btn-lg">Grande</button>
+                <button class="btn btn-secondary btn-sm">Pequeno</button>
+                <button class="btn btn-secondary btn-icon"><i class="fa-solid fa-gear"></i></button>
+            </div>
+        </section>
+
+        <section class="sg-section">
+            <h2>Cards e métricas</h2>
+            <p>Sombra em camadas, elevação suave no hover e ícones com aro.</p>
+            <div class="sg-grid">
+                <div class="stats-card">
+                    <div class="stats-card-icon accent"><i class="fa-solid fa-bolt"></i></div>
+                    <div class="stats-card-value">128</div>
+                    <div class="stats-card-label">Demandas entregues</div>
+                    <span class="stats-card-trend up"><i class="fa-solid fa-arrow-up"></i> 12% no mês</span>
+                </div>
+                <div class="stats-card">
+                    <div class="stats-card-icon primary"><i class="fa-solid fa-trophy"></i></div>
+                    <div class="stats-card-value">4.820</div>
+                    <div class="stats-card-label">XP da equipe</div>
+                    <span class="stats-card-trend up"><i class="fa-solid fa-arrow-up"></i> 8% no mês</span>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">Card padrão</span>
+                        <span class="badge badge-accent">Novo</span>
+                    </div>
+                    <div class="card-body">
+                        <p style="color: var(--text-secondary); font-size: var(--text-sm);">
+                            Corpo do card com texto secundário e footer elevado.
+                        </p>
+                    </div>
+                    <div class="card-footer" style="display:flex; justify-content:flex-end; gap: var(--space-2);">
+                        <button class="btn btn-ghost btn-sm">Cancelar</button>
+                        <button class="btn btn-primary btn-sm">Salvar</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="sg-section">
+            <h2>Formulários</h2>
+            <p>Foco com anel na cor da marca e contraste AA nos dois temas.</p>
+            <div class="sg-grid">
+                <div>
+                    <div class="form-group">
+                        <label class="form-label">Nome completo</label>
+                        <input type="text" class="form-input" placeholder="Digite o nome...">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Cargo</label>
+                        <select class="form-input form-select">
+                            <option>ADMIN</option>
+                            <option>DIRETOR</option>
+                            <option>SUPERINTENDENTE</option>
+                            <option>GERENTE</option>
+                            <option>CONSULTOR</option>
+                            <option>COORDENADOR</option>
+                            <option>ANALISTA</option>
+                            <option>MONITOR</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <div class="form-group">
+                        <label class="form-label">Descrição</label>
+                        <textarea class="form-input form-textarea" placeholder="Descreva a demanda..."></textarea>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="sg-section">
+            <h2>Badges, progresso e abas</h2>
+            <div class="sg-row">
+                <span class="badge badge-primary">Primário</span>
+                <span class="badge badge-accent">Acento</span>
+                <span class="badge badge-success">Sucesso</span>
+                <span class="badge badge-warning">Alerta</span>
+                <span class="badge badge-error">Erro</span>
+                <span class="badge badge-neutral">Neutro</span>
+                <span class="achievement-badge gold"><i class="fa-solid fa-medal"></i> Ouro</span>
+            </div>
+            <div style="max-width: 420px; margin: var(--space-5) 0;">
+                <div class="progress">
+                    <div class="progress-bar" style="width: 64%;"></div>
+                </div>
+            </div>
+            <div class="tabs" style="max-width: 480px;">
+                <button class="tab active">Visão geral</button>
+                <button class="tab">Detalhes</button>
+                <button class="tab">Histórico</button>
+            </div>
+        </section>
+
+        <section class="sg-section">
+            <h2>Tabela</h2>
+            <div class="table-container">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Colaborador</th>
+                            <th>Cargo</th>
+                            <th>Status</th>
+                            <th>XP</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Ana Souza</td>
+                            <td>ANALISTA</td>
+                            <td><span class="badge badge-success">Ativo</span></td>
+                            <td>1.240</td>
+                        </tr>
+                        <tr>
+                            <td>Carlos Lima</td>
+                            <td>MONITOR</td>
+                            <td><span class="badge badge-warning">Férias</span></td>
+                            <td>980</td>
+                        </tr>
+                        <tr>
+                            <td>Julia Reis</td>
+                            <td>COORDENADOR</td>
+                            <td><span class="badge badge-success">Ativo</span></td>
+                            <td>2.115</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="sg-section">
+            <h2>Modal</h2>
+            <button class="btn btn-primary" onclick="document.getElementById('sg-modal').classList.add('active')">
+                Abrir modal
+            </button>
+        </section>
+    </div>
+
+    <div class="modal-backdrop" id="sg-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <span class="modal-title">Nova demanda</span>
+                <button class="modal-close" onclick="document.getElementById('sg-modal').classList.remove('active')">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Título</label>
+                    <input type="text" class="form-input" placeholder="Título da demanda">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Prioridade</label>
+                    <select class="form-input form-select">
+                        <option>Baixo</option>
+                        <option>Médio</option>
+                        <option>Alto</option>
+                        <option>Urgente</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost"
+                    onclick="document.getElementById('sg-modal').classList.remove('active')">Cancelar</button>
+                <button class="btn btn-primary">Criar demanda</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleTheme() {
+            const html = document.documentElement;
+            const next = html.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+            if (next === 'light') html.setAttribute('data-theme', 'light');
+            else html.removeAttribute('data-theme');
+            localStorage.setItem('nep_theme', next);
+        }
+        // Respeita o tema salvo pelo sistema principal
+        if (localStorage.getItem('nep_theme') === 'light') {
+            document.documentElement.setAttribute('data-theme', 'light');
+        }
+    </script>
+</body>
+
+</html>

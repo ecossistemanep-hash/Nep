@@ -146,19 +146,29 @@
   --radius-2xl: 1.5rem;
   --radius-full: 9999px;
 
-  /* Shadows - Glow com Ciano e Roxo */
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -2px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.4);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.4);
-  --shadow-glow: 0 0 20px rgba(0, 224, 255, 0.3);
-  --shadow-glow-primary: 0 0 30px rgba(168, 85, 247, 0.25);
+  /* Shadows — camadas suaves (estilo Stripe/Linear) + glow sutil da marca */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35), 0 1px 1px rgba(0, 0, 0, 0.22);
+  --shadow-md: 0 2px 4px rgba(0, 0, 0, 0.32), 0 6px 16px -4px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 4px 8px rgba(0, 0, 0, 0.3), 0 16px 32px -8px rgba(0, 0, 0, 0.5);
+  --shadow-xl: 0 8px 16px rgba(0, 0, 0, 0.3), 0 28px 56px -12px rgba(0, 0, 0, 0.55);
+  --shadow-glow: 0 0 0 1px rgba(0, 224, 255, 0.12), 0 4px 20px -2px rgba(0, 224, 255, 0.25);
+  --shadow-glow-primary: 0 0 0 1px rgba(168, 85, 247, 0.12), 0 4px 24px -2px rgba(168, 85, 247, 0.22);
+  /* Realce interno no topo do elemento — profundidade sutil em superfícies escuras */
+  --highlight-inset: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --shadow-card: var(--highlight-inset), 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px -8px rgba(0, 0, 0, 0.4);
 
-  /* Transitions */
-  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-spring: 500ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  /* Transitions — 150–350ms, curvas naturais */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --transition-fast: 150ms var(--ease-out);
+  --transition-base: 240ms var(--ease-out);
+  --transition-slow: 350ms var(--ease-in-out);
+  --transition-spring: 400ms var(--ease-spring);
+
+  /* Anel de foco acessível na cor da marca */
+  --focus-ring: 0 0 0 3px rgba(0, 224, 255, 0.28);
+  --focus-ring-primary: 0 0 0 3px rgba(168, 85, 247, 0.30);
 
   /* Z-Index Scale */
   --z-dropdown: 100;
@@ -179,31 +189,44 @@
    LIGHT THEME VARIABLES
    ========================================= */
 [data-theme="light"] {
-  /* Light Theme Surfaces */
-  --surface-bg: #f8fafc;
+  /* Light Theme Surfaces — neutros quentes, bordas discretas (Notion-like) */
+  --surface-bg: #f7f8fa;
   --surface-card: #ffffff;
-  --surface-elevated: #f1f5f9;
-  --surface-hover: #e2e8f0;
-  --surface-border: #cbd5e1;
-  --surface-border-light: #94a3b8;
+  --surface-elevated: #f3f4f6;
+  --surface-hover: #eceef1;
+  --surface-border: #e4e7ec;
+  --surface-border-light: #d0d5dd;
 
-  /* Text Colors - Light Theme */
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --text-tertiary: #64748b;
-  --text-disabled: #94a3b8;
+  /* Text Colors — contraste AA garantido sobre branco */
+  --text-primary: #101828;
+  --text-secondary: #475467;
+  --text-tertiary: #667085;
+  --text-disabled: #98a2b3;
   --text-inverse: #f8fafc;
 
-  /* Adjusted Gradients for Light */
-  --gradient-mesh: radial-gradient(at 40% 20%, hsla(210, 100%, 90%, 0.4) 0px, transparent 50%),
-    radial-gradient(at 80% 0%, hsla(189, 100%, 90%, 0.3) 0px, transparent 50%),
-    radial-gradient(at 0% 50%, hsla(210, 100%, 90%, 0.3) 0px, transparent 50%);
+  /* Acento com contraste adequado sobre fundos claros
+     (ciano puro #00E0FF falha AA no claro — usar tom mais profundo) */
+  --accent-400: #0891b2;
+  --accent-500: #0e7490;
+  --accent-300: #06b6d4;
 
-  /* Shadows for Light Theme */
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  /* Adjusted Gradients for Light */
+  --gradient-mesh: radial-gradient(at 40% 20%, hsla(270, 80%, 92%, 0.5) 0px, transparent 50%),
+    radial-gradient(at 80% 0%, hsla(189, 90%, 88%, 0.4) 0px, transparent 50%),
+    radial-gradient(at 0% 50%, hsla(220, 60%, 94%, 0.5) 0px, transparent 50%);
+
+  /* Shadows — suaves e difusas no claro (sem glow, com sombra ambiente) */
+  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.05);
+  --shadow-md: 0 2px 4px rgba(16, 24, 40, 0.05), 0 6px 16px -4px rgba(16, 24, 40, 0.08);
+  --shadow-lg: 0 4px 8px rgba(16, 24, 40, 0.05), 0 16px 32px -8px rgba(16, 24, 40, 0.1);
+  --shadow-xl: 0 8px 16px rgba(16, 24, 40, 0.06), 0 28px 56px -12px rgba(16, 24, 40, 0.14);
+  --shadow-glow: 0 0 0 1px rgba(8, 145, 178, 0.14), 0 4px 16px -2px rgba(8, 145, 178, 0.18);
+  --shadow-glow-primary: 0 0 0 1px rgba(147, 51, 234, 0.12), 0 4px 16px -2px rgba(147, 51, 234, 0.16);
+  --highlight-inset: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  --shadow-card: 0 1px 2px rgba(16, 24, 40, 0.04), 0 4px 12px -2px rgba(16, 24, 40, 0.06);
+
+  --focus-ring: 0 0 0 3px rgba(8, 145, 178, 0.22);
+  --focus-ring-primary: 0 0 0 3px rgba(147, 51, 234, 0.22);
 }
 
 /* Light Theme Scrollbar */
@@ -242,10 +265,24 @@ body {
   font-size: var(--text-base);
   font-weight: var(--font-regular);
   line-height: var(--leading-normal);
+  letter-spacing: -0.006em;
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
   color: var(--text-primary);
   background: var(--surface-bg);
   min-height: 100vh;
   overflow-x: hidden;
+  transition: background-color var(--transition-slow), color var(--transition-slow);
+}
+
+/* Respeita usuários com sensibilidade a movimento */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* Background Mesh Effect */
@@ -273,30 +310,42 @@ h6 {
   font-weight: var(--font-bold);
   line-height: var(--leading-tight);
   color: var(--text-primary);
+  text-wrap: balance;
 }
 
+/* Títulos grandes com tracking negativo — aparência editorial, menos "template" */
 h1 {
   font-size: var(--text-4xl);
+  letter-spacing: -0.025em;
 }
 
 h2 {
   font-size: var(--text-3xl);
+  letter-spacing: -0.022em;
 }
 
 h3 {
   font-size: var(--text-2xl);
+  letter-spacing: -0.018em;
 }
 
 h4 {
   font-size: var(--text-xl);
+  letter-spacing: -0.012em;
 }
 
 h5 {
   font-size: var(--text-lg);
+  letter-spacing: -0.008em;
 }
 
 h6 {
   font-size: var(--text-base);
+  letter-spacing: -0.004em;
+}
+
+p {
+  line-height: var(--leading-relaxed);
 }
 
 .text-gradient {
@@ -314,23 +363,25 @@ h6 {
    SCROLLBAR STYLING
    ========================================= */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--surface-card);
-  border-radius: var(--radius-full);
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--surface-border-light);
+  background: var(--surface-border);
   border-radius: var(--radius-full);
+  border: 2px solid transparent;
+  background-clip: content-box;
   transition: background var(--transition-fast);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--primary-600);
+  background: var(--surface-border-light);
+  background-clip: content-box;
 }
 
 /* =========================================
@@ -345,8 +396,9 @@ h6 {
    FOCUS STATES
    ========================================= */
 :focus-visible {
-  outline: 2px solid var(--accent-500);
-  outline-offset: 2px;
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-radius: var(--radius-sm);
 }
 
 /* =========================================
