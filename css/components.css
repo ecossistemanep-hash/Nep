@@ -2567,3 +2567,112 @@ path.flux-connection {
 .page-title {
     letter-spacing: -0.025em;
 }
+
+/* ── Logo da marca (sidebar): gradiente vivo + entrada suave ── */
+.brand-logo {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 3px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.brand-logo-text {
+    font-family: 'Orbitron', var(--font-family);
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    line-height: 1;
+    background: linear-gradient(100deg,
+            #00E0FF 0%,
+            #7dd3fc 22%,
+            #A855F7 48%,
+            #00E0FF 72%,
+            #A855F7 100%);
+    background-size: 300% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation:
+        brandGradientFlow 9s var(--ease-in-out) infinite,
+        brandLogoIn 600ms var(--ease-spring) backwards;
+    filter: drop-shadow(0 0 14px rgba(0, 224, 255, 0.25));
+    transition: filter var(--transition-slow), transform var(--transition-spring);
+}
+
+[data-theme="light"] .brand-logo-text {
+    background-image: linear-gradient(100deg,
+            #0891b2 0%,
+            #06b6d4 22%,
+            #9333EA 48%,
+            #0891b2 72%,
+            #9333EA 100%);
+    background-size: 300% 100%;
+    filter: drop-shadow(0 1px 6px rgba(8, 145, 178, 0.18));
+}
+
+.brand-logo:hover .brand-logo-text {
+    filter: drop-shadow(0 0 20px rgba(168, 85, 247, 0.45));
+    transform: translateY(-1px);
+    animation-duration: 3s, 600ms;
+}
+
+[data-theme="light"] .brand-logo:hover .brand-logo-text {
+    filter: drop-shadow(0 2px 10px rgba(147, 51, 234, 0.3));
+}
+
+.brand-logo-sub {
+    font-size: 10px;
+    font-weight: var(--font-medium);
+    color: var(--text-tertiary);
+    letter-spacing: 0.32em;
+    line-height: 1;
+    animation: brandSubIn 700ms var(--ease-out) 180ms backwards;
+    transition: letter-spacing var(--transition-slow), color var(--transition-base);
+}
+
+.brand-logo:hover .brand-logo-sub {
+    letter-spacing: 0.42em;
+    color: var(--text-secondary);
+}
+
+@keyframes brandGradientFlow {
+    0% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
+
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+@keyframes brandLogoIn {
+    from {
+        opacity: 0;
+        transform: translateY(8px) scale(0.96);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes brandSubIn {
+    from {
+        opacity: 0;
+        transform: translateX(-6px);
+        letter-spacing: 0.15em;
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+        letter-spacing: 0.32em;
+    }
+}
