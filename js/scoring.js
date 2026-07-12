@@ -9,6 +9,12 @@ const NexusScoring = {
   rankingData: [],
   userPointsData: null,
   userAchievements: null,
+  userTransactions: [],
+
+  // Ranking inteligente: período (geral | mes | semana) e filtro por logo
+  currentPeriod: 'geral',
+  currentLogoFilter: 'all',
+  _periodCache: {},
 
   async render(container) {
     container.innerHTML = `
@@ -152,6 +158,149 @@ const NexusScoring = {
         console.warn('[Scoring] Erro ao carregar conquistas:', e);
       }
     }
+
+    // Carregar histórico de transações do usuário (aba Histórico)
+    await this._loadUserTransactions(uid);
+  },
+
+  /**
+   * Histórico do usuário vem de points_transactions (não do doc de pontos).
+   * Requer índice composto uid+created_at (ver firestore.indexes.json).
+   */
+  async _loadUserTransactions(uid) {
+    if (!uid) { this.userTransactions = []; return; }
+    try {
+      if (window.PointsService?.getUserTransactions) {
+        this.userTransactions = await window.PointsService.getUserTransactions(uid, 30);
+        return;
+      }
+      if (window.db) {
+        const snap = await window.db.collection('points_transactions')
+          .where('uid', '==', uid)
+          .orderBy('created_at', 'desc')
+          .limit(30)
+          .get();
+        this.userTransactions = snap.docs.map(d => {
+          const t = d.data();
+          return {
+            ...t,
+            points: t.points ?? t.amount ?? 0,
+            created_at: t.created_at?.toDate?.()?.toLocaleString('pt-BR') || ''
+          };
+        });
+      }
+    } catch (e) {
+      console.warn('[Scoring] Erro ao carregar histórico de transações:', e);
+      this.userTransactions = [];
+    }
+  },
+
+  /**
+   * Ranking por período: soma as transações desde o início do mês/semana.
+   * Agregação no cliente (escala Spark) com cache de 60s por período.
+   */
+  async getPeriodRanking(period) {
+    const cached = this._periodCache[period];
+    if (cached && (Date.now() - cached.at < 60000)) return cached.data;
+
+    const db = window.db;
+    if (!db) return [];
+
+    const now = new Date();
+    let start;
+    if (period === 'semana') {
+      start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay()); // domingo
+    } else {
+      start = new Date(now.getFullYear(), now.getMonth(), 1); // dia 1 do mês
+    }
+
+    try {
+      const snap = await db.collection('points_transactions')
+        .where('created_at', '>=', start)
+        .orderBy('created_at', 'desc')
+        .limit(3000)
+        .get();
+
+      // Somar pontos por usuário no período
+      const sums = {};
+      snap.docs.forEach(d => {
+        const t = d.data();
+        const pts = t.points ?? t.amount ?? 0;
+        if (!t.uid || !pts) return;
+        sums[t.uid] = (sums[t.uid] || 0) + pts;
+      });
+
+      // Reaproveitar os perfis já resolvidos do ranking geral; buscar os que faltarem
+      const byUid = {};
+      (this.rankingData || []).forEach(u => { byUid[u.uid] = u; });
+
+      const rows = await Promise.all(Object.entries(sums).map(async ([uid, pts]) => {
+        let base = byUid[uid];
+        if (!base) {
+          try {
+            const uSnap = await db.collection('users').doc(uid).get();
+            const u = uSnap.exists ? uSnap.data() : {};
+            base = {
+              uid,
+              nome: u.nome || u.name || 'Usuário',
+              cargo: u.cargo || 'Membro',
+              email: u.email || '',
+              photoURL: u.photoURL || null,
+              logos: u.logos || (u.setor ? [u.setor] : []),
+              level: 1,
+              initials: this.getInitials(u.nome || 'U')
+            };
+          } catch { base = { uid, nome: 'Usuário', cargo: 'Membro', logos: [], initials: '?' }; }
+        }
+        return { ...base, total_points: pts };
+      }));
+
+      // Mesmos filtros do ranking geral (teste/admin/logo)
+      let ranking = rows.filter(u => {
+        const lowerName = (u.nome || '').toLowerCase();
+        const lowerEmail = (u.email || '').toLowerCase();
+        if (lowerName === 'teste' || lowerName.includes('teste automacao')) return false;
+        if (lowerEmail.startsWith('teste')) return false;
+        if (u.cargo === 'ADMIN' || u.cargo === 'Administrador') return false;
+        return true;
+      });
+      if (window.LogoService && window.LogoService.shouldFilterByLogo()) {
+        ranking = ranking.filter(u => window.LogoService.canSeeUser(u));
+      }
+
+      ranking.sort((a, b) => (b.total_points || 0) - (a.total_points || 0));
+      this._periodCache[period] = { at: Date.now(), data: ranking };
+      return ranking;
+    } catch (e) {
+      console.warn('[Scoring] Erro no ranking por período:', e);
+      return [];
+    }
+  },
+
+  /**
+   * Posições com empate (dense ranking): mesma pontuação = mesma posição.
+   */
+  applyPositions(list) {
+    let lastPoints = null;
+    let lastPosition = 0;
+    return list.map((u, i) => {
+      const pts = u.total_points || 0;
+      const position = (pts === lastPoints) ? lastPosition : i + 1;
+      lastPoints = pts;
+      lastPosition = position;
+      return { ...u, position };
+    });
+  },
+
+  /**
+   * Aplica o filtro de logo escolhido no dropdown do ranking.
+   */
+  applyLogoFilter(list) {
+    if (this.currentLogoFilter === 'all') return list;
+    return list.filter(u => {
+      const logos = Array.isArray(u.logos) ? u.logos : (u.setor ? [u.setor] : []);
+      return logos.includes(this.currentLogoFilter);
+    });
   },
 
   /**
@@ -251,12 +400,44 @@ const NexusScoring = {
   renderRanking() {
     const uid = localStorage.getItem('nep_user_uid');
 
-    if (!this.rankingData || this.rankingData.length === 0) {
-      return `<div class="empty-state"><p>Nenhum usuário no ranking ainda.</p></div>`;
+    // Base: geral (todos os tempos) ou período carregado sob demanda
+    const baseList = this.currentPeriod === 'geral'
+      ? (this.rankingData || [])
+      : (this._periodCache[this.currentPeriod]?.data || []);
+
+    // Dropdown de logos montado a partir dos dados visíveis (retroalimentado)
+    const allLogos = [...new Set(
+      (this.rankingData || []).flatMap(u => Array.isArray(u.logos) ? u.logos : (u.setor ? [u.setor] : []))
+    )].filter(Boolean).sort();
+
+    const filtered = this.applyLogoFilter(baseList);
+    const ranked = this.applyPositions(filtered);
+
+    const filtersHtml = `
+      <div class="ranking-filters">
+        <div class="period-tabs">
+          <button class="period-tab ${this.currentPeriod === 'geral' ? 'active' : ''}" data-period="geral">Geral</button>
+          <button class="period-tab ${this.currentPeriod === 'mes' ? 'active' : ''}" data-period="mes">Este Mês</button>
+          <button class="period-tab ${this.currentPeriod === 'semana' ? 'active' : ''}" data-period="semana">Esta Semana</button>
+        </div>
+        ${allLogos.length > 1 ? `
+          <select class="ranking-logo-filter" id="ranking-logo-filter">
+            <option value="all" ${this.currentLogoFilter === 'all' ? 'selected' : ''}>Todas as logos</option>
+            ${allLogos.map(l => `<option value="${l}" ${this.currentLogoFilter === l ? 'selected' : ''}>${l}</option>`).join('')}
+          </select>
+        ` : ''}
+      </div>
+    `;
+
+    if (ranked.length === 0) {
+      const emptyMsg = this.currentPeriod === 'geral'
+        ? 'Nenhum usuário no ranking ainda.'
+        : 'Ninguém pontuou neste período ainda. Seja o primeiro! 🚀';
+      return `${filtersHtml}<div class="empty-state"><p>${emptyMsg}</p></div>`;
     }
 
-    const top3 = this.rankingData.slice(0, 3);
-    const rest = this.rankingData.slice(3);
+    const top3 = ranked.slice(0, 3);
+    const rest = ranked.slice(3);
 
     // Helper para renderizar avatar (foto ou iniciais)
     const renderAvatar = (user, size = 'normal') => {
@@ -267,7 +448,30 @@ const NexusScoring = {
       return `<div class="ranking-avatar ${sizeClass}" style="background: ${this.getAvatarGradient(user.nome)}">${this.getInitials(user.nome)}</div>`;
     };
 
+    const rowHtml = (user, extraClass = '') => `
+      <div class="ranking-row ${user.uid === uid ? 'is-me' : ''} ${extraClass}">
+        <span class="ranking-pos">${user.position}</span>
+        ${renderAvatar(user)}
+        <div class="ranking-info">
+          <div class="ranking-name">${user.nome || 'Usuário'}</div>
+          <div class="ranking-role">${user.cargo || 'Membro'}</div>
+        </div>
+        <div class="ranking-league">${window.NexusAchievements?.getLeague(user.total_points)?.icon || '🥉'}</div>
+        <div class="ranking-points">${user.total_points?.toLocaleString() || 0} XP</div>
+      </div>
+    `;
+
+    // "Minha posição": se eu não estiver visível na lista, mostra fixado no fim
+    const visibleLimit = 50;
+    const visibleRest = rest.slice(0, visibleLimit - 3);
+    const me = ranked.find(u => u.uid === uid);
+    const meIsVisible = me && ranked.indexOf(me) < visibleLimit;
+    const myPositionHtml = (me && !meIsVisible)
+      ? `<div class="my-position-divider">···</div>${rowHtml(me, 'pinned-me')}`
+      : '';
+
     return `
+      ${filtersHtml}
       <!-- Pódio -->
       <div class="podium-section">
         ${top3.length >= 2 ? `
@@ -296,23 +500,43 @@ const NexusScoring = {
           </div>
         ` : ''}
       </div>
-      
+
       <!-- Lista do Ranking -->
       <div class="ranking-list">
-        ${rest.map((user, i) => `
-          <div class="ranking-row ${user.uid === uid ? 'is-me' : ''}">
-            <span class="ranking-pos">${i + 4}</span>
-            ${renderAvatar(user)}
-            <div class="ranking-info">
-              <div class="ranking-name">${user.nome || 'Usuário'}</div>
-              <div class="ranking-role">${user.cargo || 'Membro'}</div>
-            </div>
-            <div class="ranking-league">${window.NexusAchievements?.getLeague(user.total_points)?.icon || '🥉'}</div>
-            <div class="ranking-points">${user.total_points?.toLocaleString() || 0} XP</div>
-          </div>
-        `).join('')}
+        ${visibleRest.map(user => rowHtml(user)).join('')}
+        ${myPositionHtml}
       </div>
     `;
+  },
+
+  /**
+   * Troca o período do ranking (carrega sob demanda com estado de loading).
+   */
+  async setPeriod(period) {
+    this.currentPeriod = period;
+    const content = document.getElementById('scoring-tab-content');
+    if (period !== 'geral' && !this._periodCache[period]) {
+      if (content) content.innerHTML = '<div class="empty-state"><i class="fa-solid fa-circle-notch fa-spin"></i> Calculando ranking do período...</div>';
+      await this.getPeriodRanking(period);
+    }
+    if (content) {
+      content.innerHTML = this.renderTabContent();
+      this.attachRankingFilterEvents();
+    }
+  },
+
+  attachRankingFilterEvents() {
+    document.querySelectorAll('.period-tab').forEach(btn => {
+      btn.addEventListener('click', () => this.setPeriod(btn.dataset.period));
+    });
+    document.getElementById('ranking-logo-filter')?.addEventListener('change', (e) => {
+      this.currentLogoFilter = e.target.value;
+      const content = document.getElementById('scoring-tab-content');
+      if (content) {
+        content.innerHTML = this.renderTabContent();
+        this.attachRankingFilterEvents();
+      }
+    });
   },
 
   renderAchievements() {
@@ -372,7 +596,9 @@ const NexusScoring = {
   },
 
   renderHistory() {
-    const transactions = this.userPointsData?.transactions || [];
+    // Correção: as transações vivem em points_transactions (carregadas em
+    // _loadUserTransactions), não no documento de pontos do usuário
+    const transactions = this.userTransactions || [];
 
     if (transactions.length === 0) {
       return `<div class="empty-state"><p>Nenhuma transação de pontos ainda.</p></div>`;
@@ -421,8 +647,10 @@ const NexusScoring = {
         document.querySelectorAll('.scoring-tab').forEach(t => t.classList.remove('active'));
         tab.classList.add('active');
         document.getElementById('scoring-tab-content').innerHTML = this.renderTabContent();
+        if (this.currentTab === 'ranking') this.attachRankingFilterEvents();
       });
     });
+    this.attachRankingFilterEvents();
   },
 
   getAvatarGradient(name) {
@@ -526,6 +754,22 @@ scoringStyles.textContent = `
   .history-points.negative { color: #ef4444; }
   
   .empty-state { text-align: center; padding: 60px 20px; color: #64748b; }
+
+  /* Filtros do ranking inteligente */
+  .ranking-filters { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+  .period-tabs { display: flex; gap: 6px; background: #0f172a; border: 1px solid #1e293b; border-radius: 10px; padding: 4px; }
+  .period-tab { padding: 8px 16px; background: transparent; border: none; border-radius: 8px; color: #94a3b8; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+  .period-tab:hover { color: #e5e7eb; }
+  .period-tab.active { background: #8b5cf6; color: #fff; box-shadow: 0 2px 8px rgba(139, 92, 246, 0.4); }
+  .ranking-logo-filter { padding: 8px 14px; background: #0f172a; border: 1px solid #1e293b; border-radius: 10px; color: #e5e7eb; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .ranking-logo-filter:focus { outline: none; border-color: #8b5cf6; }
+  .my-position-divider { text-align: center; color: #64748b; font-weight: 700; letter-spacing: 4px; padding: 4px 0; }
+  .ranking-row.pinned-me { border-color: #8b5cf6; background: rgba(139, 92, 246, 0.12); box-shadow: 0 0 16px rgba(139, 92, 246, 0.15); }
+
+  [data-theme="light"] .period-tabs { background: #ffffff; border-color: #e4e7ec; }
+  [data-theme="light"] .period-tab { color: #475467; }
+  [data-theme="light"] .period-tab.active { background: #9333EA; color: #fff; }
+  [data-theme="light"] .ranking-logo-filter { background: #ffffff; border-color: #e4e7ec; color: #101828; }
   
   .section-header { margin-bottom: 16px; }
   .section-header h3 { font-size: 16px; color: #e5e7eb; }
