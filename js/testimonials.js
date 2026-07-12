@@ -4,6 +4,11 @@
  */
 
 const NexusTestimonials = {
+    // SEGURANÇA: escape anti-XSS — depoimentos podem vir de formulário público anônimo
+    _esc(v) {
+        if (window.escapeHtml) return window.escapeHtml(v);
+        return String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    },
     db: null,
     unsubscribe: null,
     items: [],
@@ -241,15 +246,15 @@ const NexusTestimonials = {
         grid.innerHTML = approvedItems.map(item => `
             <div class="tm-card animate-slide-up">
                 <div class="tm-card-header">
-                    <div class="tm-avatar">${item.toName.charAt(0).toUpperCase()}</div>
+                    <div class="tm-avatar">${this._esc(item.toName.charAt(0).toUpperCase())}</div>
                     <div class="tm-card-info">
-                        <strong>Para: ${item.toName}</strong>
-                        <span>De: ${item.fromName || 'Anônimo'}</span>
+                        <strong>Para: ${this._esc(item.toName)}</strong>
+                        <span>De: ${this._esc(item.fromName) || 'Anônimo'}</span>
                     </div>
                     ${item.origin === 'public' ? '<span class="tm-origin-badge">🌐 Público</span>' : ''}
                 </div>
                 <div class="tm-card-body">
-                    "${item.message}"
+                    "${this._esc(item.message)}"
                 </div>
                 <div class="tm-card-footer">
                     <div class="tm-tags">
@@ -287,17 +292,17 @@ const NexusTestimonials = {
             return `
             <div class="tm-card tm-card-pending animate-slide-up" data-id="${item.id}">
                 <div class="tm-card-header">
-                    <div class="tm-avatar pending">${(item.toName || '?').charAt(0).toUpperCase()}</div>
+                    <div class="tm-avatar pending">${this._esc((item.toName || '?').charAt(0).toUpperCase())}</div>
                     <div class="tm-card-info">
-                        <strong>Para: ${item.toName || 'Não informado'}</strong>
-                        <span>De: ${item.fromName || 'Anônimo'}</span>
+                        <strong>Para: ${this._esc(item.toName) || 'Não informado'}</strong>
+                        <span>De: ${this._esc(item.fromName) || 'Anônimo'}</span>
                     </div>
                     <span class="tm-origin-badge ${isExternal ? 'public' : 'internal'}">
-                        ${isExternal ? `👤 Cliente Externo: ${item.fromName || 'Anônimo'}` : '🏢 Interno'}
+                        ${isExternal ? `👤 Cliente Externo: ${this._esc(item.fromName) || 'Anônimo'}` : '🏢 Interno'}
                     </span>
                 </div>
                 <div class="tm-card-body">
-                    "${item.message}"
+                    "${this._esc(item.message)}"
                 </div>
                 <div class="tm-card-footer">
                     <div class="tm-tags">

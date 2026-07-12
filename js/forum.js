@@ -5,6 +5,11 @@
  */
 
 const NexusForum = {
+  // SEGURANÇA: escape anti-XSS para conteúdo de tópicos/respostas
+  _esc(v) {
+    if (window.escapeHtml) return window.escapeHtml(v);
+    return String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  },
   currentCategory: 'all',
   currentTopic: null,
   searchQuery: '',
@@ -804,12 +809,12 @@ const NexusForum = {
             ${Number(topic.replies) === 0 ? '<span class="badge badge-error" style="font-size:10px; padding:2px 6px;">Novo</span>' : ''}
           </div>
           
-          <h3 class="topic-title">${topic.titulo}</h3>
-          <p class="topic-preview">${(topic.conteudo || '').substring(0, 140)}...</p>
+          <h3 class="topic-title">${this._esc(topic.titulo)}</h3>
+          <p class="topic-preview">${this._esc((topic.conteudo || '').substring(0, 140))}...</p>
           
           <div class="topic-meta">
             <span class="topic-author" style="${isOwner ? 'color:var(--primary-400); font-weight:600;' : ''}">
-                ${topic.authorNome || topic.author_nome || 'Autor'}
+                ${this._esc(topic.authorNome || topic.author_nome) || 'Autor'}
                 ${isOwner && topic.authorUid === user.uid ? '(Você)' : ''}
             </span>
             <span class="topic-date">📅 ${this.formatDate(topic.createdAt || topic.created_at)}</span>
@@ -858,7 +863,7 @@ const NexusForum = {
             <div style="width: 36px; height: 36px; border-radius: 50%; background: ${this.getAvatarGradient(reply.authorUid || reply.author_uid || reply.id)}; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 13px;">${authorInitials}</div>
             <div>
               <div style="font-weight: 600; font-size: 14px; color: ${isReplyAuthor ? 'var(--primary-400)' : 'inherit'};">
-                 ${reply.authorNome || reply.author_nome || 'Autor'} 
+                 ${this._esc(reply.authorNome || reply.author_nome) || 'Autor'} 
                  ${isReplyAuthor ? '(Você)' : ''}
                  ${(topic.authorUid || topic.author_uid) === (reply.authorUid || reply.author_uid) ? '<span style="font-size:10px; background:var(--surface-card); padding:2px 6px; border-radius:4px; margin-left:4px; border:1px solid var(--surface-border);">Autor</span>' : ''}
               </div>
@@ -876,7 +881,7 @@ const NexusForum = {
           </div>
         </div>
 
-        <div style="font-size: 14px; line-height: 1.6; margin-bottom: 12px; white-space: pre-wrap;">${reply.conteudo || ''}</div>
+        <div style="font-size: 14px; line-height: 1.6; margin-bottom: 12px; white-space: pre-wrap;">${this._esc(reply.conteudo) || ''}</div>
         
         <div id="reply-attach-${reply.id}"></div>
         
@@ -943,7 +948,7 @@ const NexusForum = {
                  <div class="topic-article-author">
                    <div class="avatar avatar-sm" style="background: ${this.getAvatarGradient(topic.authorUid || topic.author_uid || topic.id)}; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600;">${authorInitials}</div>
                    <div>
-                     <div class="topic-author-name" style="font-weight: 600;">${topic.authorNome || topic.author_nome || 'Autor'}</div>
+                     <div class="topic-author-name" style="font-weight: 600;">${this._esc(topic.authorNome || topic.author_nome) || 'Autor'}</div>
                      <div class="topic-author-role" style="font-size: 12px; color: var(--text-tertiary);">${topic.authorCargo || topic.author_cargo || ''}</div>
                    </div>
                  </div>
@@ -956,7 +961,7 @@ const NexusForum = {
              </div>
 
              <div class="topic-article-body" style="line-height: 1.7; white-space: pre-wrap;">
-               ${topic.conteudo || ''}
+               ${this._esc(topic.conteudo) || ''}
                <div id="topic-view-attachments"></div>
              </div>
            </article>

@@ -98,6 +98,18 @@ const NexusKanban = {
   // ============ HELPERS ============
   norm(v) { return String(v || '').trim().toLowerCase(); },
 
+  // SEGURANÇA: escape de HTML p/ conteúdo vindo de usuários (anti-XSS)
+  esc(v) {
+    if (window.escapeHtml) return window.escapeHtml(v);
+    return String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  },
+
+  // SEGURANÇA: só permite links http/https (bloqueia javascript: e data:)
+  safeUrl(url) {
+    const u = String(url || '').trim();
+    return /^https?:\/\//i.test(u) ? u : '';
+  },
+
   isAdmin() {
     return this.PRIVILEGED_ROLES.includes(this.myRoleKey) ||
       localStorage.getItem('nep_is_admin') === 'true';
@@ -479,7 +491,7 @@ const NexusKanban = {
                     ${(window.LogoService ? window.LogoService.filterUsersByLogo(this.activeUsers) : this.activeUsers).sort((a, b) => a.nome.localeCompare(b.nome)).map(u => `
                       <label class="kb-viewer-option" data-uid="${u.uid}" data-nome="${u.nome}">
                         <input type="checkbox" value="${u.uid}" data-nome="${u.nome}">
-                        <span>${u.nome.toUpperCase()} - ${(u.cargo || '').toUpperCase()}</span>
+                        <span>${this.esc(u.nome.toUpperCase())} - ${this.esc((u.cargo || '').toUpperCase())}</span>
                       </label>
                     `).join('')}
                   </div>
@@ -651,12 +663,12 @@ const NexusKanban = {
 
     card.innerHTML = `
       <div class="kb-archived-card-header">
-        <span class="kb-card-unit">${task.unit || 'Geral'}</span>
+        <span class="kb-card-unit">${this.esc(task.unit) || 'Geral'}</span>
         <span class="kb-badge kb-points">🏆 ${points}</span>
       </div>
-      <div class="kb-card-title">${task.title}</div>
+      <div class="kb-card-title">${this.esc(task.title)}</div>
       <div class="kb-archived-card-meta">
-        <span><i class="fa-solid fa-user"></i> ${(task.owner || 'N/D').toUpperCase()}</span>
+        <span><i class="fa-solid fa-user"></i> ${this.esc((task.owner || 'N/D').toUpperCase())}</span>
         <span>${this.toBRDate(task.deadline)}</span>
       </div>
       <div class="kb-archived-card-actions">
@@ -712,7 +724,7 @@ const NexusKanban = {
       else slaHtml = `<div class="kb-sla ${hours < 4 ? 'kb-sla-danger' : 'kb-sla-warn'}">⏰ ${hours}h</div>`;
     }
 
-    let newBadge = isNew ? `<div class="kb-new-badge">🔔 Nova demanda de ${(task.creatorName || 'Gestor').toUpperCase()}</div><button class="kb-btn-ack" data-id="${task.id}">✓ RECEBI A DEMANDA</button>` : '';
+    let newBadge = isNew ? `<div class="kb-new-badge">🔔 Nova demanda de ${this.esc((task.creatorName || 'Gestor').toUpperCase())}</div><button class="kb-btn-ack" data-id="${task.id}">✓ RECEBI A DEMANDA</button>` : '';
 
     let validationHtml = '';
     if (task.status === 'done') {
@@ -725,10 +737,10 @@ const NexusKanban = {
 
     let viewersHtml = '';
     if (task.viewersNames && task.viewersNames.length > 0) {
-      const viewersList = task.viewersNames.slice(0, 3).map(n => n.toUpperCase()).join(', ');
+      const viewersList = task.viewersNames.slice(0, 3).map(n => this.esc(n.toUpperCase())).join(', ');
       const extraCount = task.viewersNames.length > 3 ? ` +${task.viewersNames.length - 3}` : '';
       viewersHtml = `
-        <div class="kb-card-viewers" title="${task.viewersNames.map(n => n.toUpperCase()).join(', ')}">
+        <div class="kb-card-viewers" title="${task.viewersNames.map(n => this.esc(n.toUpperCase())).join(', ')}">
           <i class="fa-solid fa-eye"></i> ${task.viewersNames.length} visualizador(es)${extraCount ? extraCount : ''}
         </div>
       `;
@@ -736,7 +748,7 @@ const NexusKanban = {
 
     card.innerHTML = `
       <div class="kb-card-header">
-        <span class="kb-card-unit">${task.unit || 'Geral'}</span>
+        <span class="kb-card-unit">${this.esc(task.unit) || 'Geral'}</span>
         ${task.hasAttachments ? '<i class="fa-solid fa-paperclip" style="margin-left:auto; margin-right:8px; color:#94a3b8; font-size:11px;" title="Possui anexos"></i>' : ''}
         <div class="kb-card-actions">
           <button class="kb-act-btn kb-edit-btn" title="Editar"><i class="fa-solid fa-pen"></i></button>
@@ -744,13 +756,13 @@ const NexusKanban = {
           ${this.canDeleteTask(task) ? '<button class="kb-act-btn kb-del-btn" title="Excluir"><i class="fa-solid fa-trash"></i></button>' : ''}
         </div>
       </div>
-      <div class="kb-card-title">${task.title}</div>
+      <div class="kb-card-title">${this.esc(task.title)}</div>
       ${newBadge}
       ${slaHtml}
       ${validationHtml}
       ${viewersHtml}
       <div class="kb-card-meta">
-        <div class="kb-card-owner"><i class="fa-solid fa-user"></i> ${(task.owner || 'N/D').toUpperCase()}</div>
+        <div class="kb-card-owner"><i class="fa-solid fa-user"></i> ${this.esc((task.owner || 'N/D').toUpperCase())}</div>
         <div class="kb-card-badges">
           <span class="kb-badge ${prioClass}">${task.priority || 'Baixo'}</span>
           <span class="kb-badge kb-points">🏆 ${points}</span>
@@ -939,7 +951,8 @@ const NexusKanban = {
     if (!task) return;
     document.getElementById('kb-review-text').textContent = task.evidence || 'Sem descrição.';
     const linkEl = document.getElementById('kb-review-link');
-    linkEl.innerHTML = task.evidenceLink ? `<a href="${task.evidenceLink}" target="_blank">🔗 Ver Evidência</a>` : 'Nenhum link';
+    const safeEvidence = this.safeUrl(task.evidenceLink);
+    linkEl.innerHTML = safeEvidence ? `<a href="${this.esc(safeEvidence)}" target="_blank" rel="noopener noreferrer">🔗 Ver Evidência</a>` : 'Nenhum link';
 
     // Load Attachments ReadOnly
     this.loadTaskAttachments(taskId, 'kb-review-attachments', true);
@@ -1763,8 +1776,8 @@ const NexusKanban = {
     container.innerHTML = sorted.map(h => {
       const dt = new Date(h.date);
       const dateStr = `${dt.toLocaleDateString('pt-BR')} ${dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
-      const actionText = sanitizeAction(h.action);
-      const detailsText = h.details ? sanitizeAction(h.details) : '';
+      const actionText = this.esc(sanitizeAction(h.action));
+      const detailsText = h.details ? this.esc(sanitizeAction(h.details)) : '';
       const icon = actionText.includes('criada') || actionText.includes('Criada') || actionText.includes('Criado') ? '🆕' :
         actionText.includes('Status') || actionText.includes('Movid') ? '🔄' :
           actionText.includes('editada') || actionText.includes('Editada') ? '✏️' :
@@ -1779,7 +1792,7 @@ const NexusKanban = {
           <div class="kb-history-content">
             <div class="kb-history-action">${actionText}</div>
             ${detailsText ? `<div class="kb-history-details">${detailsText}</div>` : ''}
-            <div class="kb-history-meta">${(h.user || 'Sistema').toUpperCase()} • ${dateStr}</div>
+            <div class="kb-history-meta">${this.esc((h.user || 'Sistema').toUpperCase())} • ${dateStr}</div>
           </div>
         </div>
       `;
@@ -1833,7 +1846,7 @@ const NexusKanban = {
     selected.forEach(cb => {
       const chip = document.createElement('span');
       chip.className = 'kb-viewer-chip';
-      chip.innerHTML = `${(cb.dataset.nome || '').toUpperCase()} <button type="button" class="kb-chip-remove" data-uid="${cb.value}">✕</button>`;
+      chip.innerHTML = `${this.esc((cb.dataset.nome || '').toUpperCase())} <button type="button" class="kb-chip-remove" data-uid="${cb.value}">✕</button>`;
       chipsContainer.appendChild(chip);
     });
 

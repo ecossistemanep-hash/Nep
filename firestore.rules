@@ -68,10 +68,23 @@ service cloud.firestore {
     // ========================================================================
 
     // Mural público de depoimentos (public-feedback.html envia sem login;
-    // aprovação/moderação é interna)
+    // aprovação/moderação é interna).
+    // Criação anônima é validada por shape: campos e tamanhos limitados,
+    // e todo envio público nasce obrigatoriamente como não-aprovado.
     match /testimonials/{document} {
       allow read: if isAuthenticated();
-      allow create: if true;
+      allow create: if isActive()
+        || (
+          request.resource.data.message is string
+          && request.resource.data.message.size() > 0
+          && request.resource.data.message.size() <= 2000
+          && request.resource.data.toName is string
+          && request.resource.data.toName.size() <= 120
+          && (!('fromName' in request.resource.data) || (request.resource.data.fromName is string && request.resource.data.fromName.size() <= 120))
+          && (!('tags' in request.resource.data) || (request.resource.data.tags is list && request.resource.data.tags.size() <= 10))
+          && request.resource.data.approved == false
+          && request.resource.data.keys().hasOnly(['toName', 'message', 'fromName', 'tags', 'createdAt', 'origin', 'approved', 'public'])
+        );
       allow update: if isActive();
       allow delete: if isAdmin();
     }
@@ -82,10 +95,18 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    // Notificações: página pública cria aviso de novo feedback;
-    // leitura/gestão apenas para usuários ativos
+    // Notificações: página pública cria apenas o aviso de novo feedback
+    // (shape estrito e tamanhos limitados); leitura/gestão para ativos
     match /notifications/{notificationId} {
-      allow create: if true;
+      allow create: if isActive()
+        || (
+          request.resource.data.titulo is string
+          && request.resource.data.titulo.size() <= 200
+          && request.resource.data.mensagem is string
+          && request.resource.data.mensagem.size() <= 500
+          && request.resource.data.referencia_tipo == 'testimonials'
+          && request.resource.data.keys().hasOnly(['titulo', 'mensagem', 'destinatario_uid', 'lida', 'data', 'tipo', 'referencia_tipo'])
+        );
       allow read, update, delete: if isActive();
     }
 

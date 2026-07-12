@@ -17,6 +17,35 @@ window.setPplxApiKey = function (key) {
   else localStorage.removeItem('nep_pplx_api_key');
 };
 
+/**
+ * Chave da API Google Gemini (usada em ai-service.js — geração de PPT/IA).
+ * Mesmo padrão: fica apenas no localStorage deste navegador.
+ *   window.setGeminiApiKey('sua-chave-aqui')
+ */
+window.getGeminiApiKey = function () {
+  return localStorage.getItem('nep_gemini_api_key') || '';
+};
+window.setGeminiApiKey = function (key) {
+  if (key) localStorage.setItem('nep_gemini_api_key', key);
+  else localStorage.removeItem('nep_gemini_api_key');
+};
+
+/**
+ * SEGURANÇA — Escape de HTML para prevenir XSS armazenado.
+ * Use SEMPRE que interpolar conteúdo vindo de usuários (títulos de tarefas,
+ * mensagens, nomes, tópicos de fórum) dentro de innerHTML/template strings.
+ *   Exemplo: `<div>${esc(task.title)}</div>`
+ */
+window.escapeHtml = function (value) {
+  if (value === null || value === undefined) return '';
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+};
+
 const NepApp = {
   currentPage: 'dashboard',
 

@@ -5,6 +5,11 @@
  */
 
 const AnnouncementsService = {
+    // SEGURANÇA: escape anti-XSS
+    _esc(v) {
+        if (window.escapeHtml) return window.escapeHtml(v);
+        return String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    },
     COLLECTION: 'announcements',
     LOCAL_KEY: 'nep_announcements_local',
 
@@ -476,8 +481,8 @@ const NexusAnnouncements = {
                     ${!isRead ? '<span class="ann-new-badge">Novo</span>' : ''}
                 </div>
                 
-                <h3 class="ann-card-title">${aviso.titulo}</h3>
-                <p class="ann-card-content">${aviso.conteudo}</p>
+                <h3 class="ann-card-title">${this._esc(aviso.titulo)}</h3>
+                <p class="ann-card-content">${this._esc(aviso.conteudo)}</p>
                 
                 <div class="ann-card-footer">
                     <span class="ann-scope">

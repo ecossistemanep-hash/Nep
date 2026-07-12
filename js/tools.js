@@ -594,7 +594,7 @@ const NexusTools = {
     const metaPrompt = `Você é especialista em prompt engineering.\nCrie um prompt profissional para ${aiL[targetAI]}.\n\nSOLICITAÇÃO: "${idea}"\n${context ? `CONTEXTO: "${context}"\n` : ''}TIPO: ${taskL[taskType]} | TOM: ${toneL[tone]}\n\nO prompt deve: definir papel/persona da IA, formato de saída esperado, restrições, ser específico e sem ambiguidades, otimizado para ${aiL[targetAI]}.\n\nRetorne APENAS o prompt final pronto para copiar e colar. Depois "---" e 2-3 dicas prefixadas com "💡".`;
 
     try {
-      const GEMINI_KEY = 'AIzaSyDh5MBcze7uChGZRnz3haW9SaRhItXdRNc';
+      const GEMINI_KEY = window.getGeminiApiKey ? window.getGeminiApiKey() : '';
       const resp = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`,
         {
@@ -2135,7 +2135,7 @@ const NexusTools = {
         }
       `;
 
-      const GEMINI_KEY = 'AIzaSyDh5MBcze7uChGZRnz3haW9SaRhItXdRNc';
+      const GEMINI_KEY = window.getGeminiApiKey ? window.getGeminiApiKey() : '';
       const fullPrompt = systemPrompt + '\n\nCreate a flowchart for: ' + prompt;
       const response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`,

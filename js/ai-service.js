@@ -5,7 +5,9 @@
  */
 
 const NexusIA = {
-    API_KEY: 'AIzaSyDh5MBcze7uChGZRnz3haW9SaRhItXdRNc',
+    // Chave configurada pelo admin — NUNCA cravar no código-fonte.
+    // Para configurar: Console do navegador (F12) → window.setGeminiApiKey('sua-chave')
+    get API_KEY() { return window.getGeminiApiKey ? window.getGeminiApiKey() : ''; },
     API_URL: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
 
     // Schema para PPT Generation (força output estruturado)
