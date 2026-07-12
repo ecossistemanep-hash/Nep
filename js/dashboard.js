@@ -48,43 +48,54 @@ const NepDashboard = {
 
     const stats = this.calculateStats(tasks);
 
-    // Load user points from PointsService (com timeout)
-    let userPoints = 0, userLevel = 1, userStreak = 0;
-    if (window.PointsService && uid) {
-      try {
-        const pointsPromise = window.PointsService.getUserPoints(uid);
-        const pointsData = await Promise.race([pointsPromise, this.timeout(3000)]);
-        userPoints = pointsData?.total_points || 0;
-        userLevel = pointsData?.level || 1;
-      } catch (e) { console.warn('[Dashboard] Timeout ou erro ao carregar pontos'); }
+    // PERFORMANCE: as 4 buscas secundárias (pontos, streak, ranking, chamados)
+    // são independentes entre si → rodam EM PARALELO em vez de em série.
+    // Cada uma tem timeout próprio e é isolada com allSettled: se uma falhar
+    // ou estourar o tempo, as demais e o restante do dashboard não travam.
+    // (Antes: awaits sequenciais somavam até ~8s; o Supabase não tinha timeout.)
+    let userPoints = 0, userLevel = 1, userStreak = 0, topUsers = [];
+    let ticketStats = { pending: 0, returned: 0, resolved: 0, actionNeeded: 0, inProgress: 0 };
+
+    const withTimeout = (promise, ms) => Promise.race([promise, this.timeout(ms)]);
+    const noop = Promise.resolve(null);
+
+    const [pointsRes, streakRes, rankingRes, ticketsRes] = await Promise.allSettled([
+      (window.PointsService && uid) ? withTimeout(window.PointsService.getUserPoints(uid), 3000) : noop,
+      (window.NexusAchievements && uid) ? withTimeout(window.NexusAchievements.updateStreak(uid), 3000) : noop,
+      (window.PointsService) ? withTimeout(window.PointsService.getRanking(5), 2000) : Promise.resolve([]),
+      (window.sb && uid)
+        ? withTimeout(window.sb.from('tickets').select('status, assigned_to, created_by').or(`created_by.eq.${uid},assigned_to.eq.${uid}`), 3000)
+        : noop
+    ]);
+
+    if (pointsRes.status === 'fulfilled' && pointsRes.value) {
+      userPoints = pointsRes.value.total_points || 0;
+      userLevel = pointsRes.value.level || 1;
+    } else if (pointsRes.status === 'rejected') {
+      console.warn('[Dashboard] Timeout/erro ao carregar pontos');
     }
 
-    // Load streak from user_achievements (where updateStreak saves it)
-    if (window.NexusAchievements && uid) {
-      try {
-        // Update streak on dashboard load (tracks daily usage)
-        const streakResult = await Promise.race([
-          window.NexusAchievements.updateStreak(uid),
-          this.timeout(3000)
-        ]);
-        userStreak = streakResult?.streak || 0;
-      } catch (e) {
-        console.warn('[Dashboard] Timeout ao atualizar streak');
-        // Fallback: try reading from existing data
-        try {
-          const achData = await window.NexusAchievements.getUserAchievements(uid);
-          userStreak = achData?.stats?.streak || 0;
-        } catch (e2) { /* ignore */ }
-      }
+    if (streakRes.status === 'fulfilled' && streakRes.value) {
+      userStreak = streakRes.value.streak || 0;
+    } else if (streakRes.status === 'rejected') {
+      console.warn('[Dashboard] Timeout ao atualizar streak (exibindo 0; regulariza no próximo acesso)');
     }
 
-    // Get Top 5 ranking (com timeout)
-    let topUsers = [];
-    if (window.PointsService) {
-      try {
-        const rankingPromise = window.PointsService.getRanking(5);
-        topUsers = await Promise.race([rankingPromise, this.timeout(2000)]) || [];
-      } catch (e) { console.warn('[Dashboard] Timeout ou erro ao carregar ranking'); }
+    if (rankingRes.status === 'fulfilled' && Array.isArray(rankingRes.value)) {
+      topUsers = rankingRes.value;
+    } else if (rankingRes.status === 'rejected') {
+      console.warn('[Dashboard] Timeout/erro ao carregar ranking');
+    }
+
+    // Chamados (Supabase): "Ação Necessária", "Em Andamento" e "Resolvidos"
+    if (ticketsRes.status === 'fulfilled' && ticketsRes.value && !ticketsRes.value.error && Array.isArray(ticketsRes.value.data)) {
+      const tickets = ticketsRes.value.data;
+      ticketStats.actionNeeded = tickets.filter(t => (t.assigned_to === uid && t.status === 'new') || (t.created_by === uid && t.status === 'returned')).length;
+      ticketStats.pending = ticketStats.actionNeeded;
+      ticketStats.inProgress = tickets.filter(t => t.status === 'in_progress').length;
+      ticketStats.resolved = tickets.filter(t => t.status === 'resolved' || t.status === 'closed').length;
+    } else if (ticketsRes.status === 'rejected') {
+      console.warn('[Dashboard] Timeout/erro ao carregar chamados (Supabase)');
     }
 
     // Get overdue tasks
@@ -94,44 +105,6 @@ const NepDashboard = {
       if (!t.deadline) return false;
       return new Date(t.deadline + 'T23:59:59') < now;
     }).slice(0, 5);
-
-    // Fetch Ticket Stats
-    let ticketStats = { pending: 0, returned: 0, resolved: 0 };
-    if (window.sb && uid) {
-      try {
-        // Check if client is actually ready (might vary based on init timing)
-        const client = window.sb;
-        const { data: tickets, error } = await client
-          .from('tickets')
-          .select('status, assigned_to, created_by')
-          .or(`created_by.eq.${uid},assigned_to.eq.${uid}`);
-
-        if (!error && tickets) {
-          // Logic: 
-          // Pending: Received and status is new/opened
-          // Returned: Created by me and status is returned OR Received by me and I need to fix? No, usually returned to creator.
-          // Let's stick to the module logic:
-          // My Pending (To Do): Assigned to me AND (new OR returned? No returned is for creator).
-
-          // Let's simplify:
-          // Pending (Action needed): Assigned to me (new) OR Created by me (returned)
-          ticketStats.pending = tickets.filter(t => (t.assigned_to === uid && t.status === 'new') || (t.created_by === uid && t.status === 'returned')).length;
-
-          // Returned (Waiting for others?): Created by me (returned) -> Actually this is action needed.
-          // Let's just count purely by status for the blocks:
-          // "Ação Necessária"
-          ticketStats.actionNeeded = tickets.filter(t => (t.assigned_to === uid && t.status === 'new') || (t.created_by === uid && t.status === 'returned')).length;
-
-          // "Em Andamento"
-          ticketStats.inProgress = tickets.filter(t => t.status === 'in_progress').length;
-
-          // "Resolvidos"
-          ticketStats.resolved = tickets.filter(t => t.status === 'resolved' || t.status === 'closed').length;
-        }
-      } catch (e) {
-        console.warn('[Dashboard] Error fetching tickets:', e);
-      }
-    }
 
     container.innerHTML = `
       <div class="dashboard-container fade-in">
