@@ -113,9 +113,6 @@ const NexusAdmin = {
           <button class="admin-tab ${this.activeTab === 'audit' ? 'active' : ''}" data-tab="audit">
             <i class="fa-solid fa-clipboard-list"></i> Auditoria
           </button>
-          <button class="admin-tab ${this.activeTab === 'supabase' ? 'active' : ''}" data-tab="supabase">
-            <i class="fa-solid fa-cloud-bolt"></i> Supabase
-          </button>
           <button class="admin-tab ${this.activeTab === 'tools' ? 'active' : ''}" data-tab="tools">
             <i class="fa-solid fa-toolbox"></i> Ferramentas
           </button>
@@ -212,6 +209,111 @@ const NexusAdmin = {
   // =========================================
   // GESTÃO DE USUÁRIOS
   // =========================================
+
+  /**
+   * Candidatos a gestor direto para um cargo.
+   * O sistema se retroalimenta: conforme usuários são cadastrados, os níveis
+   * superiores passam a aparecer aqui automaticamente.
+   * - Só usuários ATIVOS de nível hierárquico SUPERIOR ao cargo selecionado
+   * - Se houver logos selecionadas, prioriza gestores da mesma logo
+   *   (se nenhum compartilhar logo, mostra todos para não travar o cadastro)
+   */
+  getManagerCandidates(cargoKey, selectedLogos = [], excludeUid = null) {
+    const roles = window.UserManagement?.ROLES || [];
+    const levelOf = (key) => roles.find(r => r.key === key)?.level ?? -1;
+    const myLevel = levelOf(cargoKey);
+    if (myLevel < 0) return [];
+
+    let candidates = (this.users || []).filter(u =>
+      u.status === 'ATIVO' &&
+      u.uid !== excludeUid &&
+      levelOf(u.cargo) > myLevel
+    );
+
+    if (selectedLogos.length > 0) {
+      const byLogo = candidates.filter(u => {
+        const userLogos = Array.isArray(u.logos) ? u.logos : (u.setor ? [u.setor] : []);
+        return userLogos.some(l => selectedLogos.includes(l));
+      });
+      if (byLogo.length > 0) candidates = byLogo;
+    }
+
+    // Nível mais próximo primeiro (ex.: p/ MONITOR vem COORDENADOR antes de GERENTE)
+    return candidates.sort((a, b) =>
+      (levelOf(a.cargo) - levelOf(b.cargo)) || (a.nome || '').localeCompare(b.nome || '')
+    );
+  },
+
+  /**
+   * Monta as <option> do select de gestor, agrupadas por cargo.
+   * Pré-seleção inteligente: se no nível superior mais próximo existir
+   * exatamente 1 pessoa (ex.: o único superintendente), ela já vem marcada.
+   */
+  renderManagerOptions(cargoKey, selectedLogos = [], currentGestorUid = null, excludeUid = null) {
+    const roles = window.UserManagement?.ROLES || [];
+    const labelOf = (key) => roles.find(r => r.key === key)?.label || key;
+    const candidates = this.getManagerCandidates(cargoKey, selectedLogos, excludeUid);
+
+    if (!cargoKey) {
+      return '<option value="">Selecione primeiro o cargo...</option>';
+    }
+    if (candidates.length === 0) {
+      return '<option value="">Nenhum gestor cadastrado ainda (opcional)</option>';
+    }
+
+    // Pré-seleção: único candidato do nível superior mais próximo
+    let autoUid = null;
+    if (!currentGestorUid) {
+      const closestCargo = candidates[0].cargo;
+      const closest = candidates.filter(c => c.cargo === closestCargo);
+      if (closest.length === 1) autoUid = closest[0].uid;
+    }
+    const selectedUid = currentGestorUid || autoUid;
+
+    // Agrupar por cargo preservando a ordem (nível mais próximo primeiro)
+    const groups = [];
+    candidates.forEach(c => {
+      let group = groups.find(g => g.cargo === c.cargo);
+      if (!group) { group = { cargo: c.cargo, items: [] }; groups.push(group); }
+      group.items.push(c);
+    });
+
+    return '<option value="">Sem gestor definido</option>' + groups.map(g => `
+      <optgroup label="${labelOf(g.cargo)}">
+        ${g.items.map(c => `
+          <option value="${c.uid}" data-nome="${(c.nome || '').replace(/"/g, '&quot;')}"
+            ${c.uid === selectedUid ? 'selected' : ''}>${c.nome || c.email}</option>
+        `).join('')}
+      </optgroup>
+    `).join('');
+  },
+
+  /**
+   * Liga o select de gestor ao cargo e às logos do modal:
+   * qualquer mudança recalcula os candidatos na hora.
+   */
+  _bindManagerField(prefix, currentGestorUid = null, excludeUid = null) {
+    const cargoSelect = document.getElementById(`${prefix}-role`);
+    const managerSelect = document.getElementById(`${prefix}-gestor`);
+    if (!cargoSelect || !managerSelect) return;
+
+    const refresh = () => {
+      const selectedLogos = [];
+      document.querySelectorAll(`#${prefix}-logos-container input[type="checkbox"]:checked`)
+        .forEach(cb => selectedLogos.push(cb.value));
+      managerSelect.innerHTML = this.renderManagerOptions(
+        cargoSelect.value, selectedLogos, currentGestorUid, excludeUid
+      );
+      // Depois da primeira troca manual, a pré-seleção automática não força mais nada
+      currentGestorUid = managerSelect.value || null;
+    };
+
+    cargoSelect.addEventListener('change', () => { currentGestorUid = null; refresh(); });
+    managerSelect.addEventListener('change', () => { currentGestorUid = managerSelect.value || null; });
+    document.getElementById(`${prefix}-logos-container`)?.addEventListener('change', refresh);
+    refresh();
+  },
+
   async renderUsersManagement(container) {
     try {
       this.users = await window.UserManagement.listUsers();
@@ -275,6 +377,7 @@ const NexusAdmin = {
                             <tr>
                                 <th>Usuário</th>
                                 <th>Cargo</th>
+                                <th>Gestor</th>
                                 <th>Logos</th>
                                 <th>Status</th>
                                 <th>Primeiro Acesso</th>
@@ -292,7 +395,7 @@ const NexusAdmin = {
 
   renderUsersRows(users) {
     if (!users || !users.length) {
-      return '<tr><td colspan="7" class="text-center text-muted" style="padding: 40px;">Nenhum usuário encontrado</td></tr>';
+      return '<tr><td colspan="8" class="text-center text-muted" style="padding: 40px;">Nenhum usuário encontrado</td></tr>';
     }
 
     return users.map(user => `
@@ -307,6 +410,7 @@ const NexusAdmin = {
                     </div>
                 </td>
                 <td><span class="role-badge role-${(user.cargo || 'usuario').toLowerCase()}">${user.cargo || 'N/A'}</span></td>
+                <td><span class="text-muted" style="font-size: 13px;">${user.gestor_nome || '—'}</span></td>
                 <td>${this._renderUserLogoBadges(user)}</td>
                 <td><span class="status-badge status-${(user.status || 'inativo').toLowerCase()}">${user.status || 'N/A'}</span></td>
                 <td>${user.primeiro_acesso ? '<span class="badge-warning">Pendente</span>' : '<span class="badge-success">Concluído</span>'}</td>
@@ -447,6 +551,15 @@ const NexusAdmin = {
                         <label class="form-label">Logos Iniciais (Multi-tenancy)</label>
                         <div id="new-user-logos-container" style="display:flex;flex-wrap:wrap;gap:8px;padding:8px 0">Carregando logos...</div>
                     </div>
+                    <div class="form-group">
+                        <label class="form-label">Gestor Direto</label>
+                        <select id="new-user-gestor" class="form-input">
+                            <option value="">Selecione primeiro o cargo...</option>
+                        </select>
+                        <small style="color: var(--text-tertiary); font-size: 12px; display: block; margin-top: 6px;">
+                            Sugerido automaticamente pelo cargo e pela logo — ajuste se precisar.
+                        </small>
+                    </div>
                     <div class="alert alert-info">
                         <i class="fa-solid fa-info-circle"></i>
                         <span>Senha padrão: <strong>NEP2025@Temp</strong><br>O usuário deverá trocar no primeiro acesso.</span>
@@ -489,6 +602,9 @@ const NexusAdmin = {
       this._populateLogoCheckboxesForNewUser();
     }
 
+    // Select de gestor reage ao cargo e às logos escolhidas
+    this._bindManagerField('new-user');
+
     document.getElementById('btn-confirm-create').addEventListener('click', async () => {
       const nome = document.getElementById('new-user-name').value.trim();
       const email = document.getElementById('new-user-email').value.trim();
@@ -510,20 +626,17 @@ const NexusAdmin = {
           selectedLogos.push(cb.value);
         });
 
-        await window.UserManagement.createUser(nome, email, cargo);
+        // Gestor direto selecionado
+        const gestorSelect = document.getElementById('new-user-gestor');
+        const gestorUid = gestorSelect?.value || '';
+        const gestorNome = gestorSelect?.selectedOptions?.[0]?.dataset?.nome || '';
 
-        // Se escolheu logos, atualizar logo em seguida pegando pelo email
-        if (selectedLogos.length > 0) {
-          const db = firebase.firestore();
-          const snap = await db.collection('users').where('email', '==', email).limit(1).get();
-          if (!snap.empty) {
-            const docId = snap.docs[0].id;
-            await db.collection('users').doc(docId).update({
-              logos: selectedLogos,
-              setor: selectedLogos[0] || '' // compat legada
-            });
-          }
-        }
+        await window.UserManagement.createUser(nome, email, cargo, {
+          logos: selectedLogos,
+          gestor_uid: gestorUid,
+          gestor_nome: gestorNome
+        });
+
         if (typeof NexusApp !== 'undefined') NexusApp.showToast('Usuário criado com sucesso!', 'success');
         modal.remove();
         await this.loadTabContent();
@@ -590,6 +703,15 @@ const NexusAdmin = {
                         <label class="form-label">Logos</label>
                         <div id="edit-user-logos-container" style="display:flex;flex-wrap:wrap;gap:8px;padding:8px 0">Carregando logos...</div>
                     </div>
+                    <div class="form-group">
+                        <label class="form-label">Gestor Direto</label>
+                        <select id="edit-user-gestor" class="form-input">
+                            <option value="">Carregando...</option>
+                        </select>
+                        <small style="color: var(--text-tertiary); font-size: 12px; display: block; margin-top: 6px;">
+                            Apenas usuários ativos de nível superior ao cargo aparecem aqui.
+                        </small>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button class="btn btn-secondary" onclick="document.getElementById('edit-user-modal').remove()">Cancelar</button>
@@ -601,6 +723,10 @@ const NexusAdmin = {
 
     // Carregar logos disponíveis e preencher checkboxes
     this._populateLogoCheckboxes(user);
+
+    // Select de gestor: pré-preenchido com o gestor atual, sem sugerir outro
+    // automaticamente, e sem permitir que a pessoa seja gestora de si mesma
+    this._bindManagerField('edit-user', user.gestor_uid || null, user.uid);
 
     document.getElementById('btn-confirm-edit').addEventListener('click', async () => {
       const nome = document.getElementById('edit-user-name').value.trim();
@@ -625,6 +751,14 @@ const NexusAdmin = {
         // Atualizar Status e Logos diretamente no Firestore
         const updates = {};
         if (status !== user.status) updates.status = status;
+
+        // Gestor direto
+        const gestorSelect = document.getElementById('edit-user-gestor');
+        const newGestorUid = gestorSelect?.value || '';
+        if (newGestorUid !== (user.gestor_uid || '')) {
+          updates.gestor_uid = newGestorUid;
+          updates.gestor_nome = gestorSelect?.selectedOptions?.[0]?.dataset?.nome || '';
+        }
 
         // Atualizar logos
         const oldLogos = Array.isArray(user.logos) ? user.logos : (user.setor ? [user.setor] : []);

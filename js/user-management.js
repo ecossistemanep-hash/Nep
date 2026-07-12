@@ -44,7 +44,7 @@ const UserManagement = {
      * @param {string} email - Email do usuário
      * @param {string} cargo - Cargo (ADMIN, GERENTE, etc)
      */
-    async createUser(nome, email, cargo) {
+    async createUser(nome, email, cargo, extras = {}) {
         try {
             // Verificar permissão
             if (!window.NexusAuthService?.canManageUsers()) {
@@ -87,6 +87,16 @@ const UserManagement = {
                 ultimo_login: null,
                 criado_por: executorUid
             };
+
+            // Campos opcionais (gestor direto e logos) gravados já na criação
+            if (extras.gestor_uid) {
+                userData.gestor_uid = extras.gestor_uid;
+                userData.gestor_nome = extras.gestor_nome || '';
+            }
+            if (Array.isArray(extras.logos) && extras.logos.length > 0) {
+                userData.logos = extras.logos;
+                userData.setor = extras.logos[0]; // compatibilidade legada
+            }
 
             await setDoc(doc(db, this.COLLECTION, newUser.uid), userData);
 
