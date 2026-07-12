@@ -207,6 +207,68 @@ service cloud.firestore {
     }
 
     // ========================================================================
+    // PORTAL CORPORATIVO DE PAINÉIS HTML
+    // ========================================================================
+
+    // Aprovadores das análises (técnica/visual/segurança): COORDENADOR+
+    function isPanelApprover() {
+      return isActive()
+        && myProfile().cargo in ['ADMIN', 'DIRETOR', 'SUPERINTENDENTE', 'GERENTE', 'CONSULTOR', 'COORDENADOR'];
+    }
+
+    // Gestão/governança (publicar, suspender, arquivar, rollback): GERENTE+
+    function isPanelManager() {
+      return isActive()
+        && myProfile().cargo in ['ADMIN', 'DIRETOR', 'SUPERINTENDENTE', 'GERENTE'];
+    }
+
+    match /panels/{panelId} {
+      allow read: if isActive();
+      // Criação: qualquer ativo, sempre como dono e nunca já publicado
+      allow create: if isActive()
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.status in ['RASCUNHO', 'EM_ANALISE'];
+      // Atualização: gestão controla tudo; dono atualiza o próprio painel
+      // MAS não pode se autopublicar; qualquer ativo só incrementa views
+      allow update: if isPanelManager()
+        || (isActive()
+          && resource.data.ownerUid == request.auth.uid
+          && !(request.resource.data.status == 'PUBLICADO' && resource.data.status != 'PUBLICADO'))
+        || (isActive()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['views']));
+      allow delete: if isAdmin();
+
+      match /versions/{versionId} {
+        allow read: if isActive();
+        // Envio de versão: autor real da sessão, sempre em análise
+        allow create: if isActive()
+          && request.resource.data.submittedByUid == request.auth.uid
+          && request.resource.data.status == 'EM_ANALISE';
+        // Pareceres/publicação: aprovador que NÃO seja o dono do painel
+        // (segregação autor × aprovador garantida no servidor)
+        allow update: if (
+            isPanelApprover()
+            && get(/databases/$(database)/documents/panels/$(panelId)).data.ownerUid != request.auth.uid
+          ) || isPanelManager() || isAdmin();
+        allow delete: if isAdmin();
+      }
+    }
+
+    match /panel_favorites/{favId} {
+      allow read: if isActive();
+      allow create: if isActive() && request.resource.data.uid == request.auth.uid;
+      allow delete: if isActive() && resource.data.uid == request.auth.uid;
+      allow update: if false;
+    }
+
+    match /panel_reports/{reportId} {
+      allow read: if isActive();
+      allow create: if isActive() && request.resource.data.uid == request.auth.uid;
+      allow update: if isActive();
+      allow delete: if isAdmin();
+    }
+
+    // ========================================================================
     // GAMIFICAÇÃO E ANALYTICS
     // ========================================================================
 

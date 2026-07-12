@@ -157,6 +157,12 @@ const NepApp = {
   },
 
   navigate(page, pushState = true) {
+    // Link permanente do Portal de Painéis: #paineis/{slug}
+    if (page && page.startsWith('paineis/')) {
+      if (window.NexusPanels) window.NexusPanels.deepLink = decodeURIComponent(page.split('/')[1] || '');
+      page = 'paineis';
+    }
+
     this.currentPage = page;
 
     document.querySelectorAll('.nav-item').forEach(item => {
@@ -184,7 +190,8 @@ const NepApp = {
       announcements: 'Avisos',
       testimonials: 'NEP Depoimentos',
       vacation: 'Controle de Férias',
-      okr: 'Gestão de Entregas'
+      okr: 'Gestão de Entregas',
+      paineis: 'Painéis Corporativos'
     };
 
     const headerTitle = document.getElementById('header-title');
@@ -251,6 +258,9 @@ const NepApp = {
           break;
         case 'kanban':
           if (typeof NexusKanban !== 'undefined') NexusKanban.render(content);
+          break;
+        case 'paineis':
+          if (typeof NexusPanels !== 'undefined') NexusPanels.render(content);
           break;
         case 'ranking':
           if (typeof NexusScoring !== 'undefined') NexusScoring.render(content);
