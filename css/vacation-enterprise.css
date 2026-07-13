@@ -168,7 +168,7 @@
 
 .kpi-icon.purple {
     background: rgba(139, 92, 246, 0.15);
-    color: #a78bfa;
+    color: #ad97ee;
 }
 
 .kpi-icon.amber {
@@ -188,7 +188,7 @@
 }
 
 [data-theme="light"] .kpi-icon.purple {
-    color: #7c3aed;
+    color: #6544d0;
     background: rgba(124, 58, 237, 0.1);
 }
 
@@ -269,7 +269,7 @@
 
 .search-enterprise input:focus {
     outline: none;
-    border-color: #6366f1;
+    border-color: #7555e8;
     box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
 }
 
@@ -588,7 +588,7 @@
 .form-input:focus,
 .form-select:focus {
     outline: none;
-    border-color: #6366f1;
+    border-color: #7555e8;
     box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
 }
 
