@@ -72,7 +72,6 @@ const NexusTools = {
       { id: 'ishikawa', name: 'Diagrama de Ishikawa', desc: 'Espinha de peixe para análise de causa raiz (6M)', tag: 'Causa Raiz', icon: 'fa-fish', color: '#0ea5e9, #0284c7' },
       { id: 'gut', name: 'Matriz GUT', desc: 'Priorização por Gravidade × Urgência × Tendência', tag: 'Priorização', icon: 'fa-ranking-star', color: '#a855f7, #7c3aed' },
       { id: 'cronometro', name: 'Cronômetro/Pomodoro', desc: 'Timer de produtividade com técnica Pomodoro', tag: 'Produtividade', icon: 'fa-stopwatch', color: '#f43f5e, #e11d48' },
-      { id: 'weather', name: 'NEP Clima', desc: 'Monitoramento meteorológico em tempo real (HG Brasil)', tag: 'API', icon: 'fa-cloud-sun', color: '#3b82f6, #1d4ed8' },
       { id: 'news_br', name: 'NEP News Brasil', desc: 'Notícias do Brasil em tempo real (GNews)', tag: 'Notícias', icon: 'fa-newspaper', color: '#ef4444, #dc2626' },
       { id: 'news_world', name: 'NEP Mundo Updates', desc: 'Giro de notícias globais em português', tag: 'Mundo', icon: 'fa-globe', color: '#8b5cf6, #6d28d9' },
       { id: 'dict', name: 'NEP Dicionário', desc: 'Consulta lexicográfica e sinônimos', tag: 'Educação', icon: 'fa-book-bookmark', color: '#10b981, #059669' },
@@ -653,14 +652,13 @@ const NexusTools = {
         }
 
         // API Tools Routing
-        if (['weather', 'news_br', 'news_world', 'dict', 'brasil'].includes(tool)) {
+        if (['news_br', 'news_world', 'dict', 'brasil'].includes(tool)) {
           if (typeof nexusAPITools !== 'undefined') {
             this.currentTool = tool;
             document.getElementById('page-content').innerHTML = `
                 <div class="tools-page">
                   <header class="tools-header">
                     <button class="tools-back" id="btn-back-api"><i class="fa-solid fa-arrow-left"></i> Voltar</button>
-                    ${tool === 'weather' ? '<h1><i class="fa-solid fa-cloud-sun"></i> NEP Clima</h1>' : ''}
                   </header>
                   <div id="api-tool-wrapper"></div>
                 </div>
@@ -668,8 +666,7 @@ const NexusTools = {
 
             // Setup container and render
             nexusAPITools.container = document.getElementById('api-tool-wrapper');
-            if (tool === 'weather') nexusAPITools.renderWeather();
-            else if (tool === 'news_br') nexusAPITools.renderNews('br');
+            if (tool === 'news_br') nexusAPITools.renderNews('br');
             else if (tool === 'news_world') nexusAPITools.renderNews('world');
             else if (tool === 'dict') nexusAPITools.renderDictionary();
             else if (tool === 'brasil') nexusAPITools.renderBrasilData();

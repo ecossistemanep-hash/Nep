@@ -180,7 +180,6 @@ const NepApp = {
       forum: 'Fórum Colaborativo',
       admin: 'Painel Admin',
       checklist: 'Rotina ADM',
-      calendar: 'Agendas Executivas',
       'teams-calendar': 'Calendário Teams',
       estagiario: 'Neuronyo',
       reports: 'Relatórios',
@@ -190,7 +189,6 @@ const NepApp = {
       announcements: 'Avisos',
       testimonials: 'NEP Depoimentos',
       vacation: 'Controle de Férias',
-      okr: 'Gestão de Entregas',
       paineis: 'Painéis Corporativos'
     };
 
@@ -276,9 +274,6 @@ const NepApp = {
           if (typeof RotinaADM !== 'undefined') RotinaADM.render(content);
           else this.renderChecklist(content);
           break;
-        case 'calendar':
-          if (typeof NexusCalendar !== 'undefined') NexusCalendar.render(content);
-          break;
         case 'teams-calendar':
           if (typeof NexusTeamsCalendar !== 'undefined') NexusTeamsCalendar.render(content);
           break;
@@ -306,9 +301,6 @@ const NepApp = {
           break;
         case 'vacation':
           if (typeof NexusVacation !== 'undefined') NexusVacation.render(content);
-          break;
-        case 'okr':
-          if (typeof NexusOKR !== 'undefined') NexusOKR.render(content);
           break;
         case 'tickets':
           if (window.TicketManagement) window.TicketManagement.render(content);

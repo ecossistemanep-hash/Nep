@@ -149,12 +149,10 @@ service cloud.firestore {
     match /deliveries/{deliveryId} { allow read, write: if isActive(); }
     match /entregas/{entregaId} { allow read, write: if isActive(); }
     match /reports/{reportId} { allow read, write: if isActive(); }
-    match /okrs/{okrId} { allow read, write: if isActive(); }
 
     match /vacations/{vacationId} { allow read, write: if isActive(); }
     match /vacation_requests/{requestId} { allow read, write: if isActive(); }
 
-    match /agendas/{agendaId} { allow read, write: if isActive(); }
     match /daily_routines/{docId} { allow read, write: if isActive(); }
     match /rotina_checklist/{docId} { allow read, write: if isActive(); }
     match /rotinas_adm/{docId} { allow read, write: if isActive(); }
