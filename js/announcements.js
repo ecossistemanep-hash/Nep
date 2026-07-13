@@ -705,7 +705,7 @@ const NexusAnnouncements = {
             
             .ann-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
             .ann-author { display: flex; gap: 12px; align-items: center; }
-            .ann-avatar { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #3b82f6, #8b5cf6); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 14px; }
+            .ann-avatar { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #3b82f6, #9c5cff); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 14px; }
             .ann-author-name { font-weight: 600; display: block; }
             .ann-author-meta { font-size: 12px; color: var(--text-tertiary); }
             .ann-new-badge { background: var(--accent-500); color: white; padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; }

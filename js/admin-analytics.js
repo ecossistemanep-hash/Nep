@@ -356,7 +356,7 @@ Object.assign(NexusAdmin, {
                         {
                             label: 'Usuários Acumulados',
                             data: growthData.userGrowth,
-                            borderColor: '#6366f1',
+                            borderColor: '#7555e8',
                             backgroundColor: 'rgba(99, 102, 241, 0.1)',
                             tension: 0.4,
                             yAxisID: 'y'
@@ -543,7 +543,7 @@ Object.assign(NexusAdmin, {
                 <span style="font-weight: 600;">${m.count}</span>
               </div>
               <div style="background: rgba(99, 102, 241, 0.1); border-radius: 4px; height: 6px; overflow: hidden;">
-                <div style="background: linear-gradient(90deg, #6366f1, #8b5cf6); width: ${percentage}%; height: 100%; transition: width 0.3s;"></div>
+                <div style="background: linear-gradient(90deg, #7555e8, #9c5cff); width: ${percentage}%; height: 100%; transition: width 0.3s;"></div>
               </div>
             </div>
           `;
@@ -576,8 +576,8 @@ Object.assign(NexusAdmin, {
      */
     renderConversionFunnel(funnel) {
         const stages = [
-            { label: 'Cadastro', value: funnel.cadastro, color: '#6366f1' },
-            { label: 'Primeiro Acesso', value: funnel.primeiroAcesso, color: '#8b5cf6' },
+            { label: 'Cadastro', value: funnel.cadastro, color: '#7555e8' },
+            { label: 'Primeiro Acesso', value: funnel.primeiroAcesso, color: '#9c5cff' },
             { label: 'Criar Tarefa', value: funnel.criarTarefa, color: '#22c55e' },
             { label: 'Concluir Tarefa', value: funnel.concluirTarefa, color: '#10b981' }
         ];
@@ -641,16 +641,16 @@ Object.assign(NexusAdmin, {
       <div style="display: grid; gap: 16px; margin-top: 12px;">
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
           <div style="text-align: center; padding: 16px; background: var(--surface-elevated); border-radius: 8px;">
-            <div style="font-size: 24px; font-weight: 700; color: #6366f1;">${roi.usersWithPoints}</div>
+            <div style="font-size: 24px; font-weight: 700; color: #7555e8;">${roi.usersWithPoints}</div>
             <div style="font-size: 11px; margin-top: 4px;">Usuários com XP</div>
           </div>
           <div style="text-align: center; padding: 16px; background: var(--surface-elevated); border-radius: 8px;">
-            <div style="font-size: 24px; font-weight: 700; color: #8b5cf6;">${roi.avgPoints}</div>
+            <div style="font-size: 24px; font-weight: 700; color: #9c5cff;">${roi.avgPoints}</div>
             <div style="font-size: 11px; margin-top: 4px;">XP Médio</div>
           </div>
         </div>
         
-        <div style="padding: 16px; background: rgba(139, 92, 246, 0.1); border-radius: 8px; border-left: 4px solid #8b5cf6;">
+        <div style="padding: 16px; background: rgba(139, 92, 246, 0.1); border-radius: 8px; border-left: 4px solid #9c5cff;">
           <div style="font-size: 13px; font-weight: 600; margin-bottom: 8px;">💡 Insight</div>
           <p style="margin: 0; font-size: 12px;">
             Top 10 ranqueados são responsáveis por <strong>${roi.topPerformersContribution}%</strong> das tarefas (${roi.tasksFromTop} de ${roi.tasksFromTop + 100}).

@@ -264,7 +264,7 @@ const NepCourses = {
       duration: '4h 00m',
       points: 120,
       icon: '🧠',
-      color: '#8b5cf6',
+      color: '#9c5cff',
       modules: [
         {
           id: 'ml1',
@@ -892,7 +892,7 @@ const NepCourses = {
             .course-meta { display: flex; justify-content: space-between; font-size: 13px; color: var(--text-tertiary); margin-bottom: 16px; }
             
             .course-progress { height: 6px; background: var(--surface-elevated); border-radius: 3px; margin-bottom: 8px; overflow: hidden; }
-            .course-progress-bar { height: 100%; background: linear-gradient(90deg, #3b82f6, #8b5cf6); border-radius: 3px; }
+            .course-progress-bar { height: 100%; background: linear-gradient(90deg, #3b82f6, #9c5cff); border-radius: 3px; }
             .course-progress-text { font-size: 12px; color: var(--text-tertiary); margin-bottom: 12px; }
             
             .course-action { width: 100%; padding: 10px; background: rgba(47, 111, 237, 0.1); border: 1px solid rgba(47, 111, 237, 0.2); color: #2f6fed; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; }

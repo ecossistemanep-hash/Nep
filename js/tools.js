@@ -62,7 +62,7 @@ const NexusTools = {
   renderMenu() {
     // Lista de todas as ferramentas com seus dados
     const allTools = [
-      { id: 'correlacao', name: 'NEP Correlação', desc: 'Análise estatística de correlação entre indicadores via upload de Excel', tag: 'Estatística', icon: 'fa-chart-line', color: '#6366f1, #8b5cf6' },
+      { id: 'correlacao', name: 'NEP Correlação', desc: 'Análise estatística de correlação entre indicadores via upload de Excel', tag: 'Estatística', icon: 'fa-chart-line', color: '#7555e8, #9c5cff' },
       { id: 'factibilidade', name: 'Calculadora de Factibilidade', desc: 'Calcule a viabilidade de metas considerando baseline e capacidade', tag: 'Metas', icon: 'fa-calculator', color: '#22c55e, #16a34a' },
       { id: 'senha', name: 'Gerador de Senha', desc: 'Gere senhas seguras com configurações personalizadas', tag: 'Segurança', icon: 'fa-key', color: '#f59e0b, #d97706' },
       { id: 'pdca', name: 'Estruturador PDCA', desc: 'Organize ciclos de melhoria contínua Plan-Do-Check-Act', tag: 'Qualidade', icon: 'fa-arrows-spin', color: '#3b82f6, #1d4ed8' },
@@ -70,21 +70,21 @@ const NexusTools = {
       { id: 'compressor', name: 'Compressor de Vídeo', desc: 'Reduza o tamanho de vídeos mantendo a qualidade', tag: 'Multimídia', icon: 'fa-video', color: '#ec4899, #be185d' },
       { id: 'pareto', name: 'Diagrama de Pareto', desc: 'Análise 80/20 para priorização de problemas', tag: 'Análise', icon: 'fa-chart-bar', color: '#14b8a6, #0d9488' },
       { id: 'ishikawa', name: 'Diagrama de Ishikawa', desc: 'Espinha de peixe para análise de causa raiz (6M)', tag: 'Causa Raiz', icon: 'fa-fish', color: '#0ea5e9, #0284c7' },
-      { id: 'gut', name: 'Matriz GUT', desc: 'Priorização por Gravidade × Urgência × Tendência', tag: 'Priorização', icon: 'fa-ranking-star', color: '#a855f7, #7c3aed' },
+      { id: 'gut', name: 'Matriz GUT', desc: 'Priorização por Gravidade × Urgência × Tendência', tag: 'Priorização', icon: 'fa-ranking-star', color: '#7555e8, #6544d0' },
       { id: 'cronometro', name: 'Cronômetro/Pomodoro', desc: 'Timer de produtividade com técnica Pomodoro', tag: 'Produtividade', icon: 'fa-stopwatch', color: '#f43f5e, #e11d48' },
       { id: 'news_br', name: 'NEP News Brasil', desc: 'Notícias do Brasil em tempo real (GNews)', tag: 'Notícias', icon: 'fa-newspaper', color: '#ef4444, #dc2626' },
-      { id: 'news_world', name: 'NEP Mundo Updates', desc: 'Giro de notícias globais em português', tag: 'Mundo', icon: 'fa-globe', color: '#8b5cf6, #6d28d9' },
+      { id: 'news_world', name: 'NEP Mundo Updates', desc: 'Giro de notícias globais em português', tag: 'Mundo', icon: 'fa-globe', color: '#9c5cff, #6d28d9' },
       { id: 'dict', name: 'NEP Dicionário', desc: 'Consulta lexicográfica e sinônimos', tag: 'Educação', icon: 'fa-book-bookmark', color: '#10b981, #059669' },
       { id: 'brasil', name: 'NEP Brasil Data', desc: 'Dados públicos: CNPJ, CEP, FIPE, Feriados (BrasilAPI)', tag: 'Dados', icon: 'fa-flag', color: '#f59e0b, #d97706' },
       { id: 'fluxograma', name: 'Criador de Fluxograma', desc: 'Monte fluxogramas visuais interativos', tag: 'Fluxo', icon: 'fa-diagram-project', color: '#06b6d4, #0891b2' },
       { id: 'cincoporques', name: '5 Porquês', desc: 'Técnica de análise de causa raiz com gráfico', tag: 'Causa Raiz', icon: 'fa-question', color: '#84cc16, #65a30d' },
-      { id: 'cartacontrole', name: 'Carta de Controle', desc: 'Gráfico de controle estatístico de processos', tag: 'CEP', icon: 'fa-chart-line', color: '#6366f1, #4f46e5' },
+      { id: 'cartacontrole', name: 'Carta de Controle', desc: 'Gráfico de controle estatístico de processos', tag: 'CEP', icon: 'fa-chart-line', color: '#7555e8, #5436b0' },
       { id: 'geradorgraficos', name: 'Gerador de Gráficos', desc: 'Crie qualquer tipo de gráfico com exportação visual', tag: 'Gráficos', icon: 'fa-chart-pie', color: '#f97316, #ea580c' },
       { id: 'nexus', name: 'NEP Nexus', desc: 'Visualização interativa do ecossistema NEP com mandala orbital', tag: 'Visualização', icon: 'fa-atom', color: '#06b6d4, #0e7490' },
       { id: 'html_creator', name: 'Criador de HTML', desc: 'Crie ferramentas web completas e baixe-as usando IA', tag: 'IA Creator', icon: 'fa-code', color: '#0ea5e9, #0284c7' },
-      { id: 'promptcreator', name: 'Criador de Prompt', desc: 'Descreva sua ideia e gere um prompt profissional otimizado para qualquer IA', tag: 'IA', icon: 'fa-wand-magic-sparkles', color: '#a855f7, #7c3aed' },
-      { id: 'estatistica', name: 'Estatística Avançada', desc: 'Análise estatística completa: quartis, dispersão, correlação, anomalias e mais', tag: 'Análise', icon: 'fa-square-root-variable', color: '#6366f1, #4f46e5' },
-      { id: 'grafo', name: 'Grafo do NEP', desc: 'Visualização interativa do ecossistema completo: módulos, conexões e fluxos de dados', tag: 'Visualização', icon: 'fa-diagram-project', color: '#00E0FF, #0891b2' }
+      { id: 'promptcreator', name: 'Criador de Prompt', desc: 'Descreva sua ideia e gere um prompt profissional otimizado para qualquer IA', tag: 'IA', icon: 'fa-wand-magic-sparkles', color: '#7555e8, #6544d0' },
+      { id: 'estatistica', name: 'Estatística Avançada', desc: 'Análise estatística completa: quartis, dispersão, correlação, anomalias e mais', tag: 'Análise', icon: 'fa-square-root-variable', color: '#7555e8, #5436b0' },
+      { id: 'grafo', name: 'Grafo do NEP', desc: 'Visualização interativa do ecossistema completo: módulos, conexões e fluxos de dados', tag: 'Visualização', icon: 'fa-diagram-project', color: '#12bcd4, #0891b2' }
     ];
 
     // Filtrar ferramentas baseado em permissões
@@ -162,7 +162,7 @@ const NexusTools = {
     return `
       <div class="tool-container">
         <div class="tool-title-row">
-          <div class="tool-icon-sm" style="background: linear-gradient(135deg, #6366f1, #8b5cf6);">
+          <div class="tool-icon-sm" style="background: linear-gradient(135deg, #7555e8, #9c5cff);">
             <i class="fa-solid fa-chart-line"></i>
           </div>
           <div>
@@ -388,7 +388,7 @@ const NexusTools = {
   renderDMAIC() {
     this.loadDMAIC();
     const phases = [
-      { key: 'define', label: 'Define', icon: 'fa-bullseye', color: '#6366f1', desc: 'Defina o problema, escopo e objetivos' },
+      { key: 'define', label: 'Define', icon: 'fa-bullseye', color: '#7555e8', desc: 'Defina o problema, escopo e objetivos' },
       { key: 'measure', label: 'Measure', icon: 'fa-ruler', color: '#22c55e', desc: 'Meça o desempenho atual' },
       { key: 'analyze', label: 'Analyze', icon: 'fa-magnifying-glass-chart', color: '#f59e0b', desc: 'Analise as causas raiz' },
       { key: 'improve', label: 'Improve', icon: 'fa-arrow-trend-up', color: '#3b82f6', desc: 'Implemente melhorias' },
@@ -434,7 +434,7 @@ const NexusTools = {
     return `
     <div class="tool-container">
       <div class="tool-title-row">
-        <div class="tool-icon-sm" style="background:linear-gradient(135deg,#a855f7,#7c3aed)">
+        <div class="tool-icon-sm" style="background:linear-gradient(135deg,#7555e8,#6544d0)">
           <i class="fa-solid fa-wand-magic-sparkles"></i>
         </div>
         <div>
@@ -509,7 +509,7 @@ const NexusTools = {
         <div id="pc-output-section" style="display:none;background:var(--surface-card,#131B29);border:1px solid var(--surface-border,#2D3A4F);border-radius:16px;overflow:hidden;">
           <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 20px;border-bottom:1px solid var(--surface-border,#2D3A4F);background:rgba(168,85,247,0.05);">
             <div style="display:flex;align-items:center;gap:8px;font-weight:600;font-size:14px;color:var(--text-primary);">
-              <i class="fa-solid fa-sparkles" style="color:#a855f7"></i> Prompt Gerado
+              <i class="fa-solid fa-sparkles" style="color:#7555e8"></i> Prompt Gerado
             </div>
             <div style="display:flex;gap:8px;">
               <button id="pc-copy-btn" class="pc-btn-sm"><i class="fa-solid fa-copy"></i> Copiar</button>
@@ -529,16 +529,16 @@ const NexusTools = {
         border:1px solid var(--surface-border,#2D3A4F);border-radius:10px;
         color:var(--text-primary);font-size:14px;font-family:inherit;transition:border-color 0.2s;
       }
-      .pc-sel:focus,.pc-inp:focus { outline:none;border-color:#a855f7; }
+      .pc-sel:focus,.pc-inp:focus { outline:none;border-color:#7555e8; }
       .pc-ta {
         width:100%;padding:14px;background:var(--surface-elevated,#1C2438);
         border:1px solid var(--surface-border,#2D3A4F);border-radius:12px;
         color:var(--text-primary);font-size:14px;font-family:inherit;line-height:1.6;resize:vertical;transition:border-color 0.2s;
       }
-      .pc-ta:focus { outline:none;border-color:#a855f7;box-shadow:0 0 0 3px rgba(168,85,247,0.12); }
+      .pc-ta:focus { outline:none;border-color:#7555e8;box-shadow:0 0 0 3px rgba(168,85,247,0.12); }
       .pc-ta::placeholder { color:var(--text-tertiary); }
       .pc-btn-gen {
-        padding:14px 28px;background:linear-gradient(135deg,#a855f7,#7c3aed);color:white;border:none;
+        padding:14px 28px;background:linear-gradient(135deg,#7555e8,#6544d0);color:white;border:none;
         border-radius:12px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;
         display:flex;align-items:center;justify-content:center;gap:10px;transition:all 0.3s;
         box-shadow:0 4px 16px rgba(168,85,247,0.3);
@@ -546,16 +546,16 @@ const NexusTools = {
       .pc-btn-gen:hover:not(:disabled) { transform:translateY(-2px);box-shadow:0 8px 24px rgba(168,85,247,0.4); }
       .pc-btn-gen:disabled { opacity:0.6;cursor:not-allowed; }
       .pc-btn-sm {
-        padding:6px 14px;background:linear-gradient(135deg,#a855f7,#7c3aed);color:white;border:none;
+        padding:6px 14px;background:linear-gradient(135deg,#7555e8,#6544d0);color:white;border:none;
         border-radius:8px;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;
         display:flex;align-items:center;gap:6px;transition:all 0.2s;
       }
       .pc-btn-sm:hover { transform:translateY(-1px); }
-      .pc-btn-ol { background:transparent!important;border:1px solid rgba(168,85,247,0.4)!important;color:#a855f7!important; }
+      .pc-btn-ol { background:transparent!important;border:1px solid rgba(168,85,247,0.4)!important;color:#7555e8!important; }
       .pc-btn-ol:hover { background:rgba(168,85,247,0.1)!important; }
       .pc-spin {
         width:40px;height:40px;border:3px solid rgba(168,85,247,0.2);
-        border-top-color:#a855f7;border-radius:50%;animation:pc-spin 0.9s linear infinite;
+        border-top-color:#7555e8;border-radius:50%;animation:pc-spin 0.9s linear infinite;
       }
       @keyframes pc-spin { to { transform:rotate(360deg); } }
       [data-theme="light"] .pc-sel,[data-theme="light"] .pc-inp,[data-theme="light"] .pc-ta {
@@ -2412,7 +2412,7 @@ const NexusTools = {
     return `
       <div class="tool-container">
         <div class="tool-title-row">
-          <div class="tool-icon-sm" style="background: linear-gradient(135deg, #6366f1, #4f46e5);">
+          <div class="tool-icon-sm" style="background: linear-gradient(135deg, #7555e8, #5436b0);">
             <i class="fa-solid fa-chart-line"></i>
           </div>
           <div>
@@ -2740,7 +2740,7 @@ const NexusTools = {
         return;
       }
 
-      const colors = ['#3b82f6', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
+      const colors = ['#3b82f6', '#22c55e', '#f59e0b', '#ef4444', '#9c5cff', '#ec4899', '#06b6d4', '#84cc16'];
 
       document.getElementById('cg-chart-container').style.display = 'block';
       const ctx = document.getElementById('cg-chart').getContext('2d');
@@ -2947,7 +2947,7 @@ const NexusTools = {
     const trendX = [xMin, xMax];
     const trendY = [slope * xMin + intercept, slope * xMax + intercept];
 
-    const scatter = { x: xData, y: yData, mode: 'markers', type: 'scatter', name: 'Dados', marker: { color: '#6366f1', size: 8 } };
+    const scatter = { x: xData, y: yData, mode: 'markers', type: 'scatter', name: 'Dados', marker: { color: '#7555e8', size: 8 } };
     const trend = { x: trendX, y: trendY, mode: 'lines', type: 'scatter', name: 'Tendência', line: { color: '#ef4444', width: 2 } };
 
     const layout = {
@@ -3274,7 +3274,7 @@ const NexusTools = {
       { key: 'maquina', label: 'Máquina', icon: 'fa-gears', color: '#22c55e' },
       { key: 'maoDeObra', label: 'Mão de Obra', icon: 'fa-users', color: '#f59e0b' },
       { key: 'material', label: 'Material', icon: 'fa-boxes-stacked', color: '#ef4444' },
-      { key: 'medicao', label: 'Medição', icon: 'fa-ruler', color: '#8b5cf6' },
+      { key: 'medicao', label: 'Medição', icon: 'fa-ruler', color: '#9c5cff' },
       { key: 'meioAmbiente', label: 'Meio Ambiente', icon: 'fa-leaf', color: '#14b8a6' }
     ];
 
@@ -3342,7 +3342,7 @@ const NexusTools = {
     return `
       <div class="tool-container">
         <div class="tool-title-row">
-          <div class="tool-icon-sm" style="background: linear-gradient(135deg, #a855f7, #7c3aed);">
+          <div class="tool-icon-sm" style="background: linear-gradient(135deg, #7555e8, #6544d0);">
             <i class="fa-solid fa-ranking-star"></i>
           </div>
           <div>
@@ -3504,7 +3504,7 @@ const NexusTools = {
 .tool-title-row p { color: var(--text-secondary); font-size: 14px; margin: 4px 0 0; }
 
 /* Buttons */
-.tools-btn-primary { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; border: none; padding: 12px 24px; border-radius: 10px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; margin-top: 16px; }
+.tools-btn-primary { background: linear-gradient(135deg, #7555e8, #9c5cff); color: white; border: none; padding: 12px 24px; border-radius: 10px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; margin-top: 16px; }
 .tools-btn-secondary { background: var(--surface-elevated); color: var(--text-primary); border: 1px solid var(--surface-border); padding: 10px 20px; border-radius: 10px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
 .tools-btn-danger { background: #ef444420; color: #ef4444; border: 1px solid #ef444440; padding: 10px 20px; border-radius: 10px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
 
@@ -3646,7 +3646,7 @@ const NexusTools = {
 .ishikawa-actions { display: flex; gap: 12px; }
 
 /* ===== GUT ===== */
-.gut-info { background: #a855f720; border-left: 4px solid #a855f7; padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; }
+.gut-info { background: #7555e820; border-left: 4px solid #7555e8; padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; }
 .gut-info p { margin: 0; font-size: 13px; }
 .gut-add-row { display: flex; gap: 8px; margin-bottom: 20px; }
 .gut-add-row input { padding: 10px 14px; border: 1px solid var(--surface-border); border-radius: 8px; background: var(--surface-elevated); color: var(--text-primary); }
@@ -3658,7 +3658,7 @@ const NexusTools = {
 .gut-table td:first-child { text-align: left; }
 .gut-row { transition: background 0.2s; }
 .gut-row:hover { background: var(--surface-hover); }
-.gut-top { background: #a855f720; }
+.gut-top { background: #7555e820; }
 .gut-score { font-weight: 700; font-size: 16px; }
 .gut-priority { padding: 4px 10px; border-radius: 20px; font-weight: 600; font-size: 12px; }
 .gut-p-critical { background: #ef444440; color: #ef4444; }
@@ -3724,7 +3724,7 @@ const NexusTools = {
         { icon: 'database', label: "DADOS", color: "#3b82f6", targetView: 'PILLARS', targetId: 1 },
         { icon: 'target', label: "FOCUS", color: "#ef4444", targetView: 'PILLARS', targetId: 2 },
         { icon: 'activity', label: "TERMÔMETRO", color: "#22c55e", targetView: 'PILLARS', targetId: 3 },
-        { icon: 'cpu', label: "MONITORIA", color: "#a855f7", targetView: 'PILLARS', targetId: 4 }
+        { icon: 'cpu', label: "MONITORIA", color: "#7555e8", targetView: 'PILLARS', targetId: 4 }
       ],
       l2: [
         { icon: 'eye', label: "MONITORAR", color: "#06b6d4" },

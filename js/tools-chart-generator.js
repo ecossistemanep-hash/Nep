@@ -19,7 +19,7 @@ class NexusChartEngine {
         this.config = {
             type: 'bar',
             theme: 'dark', // 'dark', 'light', 'corporate'
-            colors: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4'],
+            colors: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#9c5cff', '#ec4899', '#06b6d4'],
             font: 'Inter, sans-serif',
             showGrid: true,
             showLegend: true,

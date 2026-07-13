@@ -17,12 +17,12 @@ const IshikawaPro = {
   },
 
   categories: {
-    metodo: { label: 'MÉTODO', icon: 'fa-clipboard-list', color: '#6366f1', desc: 'Processos, procedimentos, rotinas' },
+    metodo: { label: 'MÉTODO', icon: 'fa-clipboard-list', color: '#7555e8', desc: 'Processos, procedimentos, rotinas' },
     maquina: { label: 'MÁQUINA', icon: 'fa-cog', color: '#3b82f6', desc: 'Equipamentos, ferramentas, tecnologia' },
     maoDeObra: { label: 'MÃO DE OBRA', icon: 'fa-users', color: '#22c55e', desc: 'Pessoas, capacitação, motivação' },
     material: { label: 'MATERIAL', icon: 'fa-boxes-stacked', color: '#f59e0b', desc: 'Insumos, matéria-prima, fornecedores' },
     medicao: { label: 'MEDIÇÃO', icon: 'fa-ruler', color: '#ef4444', desc: 'Indicadores, métricas, controles' },
-    meioAmbiente: { label: 'MEIO AMBIENTE', icon: 'fa-leaf', color: '#8b5cf6', desc: 'Ambiente físico, condições de trabalho' }
+    meioAmbiente: { label: 'MEIO AMBIENTE', icon: 'fa-leaf', color: '#9c5cff', desc: 'Ambiente físico, condições de trabalho' }
   },
 
   init() {

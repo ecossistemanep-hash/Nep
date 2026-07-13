@@ -727,7 +727,7 @@ const NepApp = {
       return NepAuth.getAvatarGradient(nameOrId);
     }
     // Fallback if NepAuth isn't ready
-    const colors = ['#2f6fed', '#8b5cf6', '#e5533d', '#f2b705', '#2ecc71', '#ec4899'];
+    const colors = ['#2f6fed', '#9c5cff', '#e5533d', '#f2b705', '#2ecc71', '#ec4899'];
     let hash = 0;
     const str = nameOrId || 'user';
     for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);

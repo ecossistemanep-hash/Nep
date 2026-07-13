@@ -150,7 +150,7 @@ const NepGrafo = {
 
     // ============ STYLES ============
     catStyle: {
-        core: { color: '#00E0FF', bg: 'rgba(0,224,255,0.12)' },
+        core: { color: '#12bcd4', bg: 'rgba(0,224,255,0.12)' },
         modulo: { color: '#3b82f6', bg: 'rgba(59,130,246,0.10)' },
         ferramentas: { color: '#10b981', bg: 'rgba(16,185,129,0.10)' },
         ia: { color: '#c084fc', bg: 'rgba(192,132,252,0.12)' },
@@ -447,7 +447,7 @@ const NepGrafo = {
                 const fy = e.src.y + (e.tgt.y - e.src.y) * e.flow;
                 c.beginPath();
                 c.arc(fx, fy, 2.5, 0, Math.PI * 2);
-                c.fillStyle = '#00E0FF';
+                c.fillStyle = '#12bcd4';
                 c.fill();
             }
         });

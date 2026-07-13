@@ -11,10 +11,10 @@ const NexusProfile = {
 
   // 10 opções de banner para o usuário escolher
   BANNER_OPTIONS: [
-    { id: 'gradient-blue-purple', name: 'Azul & Roxo', style: 'linear-gradient(135deg, #2f6fed 0%, #8b5cf6 100%)' },
+    { id: 'gradient-blue-purple', name: 'Azul & Roxo', style: 'linear-gradient(135deg, #2f6fed 0%, #9c5cff 100%)' },
     { id: 'gradient-green-cyan', name: 'Verde & Ciano', style: 'linear-gradient(135deg, #10b981 0%, #06b6d4 100%)' },
     { id: 'gradient-orange-red', name: 'Laranja & Vermelho', style: 'linear-gradient(135deg, #f97316 0%, #ef4444 100%)' },
-    { id: 'gradient-pink-purple', name: 'Rosa & Roxo', style: 'linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%)' },
+    { id: 'gradient-pink-purple', name: 'Rosa & Roxo', style: 'linear-gradient(135deg, #ec4899 0%, #9c5cff 100%)' },
     { id: 'gradient-gold', name: 'Dourado Premium', style: 'linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #b45309 100%)' },
     { id: 'gradient-dark', name: 'Escuro Elegante', style: 'linear-gradient(135deg, #1e293b 0%, #334155 50%, #475569 100%)' },
     { id: 'gradient-neon', name: 'Neon Cyber', style: 'linear-gradient(135deg, #00f5ff 0%, #ff00ff 50%, #00ff88 100%)' },
@@ -374,12 +374,12 @@ const NexusProfile = {
     { name: 'Iniciante', icon: '🌱', color: '#6b7280' },
     { name: 'Aprendiz', icon: '📗', color: '#10b981' },
     { name: 'Praticante', icon: '⭐', color: '#3b82f6' },
-    { name: 'Competente', icon: '🏅', color: '#8b5cf6' },
+    { name: 'Competente', icon: '🏅', color: '#9c5cff' },
     { name: 'Proficiente', icon: '💎', color: '#06b6d4' },
     { name: 'Especialista', icon: '🔥', color: '#f59e0b' },
     { name: 'Mestre', icon: '👑', color: '#d97706' },
     { name: 'Grão-Mestre', icon: '🏆', color: '#dc2626' },
-    { name: 'Lenda', icon: '⚡', color: '#7c3aed' },
+    { name: 'Lenda', icon: '⚡', color: '#6544d0' },
     { name: 'Transcendente', icon: '🌟', color: '#f43f5e' },
   ],
 
@@ -423,7 +423,7 @@ const NexusProfile = {
 
     container.innerHTML = `
       <div class="quick-card">
-        <div class="quick-card-icon" style="background: linear-gradient(135deg, #8b5cf6, #6366f1);">🏆</div>
+        <div class="quick-card-icon" style="background: linear-gradient(135deg, #9c5cff, #7555e8);">🏆</div>
         <div class="quick-card-info">
           <div class="quick-card-value">${points.toLocaleString()}</div>
           <div class="quick-card-label">Pontos Totais</div>
@@ -548,11 +548,11 @@ const NexusProfile = {
       { icon: '📋', label: 'Kanban', value: `${stats.tasks_completed || 0} tarefas`, pts: kanbanPts, color: '#2f6fed' },
       { icon: '💬', label: 'Fórum', value: `${(stats.forum_topics || 0) + (stats.forum_replies || 0)} posts`, pts: forumPts, color: '#10B981' },
       { icon: '❤️', label: 'Social', value: `${(stats.testimonials_sent || 0) + (stats.testimonials_received || 0)} depoimentos`, pts: socialPts, color: '#EC4899' },
-      { icon: '🎫', label: 'Chamados', value: `${(stats.tickets_created || 0) + (stats.tickets_resolved || 0)} tickets`, pts: ticketPts, color: '#8B5CF6' },
+      { icon: '🎫', label: 'Chamados', value: `${(stats.tickets_created || 0) + (stats.tickets_resolved || 0)} tickets`, pts: ticketPts, color: '#9c5cff' },
       { icon: '📚', label: 'Cursos', value: `${stats.courses_completed || 0} cursos`, pts: coursePts, color: '#F97316' },
       { icon: '🏆', label: 'Conquistas', value: `${this.achievementsData?.unlocked?.length || 0} desbloqueadas`, pts: achievementPts, color: '#FBBF24' },
       { icon: '📅', label: 'Rotina ADM', value: `${stats.routines_completed || 0} dias`, pts: routinePts, color: '#06B6D4' },
-      { icon: '📝', label: 'Relatórios', value: `${stats.reports_sent || 0} enviados`, pts: reportsPts, color: '#6366F1' }
+      { icon: '📝', label: 'Relatórios', value: `${stats.reports_sent || 0} enviados`, pts: reportsPts, color: '#7555e8' }
     ].filter(s => s.pts > 0);
 
     let html = `<h3 class="section-title">📊 Composição da Pontuação</h3><div class="score-breakdown">`;
@@ -1087,7 +1087,7 @@ profileStyles.textContent = `
   
   .profile-cover {
     height: 180px;
-    background: linear-gradient(135deg, #2f6fed, #8b5cf6);
+    background: linear-gradient(135deg, #2f6fed, #9c5cff);
     border-radius: var(--radius-xl);
     position: relative;
     overflow: hidden;

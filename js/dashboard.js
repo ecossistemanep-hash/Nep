@@ -631,7 +631,7 @@ const NepDashboard = {
   },
 
   getAvatarGradient(name) {
-    const colors = ['#2f6fed', '#8b5cf6', '#e5533d', '#f2b705', '#2ecc71', '#ec4899'];
+    const colors = ['#2f6fed', '#9c5cff', '#e5533d', '#f2b705', '#2ecc71', '#ec4899'];
     let hash = 0;
     for (let i = 0; i < (name || '').length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
     return colors[Math.abs(hash) % colors.length];
@@ -702,7 +702,7 @@ dashStyles.textContent = `
   .rank-3 { background: linear-gradient(135deg, #cd7f32, #b06020); color: #fff; }
   .rank-avatar { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 12px; font-weight: 600; }
   .rank-name { flex: 1; font-size: 13px; color: #e5e7eb; }
-  .rank-pts { font-size: 13px; font-weight: 600; color: #8b5cf6; }
+  .rank-pts { font-size: 13px; font-weight: 600; color: #9c5cff; }
   
   .alerts-section .section-header { border-bottom: none; }
   .alert-count { background: #64748b; color: #fff; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }

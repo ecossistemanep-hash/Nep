@@ -354,7 +354,7 @@ const NexusTeamsCalendar = {
 
             /* Tipos de Eventos */
             .cal-event-pill.type-meeting { border-left-color: #38bdf8; background: rgba(56, 189, 248, 0.15); }
-            .cal-event-pill.type-planning { border-left-color: #a855f7; background: rgba(168, 85, 247, 0.15); }
+            .cal-event-pill.type-planning { border-left-color: #7555e8; background: rgba(168, 85, 247, 0.15); }
             .cal-event-pill.type-training { border-left-color: #22c55e; background: rgba(34, 197, 94, 0.15); }
             .cal-event-pill.type-presentation { border-left-color: #f59e0b; background: rgba(245, 158, 11, 0.15); }
             .cal-event-pill.type-holiday { border-left-color: #ef4444; background: rgba(239, 68, 68, 0.15); font-weight: bold; }

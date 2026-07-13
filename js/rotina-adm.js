@@ -681,7 +681,7 @@ const RotinaADM = {
         .rotina-week-bar {
           width: 100%;
           max-width: 60px;
-          background: linear-gradient(180deg, #8b5cf6, #6366f1);
+          background: linear-gradient(180deg, #9c5cff, #7555e8);
           border-radius: 8px 8px 0 0;
           display: flex;
           align-items: flex-start;
@@ -731,7 +731,7 @@ const RotinaADM = {
         
         .rotina-count {
           background: rgba(139, 92, 246, 0.15);
-          color: #8b5cf6;
+          color: #9c5cff;
           padding: 6px 14px;
           border-radius: 20px;
           font-size: 14px;
@@ -757,12 +757,12 @@ const RotinaADM = {
         
         .rotina-input:focus {
           outline: none;
-          border-color: #8b5cf6;
+          border-color: #9c5cff;
           box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
         }
         
         .rotina-btn-add {
-          background: linear-gradient(135deg, #8b5cf6, #6366f1);
+          background: linear-gradient(135deg, #9c5cff, #7555e8);
           color: white;
           border: none;
           padding: 14px 24px;
@@ -821,7 +821,7 @@ const RotinaADM = {
         }
         
         .rotina-task-checkbox:hover {
-          border-color: #8b5cf6;
+          border-color: #9c5cff;
         }
         
         .rotina-task-checkbox.checked {
@@ -962,7 +962,7 @@ const RotinaADM = {
 
         .rotina-nav-btn:hover:not(.disabled) {
           background: rgba(139, 92, 246, 0.15);
-          border-color: #8b5cf6;
+          border-color: #9c5cff;
           transform: scale(1.05);
         }
 
@@ -986,7 +986,7 @@ const RotinaADM = {
         }
 
         .rotina-nav-today {
-          background: linear-gradient(135deg, #8b5cf6, #6366f1);
+          background: linear-gradient(135deg, #9c5cff, #7555e8);
           color: white;
           border: none;
           padding: 6px 16px;

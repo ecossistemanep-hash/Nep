@@ -587,7 +587,7 @@ const NexusAdmin = {
             return;
           }
           container.innerHTML = allLogos.map(logo => {
-            const color = logo.color || '#6366f1';
+            const color = logo.color || '#7555e8';
             return `
                         <label class="logo-checkbox-label" style="display:flex;align-items:center;gap:6px;padding:6px 12px;background:var(--surface-card);border:1px solid var(--surface-border);border-radius:8px;cursor:pointer;font-size:12px;transition:all .2s"
                                onchange="this.style.borderColor = this.querySelector('input').checked ? '${color}' : 'var(--surface-border)'">
@@ -1124,7 +1124,7 @@ const NexusAdmin = {
         <div class="admin-section">
           <div class="admin-section-header">
             <div>
-              <h3 style="margin-bottom: 4px;"><i class="fa-solid fa-gauge-high"></i> Central de Comando NEP <span style="font-size: 10px; vertical-align: middle; background: #6366f1; padding: 2px 6px; border-radius: 4px;">V2 BETA</span></h3>
+              <h3 style="margin-bottom: 4px;"><i class="fa-solid fa-gauge-high"></i> Central de Comando NEP <span style="font-size: 10px; vertical-align: middle; background: #7555e8; padding: 2px 6px; border-radius: 4px;">V2 BETA</span></h3>
               <p style="font-size: 11px; color: var(--text-tertiary);">Visão Total de Operação, Engajamento e Risco</p>
             </div>
             <div style="display: flex; gap: 10px;">
@@ -1176,10 +1176,10 @@ const NexusAdmin = {
               <div class="analytics-kpi-label">Score OKR</div>
               <div style="font-size: 10px; opacity: 0.8;">Média de Entregas</div>
             </div>
-            <div class="analytics-kpi" style="border-color: #8b5cf6;">
+            <div class="analytics-kpi" style="border-color: #9c5cff;">
               <div class="analytics-kpi-value">${aiConsultas}</div>
               <div class="analytics-kpi-label">IA Help</div>
-              <div style="font-size: 10px; color: #a78bfa;">Insights Gerados</div>
+              <div style="font-size: 10px; color: #ad97ee;">Insights Gerados</div>
             </div>
           </div>
 
@@ -1290,7 +1290,7 @@ const NexusAdmin = {
               <div class="analytics-activity" style="max-height: 200px; overflow-y: auto;">
                   ${stats.recentActivity?.slice(0, 15).map(a => `
                       <div style="display: flex; align-items: center; gap: 10px; padding: 8px 5px; border-bottom: 1px solid #ffffff05; font-size: 12px;">
-                          <div style="width: 8px; height: 8px; border-radius: 50%; background: ${a.event_type?.includes('ERROR') ? '#ef4444' : '#6366f1'}"></div>
+                          <div style="width: 8px; height: 8px; border-radius: 50%; background: ${a.event_type?.includes('ERROR') ? '#ef4444' : '#7555e8'}"></div>
                           <span style="font-weight: 600;">${a.user_name || 'Alguém'}</span>
                           <span style="color: var(--text-tertiary);">${a.event_type}</span>
                           <span style="margin-left: auto; font-size: 10px; color: var(--text-tertiary);">${a.timestamp instanceof Date ? a.timestamp.toLocaleTimeString('pt-BR') : 'Agora'}</span>
@@ -1647,7 +1647,7 @@ const NexusAdmin = {
                 <div class="permission-card ${!tool.enabled ? 'disabled' : ''}" data-tool-id="${tool.id}">
                   <div class="permission-header">
                     <div class="permission-info">
-                      <div class="permission-icon" style="color: ${tool.color || '#6366f1'}">
+                      <div class="permission-icon" style="color: ${tool.color || '#7555e8'}">
                         <i class="fa-solid ${tool.icon || 'fa-wrench'}"></i>
                       </div>
                       <div>
@@ -1979,10 +1979,10 @@ const NexusAdmin = {
         </div>
 
         <div style="margin-top:16px; padding:12px 16px; background:rgba(0,224,255,0.06); border:1px solid rgba(0,224,255,0.15); border-radius:10px; display:flex; align-items:center; gap:12px;">
-          <i class="fa-solid fa-link" style="color:#00E0FF;"></i>
+          <i class="fa-solid fa-link" style="color:#12bcd4;"></i>
           <div>
             <div style="font-size:12px; color:#9CA3AF;">Link Público (compartilhe com a equipe)</div>
-            <div style="font-size:13px; color:#00E0FF; cursor:pointer;" onclick="navigator.clipboard.writeText('https://ecossistema-nep.web.app/status.html');NexusApp?.showToast?.('Link copiado!','success');">
+            <div style="font-size:13px; color:#12bcd4; cursor:pointer;" onclick="navigator.clipboard.writeText('https://ecossistema-nep.web.app/status.html');NexusApp?.showToast?.('Link copiado!','success');">
               https://ecossistema-nep.web.app/status.html 📋
             </div>
           </div>
@@ -2100,9 +2100,9 @@ const NexusAdmin = {
     } catch (e) { console.warn('[Admin] Erro feedback_requests:', e); }
 
     const statusLabels = {
-      new: '<span style="color:#00E0FF;">🆕 Novo</span>',
+      new: '<span style="color:#12bcd4;">🆕 Novo</span>',
       analyzing: '<span style="color:#f59e0b;">🔍 Em análise</span>',
-      planned: '<span style="color:#8b5cf6;">📋 Planejado</span>',
+      planned: '<span style="color:#9c5cff;">📋 Planejado</span>',
       done: '<span style="color:#10B981;">✅ Implementado</span>',
       rejected: '<span style="color:#ef4444;">❌ Rejeitado</span>'
     };
@@ -2127,7 +2127,7 @@ const NexusAdmin = {
 
         <div style="display:flex; gap:12px; margin-bottom:20px; flex-wrap:wrap;">
           <div style="padding:10px 16px; background:rgba(0,224,255,0.08); border:1px solid rgba(0,224,255,0.2); border-radius:10px; flex:1; min-width:100px; text-align:center;">
-            <div style="font-size:22px; font-weight:700; color:#00E0FF;">${counts.new}</div>
+            <div style="font-size:22px; font-weight:700; color:#12bcd4;">${counts.new}</div>
             <div style="font-size:11px; color:#9CA3AF;">Novos</div>
           </div>
           <div style="padding:10px 16px; background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.2); border-radius:10px; flex:1; min-width:100px; text-align:center;">
@@ -2135,7 +2135,7 @@ const NexusAdmin = {
             <div style="font-size:11px; color:#9CA3AF;">Em análise</div>
           </div>
           <div style="padding:10px 16px; background:rgba(139,92,246,0.08); border:1px solid rgba(139,92,246,0.2); border-radius:10px; flex:1; min-width:100px; text-align:center;">
-            <div style="font-size:22px; font-weight:700; color:#8b5cf6;">${counts.planned}</div>
+            <div style="font-size:22px; font-weight:700; color:#9c5cff;">${counts.planned}</div>
             <div style="font-size:11px; color:#9CA3AF;">Planejados</div>
           </div>
           <div style="padding:10px 16px; background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.2); border-radius:10px; flex:1; min-width:100px; text-align:center;">
@@ -2235,9 +2235,9 @@ const NexusAdmin = {
           </div>
           <div class="modal-body" style="display:flex; flex-direction:column; gap:16px;">
             <div style="display:flex; gap:8px; flex-wrap:wrap;">
-              <span style="padding:4px 10px; border-radius:8px; font-size:12px; font-weight:600; background:rgba(139,92,246,0.15); color:#a78bfa;">${typeLabels[f.type] || f.type || '-'}</span>
+              <span style="padding:4px 10px; border-radius:8px; font-size:12px; font-weight:600; background:rgba(139,92,246,0.15); color:#ad97ee;">${typeLabels[f.type] || f.type || '-'}</span>
               <span style="padding:4px 10px; border-radius:8px; font-size:12px; font-weight:600; background:rgba(245,158,11,0.15); color:#fbbf24;">${prioLabels[f.priority] || 'N/A'}</span>
-              <span style="padding:4px 10px; border-radius:8px; font-size:12px; font-weight:600; background:rgba(0,224,255,0.1); color:#00E0FF;">${statusLabels[f.status] || f.status}</span>
+              <span style="padding:4px 10px; border-radius:8px; font-size:12px; font-weight:600; background:rgba(0,224,255,0.1); color:#12bcd4;">${statusLabels[f.status] || f.status}</span>
             </div>
             <div>
               <div style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:4px;">Título</div>
@@ -2577,7 +2577,7 @@ const NexusAdmin = {
   getAvatarGradient(id) {
     const gradients = [
       'linear-gradient(135deg, #2f6fed, #1c4ed8)',
-      'linear-gradient(135deg, #8b5cf6, #6d28d9)',
+      'linear-gradient(135deg, #9c5cff, #6d28d9)',
       'linear-gradient(135deg, #f59e0b, #d97706)',
       'linear-gradient(135deg, #10b981, #059669)',
       'linear-gradient(135deg, #ec4899, #db2777)',
@@ -2603,7 +2603,7 @@ adminStyles.textContent = `
 .admin-tabs{display:flex;gap:8px;margin-bottom:24px;background:var(--surface-card);padding:8px;border-radius:16px;border:1px solid var(--surface-border);overflow-x:auto}
 .admin-tab{display:flex;align-items:center;gap:8px;padding:12px 20px;background:transparent;border:none;color:var(--text-secondary);font-size:14px;font-weight:500;border-radius:12px;cursor:pointer;transition:all .2s;white-space:nowrap}
 .admin-tab:hover{color:var(--text-primary);background:var(--surface-hover)}
-.admin-tab.active{background:linear-gradient(135deg,#2f6fed,#8b5cf6);color:white}
+.admin-tab.active{background:linear-gradient(135deg,#2f6fed,#9c5cff);color:white}
 .admin-section{background:var(--surface-card);border:1px solid var(--surface-border);border-radius:16px;padding:24px}
 .admin-section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:16px}
 .admin-section-left{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
@@ -2630,7 +2630,7 @@ adminStyles.textContent = `
 .status-excluido{background:rgba(107,114,128,.2);color:#6b7280}
 .role-badge{display:inline-block;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;background:var(--surface-elevated)}
 .role-admin{background:rgba(245,158,11,.2);color:#f59e0b}
-.role-superintendente{background:rgba(139,92,246,.2);color:#8b5cf6}
+.role-superintendente{background:rgba(139,92,246,.2);color:#9c5cff}
 .role-gerente{background:rgba(59,130,246,.2);color:#3b82f6}
 .badge-warning{background:rgba(245,158,11,.2);color:#f59e0b;padding:4px 8px;border-radius:6px;font-size:11px}
 .badge-success{background:rgba(16,185,129,.2);color:#10b981;padding:4px 8px;border-radius:6px;font-size:11px}
@@ -2730,7 +2730,7 @@ NexusAdmin._renderUserLogoBadges = function (user) {
   if (logos.length === 0) return '<span class="text-muted">-</span>';
 
   return logos.map(l => {
-    const color = window.LogoService?._generateColor(l) || '#6366f1';
+    const color = window.LogoService?._generateColor(l) || '#7555e8';
     return `<span class="logo-badge" style="background:${color}20;color:${color};border:1px solid ${color}40;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600;margin:1px 2px;display:inline-block">${l}</span>`;
   }).join('');
 };
@@ -2750,7 +2750,7 @@ NexusAdmin._populateLogoCheckboxes = async function (user) {
 
     container.innerHTML = allLogos.map(logo => {
       const checked = userLogos.includes(logo.name) ? 'checked' : '';
-      const color = logo.color || '#6366f1';
+      const color = logo.color || '#7555e8';
       return `
                 <label class="logo-checkbox-label" style="display:flex;align-items:center;gap:6px;padding:6px 12px;background:var(--surface-card);border:1px solid ${checked ? color : 'var(--surface-border)'};border-radius:8px;cursor:pointer;font-size:12px;transition:all .2s"
                        onchange="this.style.borderColor = this.querySelector('input').checked ? '${color}' : 'var(--surface-border)'">
@@ -2802,7 +2802,7 @@ NexusAdmin.renderLogosManagement = async function (container) {
                         <p style="font-size:13px">Clique em "Nova Logo" para começar</p>
                     </div>
                 ` : allLogos.map(logo => {
-    const color = logo.color || '#6366f1';
+    const color = logo.color || '#7555e8';
     const count = logoCounts[logo.name] || 0;
     return `
                     <div class="logo-card" style="background:var(--surface-elevated);border:1px solid var(--surface-border);border-radius:12px;padding:20px;border-left:4px solid ${color};transition:all .2s">
@@ -2881,7 +2881,7 @@ NexusAdmin.renderLogosManagement = async function (container) {
         return logos.includes(logoName);
       });
 
-      const color = window.LogoService?._generateColor(logoName) || '#6366f1';
+      const color = window.LogoService?._generateColor(logoName) || '#7555e8';
 
       const modal = document.createElement('div');
       modal.id = 'logo-users-modal';

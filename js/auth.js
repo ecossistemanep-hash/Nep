@@ -195,7 +195,7 @@ const NepAuth = {
     getAvatarGradient(identifier) {
         const gradients = [
             'linear-gradient(135deg, #2f6fed 0%, #1c4ed8 100%)',
-            'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)',
+            'linear-gradient(135deg, #9c5cff 0%, #6d28d9 100%)',
             'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
             'linear-gradient(135deg, #10b981 0%, #059669 100%)',
             'linear-gradient(135deg, #ec4899 0%, #db2777 100%)',

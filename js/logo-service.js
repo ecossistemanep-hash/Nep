@@ -368,9 +368,9 @@ const LogoService = {
      */
     _generateColor(name) {
         const colors = [
-            '#8b5cf6', '#3b82f6', '#10b981', '#f59e0b',
+            '#9c5cff', '#3b82f6', '#10b981', '#f59e0b',
             '#ef4444', '#ec4899', '#06b6d4', '#84cc16',
-            '#f97316', '#6366f1', '#14b8a6', '#a855f7'
+            '#f97316', '#7555e8', '#14b8a6', '#7555e8'
         ];
         let hash = 0;
         for (let i = 0; i < name.length; i++) {
