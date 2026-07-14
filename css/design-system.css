@@ -291,7 +291,8 @@ body {
   }
 }
 
-/* Background Mesh Effect */
+/* Background: flat surface color only (Atlas scopes mesh gradients to hero
+   banners, not the whole app shell) */
 body::before {
   content: '';
   position: fixed;
@@ -299,7 +300,7 @@ body::before {
   left: 0;
   right: 0;
   bottom: 0;
-  background: var(--gradient-mesh);
+  background: var(--surface-bg);
   pointer-events: none;
   z-index: -1;
 }

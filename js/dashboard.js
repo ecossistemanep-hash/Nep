@@ -3,6 +3,17 @@
  * Consolidado: KPIs, Gráficos, Mini-Ranking, Alertas e Métricas Avançadas
  */
 
+const ICONS = {
+  chartColumn: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>',
+  zap: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg>',
+  hourglass: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 22h14"/><path d="M5 2h14"/><path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22"/><path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/></svg>',
+  checkCircle: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21.801 10A10 10 0 1 1 17 3.335"/><path d="m9 11 3 3L22 4"/></svg>',
+  trendingUp: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 7h6v6"/><path d="m22 7-8.5 8.5-5-5L2 17"/></svg>',
+  award: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m15.477 12.89 1.515 8.526a.5.5 0 0 1-.81.47l-3.58-2.687a1 1 0 0 0-1.197 0l-3.586 2.686a.5.5 0 0 1-.81-.469l1.514-8.526"/><circle cx="12" cy="8" r="6"/></svg>',
+  bell: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/></svg>',
+  loader: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>'
+};
+
 const NepDashboard = {
   charts: {},
   dataCache: null,
@@ -136,42 +147,42 @@ const NepDashboard = {
         <!-- KPIs Grid - 6 cards -->
         <div class="kpi-grid-6">
           <div class="kpi-card">
-            <div class="kpi-icon icon-blue">📊</div>
+            <div class="kpi-icon tone-violet">${ICONS.chartColumn}</div>
             <div class="kpi-data">
               <span class="kpi-value" id="kpi-total">${stats.total}</span>
               <span class="kpi-label">Total Demandas</span>
             </div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-icon icon-yellow">⚡</div>
+            <div class="kpi-icon tone-cyan">${ICONS.zap}</div>
             <div class="kpi-data">
               <span class="kpi-value" id="kpi-doing">${stats.doing}</span>
               <span class="kpi-label">Em Andamento</span>
             </div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-icon icon-orange">⏳</div>
+            <div class="kpi-icon tone-amber">${ICONS.hourglass}</div>
             <div class="kpi-data">
               <span class="kpi-value" id="kpi-pending">${stats.pending}</span>
               <span class="kpi-label">Aguardando</span>
             </div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-icon icon-green">✅</div>
+            <div class="kpi-icon tone-green">${ICONS.checkCircle}</div>
             <div class="kpi-data">
               <span class="kpi-value" id="kpi-done">${stats.done}</span>
               <span class="kpi-label">Concluídas</span>
             </div>
           </div>
           <div class="kpi-card highlight">
-            <div class="kpi-icon icon-teal">📈</div>
+            <div class="kpi-icon tone-cyan">${ICONS.trendingUp}</div>
             <div class="kpi-data">
               <span class="kpi-value" id="kpi-ontime">${stats.onTimeRate}%</span>
               <span class="kpi-label">Taxa On-Time</span>
             </div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-icon icon-purple">🏆</div>
+            <div class="kpi-icon tone-violet">${ICONS.award}</div>
             <div class="kpi-data">
               <span class="kpi-value" id="kpi-points">${userPoints.toLocaleString()}</span>
               <span class="kpi-label">Seus Pontos (Nv.${userLevel})</span>
@@ -181,25 +192,25 @@ const NepDashboard = {
 
         <!-- Ticket Stats Row -->
         <div class="section-divider">
-            <h3>🎫 Central de Chamados</h3>
+            <h3>Central de Chamados</h3>
         </div>
         <div class="kpi-grid-3">
-            <div class="kpi-card" style="border-left: 3px solid #f59e0b;">
-                <div class="kpi-icon icon-yellow"><i class="fa-solid fa-bell"></i></div>
+            <div class="kpi-card">
+                <div class="kpi-icon tone-amber">${ICONS.bell}</div>
                 <div class="kpi-data">
                     <span class="kpi-value">${ticketStats.actionNeeded || 0}</span>
                     <span class="kpi-label">Ação Necessária</span>
                 </div>
             </div>
-            <div class="kpi-card" style="border-left: 3px solid #3b82f6;">
-                <div class="kpi-icon icon-blue"><i class="fa-solid fa-spinner"></i></div>
+            <div class="kpi-card">
+                <div class="kpi-icon tone-cyan">${ICONS.loader}</div>
                 <div class="kpi-data">
                     <span class="kpi-value">${ticketStats.inProgress || 0}</span>
                     <span class="kpi-label">Em Andamento</span>
                 </div>
             </div>
-            <div class="kpi-card" style="border-left: 3px solid #10b981;">
-                <div class="kpi-icon icon-green"><i class="fa-solid fa-check-circle"></i></div>
+            <div class="kpi-card">
+                <div class="kpi-icon tone-green">${ICONS.checkCircle}</div>
                 <div class="kpi-data">
                     <span class="kpi-value">${ticketStats.resolved || 0}</span>
                     <span class="kpi-label">Resolvidos/Fechados</span>
@@ -670,13 +681,13 @@ dashStyles.textContent = `
   .kpi-card { background: #0f1729; border: 1px solid rgba(47, 111, 237, 0.15); border-radius: 14px; padding: 16px; display: flex; align-items: center; gap: 14px; transition: all 0.2s; }
   .kpi-card:hover { transform: translateY(-2px); border-color: rgba(47, 111, 237, 0.3); }
   .kpi-card.highlight { background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(6, 182, 212, 0.1)); border-color: rgba(16, 185, 129, 0.3); }
-  .kpi-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
-  .icon-blue { background: rgba(47, 111, 237, 0.15); }
-  .icon-yellow { background: rgba(242, 183, 5, 0.15); }
-  .icon-orange { background: rgba(249, 115, 22, 0.15); }
-  .icon-green { background: rgba(46, 204, 113, 0.15); }
-  .icon-purple { background: rgba(139, 92, 246, 0.15); }
-  .icon-teal { background: rgba(20, 184, 166, 0.15); }
+  .kpi-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .kpi-icon svg { width: 20px; height: 20px; }
+  .kpi-icon.tone-violet { background: #eeeafe; color: var(--atlas-violet-2, var(--primary-500)); }
+  .kpi-icon.tone-amber { background: #fff5df; color: var(--atlas-amber, #f0ac32); }
+  .kpi-icon.tone-magenta { background: #fff0f6; color: var(--atlas-magenta, #e83f84); }
+  .kpi-icon.tone-green { background: #eafaf4; color: var(--atlas-green, #21aa78); }
+  .kpi-icon.tone-cyan { background: #e5fbfe; color: var(--accent-500, #12bcd4); }
   .kpi-data { display: flex; flex-direction: column; }
   .kpi-value { font-size: 22px; font-weight: 700; color: #fff; line-height: 1.1; }
   .kpi-label { font-size: 11px; color: #64748b; margin-top: 4px; }
