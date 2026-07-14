@@ -144,24 +144,23 @@
   --space-20: 5rem;
   --space-24: 6rem;
 
-  /* Border Radius */
-  --radius-sm: 0.375rem;
-  --radius-md: 0.5rem;
-  --radius-lg: 0.75rem;
-  --radius-xl: 1rem;
-  --radius-2xl: 1.5rem;
+  /* Border Radius — valores literais do Atlas (--radius:18px base) */
+  --radius-sm: 0.5rem;    /* 8px  — badges/chips pequenos */
+  --radius-md: 0.625rem;  /* 10px — inputs, botões de ícone */
+  --radius-lg: 0.6875rem; /* 11px — .btn do Atlas */
+  --radius-xl: 1rem;      /* 16px — cards menores */
+  --radius-2xl: 1.125rem; /* 18px — --radius do Atlas (cards, hero, modais) */
   --radius-full: 9999px;
 
-  /* Shadows — camadas suaves (estilo Stripe/Linear) + glow sutil da marca */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35), 0 1px 1px rgba(0, 0, 0, 0.22);
-  --shadow-md: 0 2px 4px rgba(0, 0, 0, 0.32), 0 6px 16px -4px rgba(0, 0, 0, 0.45);
-  --shadow-lg: 0 4px 8px rgba(0, 0, 0, 0.3), 0 16px 32px -8px rgba(0, 0, 0, 0.5);
-  --shadow-xl: 0 8px 16px rgba(0, 0, 0, 0.3), 0 28px 56px -12px rgba(0, 0, 0, 0.55);
-  --shadow-glow: 0 0 0 1px rgba(0, 224, 255, 0.12), 0 4px 20px -2px rgba(0, 224, 255, 0.25);
-  --shadow-glow-primary: 0 0 0 1px rgba(168, 85, 247, 0.12), 0 4px 24px -2px rgba(168, 85, 247, 0.22);
-  /* Realce interno no topo do elemento — profundidade sutil em superfícies escuras */
+  /* Shadows — valores literais do Atlas: --shadow:0 12px 32px rgba(24,32,49,.08) */
+  --shadow-sm: 0 5px 15px rgba(20, 30, 50, 0.025);
+  --shadow-md: 0 5px 18px rgba(20, 30, 50, 0.035);
+  --shadow-lg: 0 12px 32px rgba(24, 32, 49, 0.08);
+  --shadow-xl: 0 22px 50px rgba(15, 19, 39, 0.2);
+  --shadow-glow: 0 0 0 1px rgba(18, 188, 212, 0.12), 0 8px 18px rgba(18, 188, 212, 0.25);
+  --shadow-glow-primary: 0 0 0 1px rgba(117, 85, 232, 0.12), 0 8px 18px rgba(117, 85, 232, 0.25);
   --highlight-inset: inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  --shadow-card: var(--highlight-inset), 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px -8px rgba(0, 0, 0, 0.4);
+  --shadow-card: 0 5px 20px rgba(20, 30, 50, 0.04);
 
   /* Transitions — 150–350ms, curvas naturais */
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
@@ -184,11 +183,11 @@
   --z-tooltip: 500;
   --z-toast: 600;
 
-  /* Layout */
-  --sidebar-width: 280px;
-  --sidebar-collapsed: 80px;
-  --header-height: 64px;
-  --content-max-width: 1400px;
+  /* Layout — medidas literais do Atlas */
+  --sidebar-width: 264px;
+  --sidebar-collapsed: 82px;
+  --header-height: 76px;
+  --content-max-width: 1600px;
 }
 
 /* =========================================
@@ -222,18 +221,18 @@
     radial-gradient(at 80% 0%, hsla(188, 74%, 86%, 0.4) 0px, transparent 50%),
     radial-gradient(at 0% 50%, hsla(220, 60%, 93%, 0.5) 0px, transparent 50%);
 
-  /* Shadows — suaves e difusas no claro (sem glow, com sombra ambiente) */
-  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.05);
-  --shadow-md: 0 2px 4px rgba(16, 24, 40, 0.05), 0 6px 16px -4px rgba(16, 24, 40, 0.08);
-  --shadow-lg: 0 4px 8px rgba(16, 24, 40, 0.05), 0 16px 32px -8px rgba(16, 24, 40, 0.1);
-  --shadow-xl: 0 8px 16px rgba(16, 24, 40, 0.06), 0 28px 56px -12px rgba(16, 24, 40, 0.14);
-  --shadow-glow: 0 0 0 1px rgba(8, 145, 178, 0.14), 0 4px 16px -2px rgba(8, 145, 178, 0.18);
-  --shadow-glow-primary: 0 0 0 1px rgba(147, 51, 234, 0.12), 0 4px 16px -2px rgba(147, 51, 234, 0.16);
+  /* Shadows — valores literais do Atlas claro */
+  --shadow-sm: 0 5px 15px rgba(20, 30, 50, 0.025);
+  --shadow-md: 0 5px 18px rgba(20, 30, 50, 0.035);
+  --shadow-lg: 0 12px 32px rgba(24, 32, 49, 0.08);
+  --shadow-xl: 0 22px 50px rgba(15, 19, 39, 0.15);
+  --shadow-glow: 0 0 0 1px rgba(18, 188, 212, 0.14), 0 8px 18px rgba(18, 188, 212, 0.18);
+  --shadow-glow-primary: 0 0 0 1px rgba(117, 85, 232, 0.12), 0 8px 18px rgba(117, 85, 232, 0.18);
   --highlight-inset: inset 0 1px 0 rgba(255, 255, 255, 0.9);
-  --shadow-card: 0 1px 2px rgba(16, 24, 40, 0.04), 0 4px 12px -2px rgba(16, 24, 40, 0.06);
+  --shadow-card: 0 5px 20px rgba(20, 30, 50, 0.04);
 
-  --focus-ring: 0 0 0 3px rgba(8, 145, 178, 0.22);
-  --focus-ring-primary: 0 0 0 3px rgba(147, 51, 234, 0.22);
+  --focus-ring: 0 0 0 3px rgba(117, 85, 232, 0.1);
+  --focus-ring-primary: 0 0 0 3px rgba(117, 85, 232, 0.1);
 }
 
 /* Light Theme Scrollbar */

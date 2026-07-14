@@ -121,16 +121,20 @@
 }
 
 .nav-item.active {
-    background: linear-gradient(90deg, rgba(18, 188, 212, 0.10), rgba(117, 85, 232, 0.06));
-    color: var(--accent-400);
+    background: linear-gradient(90deg, rgba(117, 85, 232, 0.24), rgba(18, 188, 212, 0.07));
+    color: #ffffff !important;
+    box-shadow: inset 3px 0 var(--primary-500);
 }
+.nav-item.active .nav-item-icon i { color: #ffffff !important; }
 
 [data-theme="light"] .nav-item.active {
-    background: linear-gradient(90deg, rgba(8, 145, 178, 0.10), rgba(147, 51, 234, 0.05));
+    background: linear-gradient(90deg, rgba(117, 85, 232, 0.24), rgba(18, 188, 212, 0.07));
 }
 
+/* Atlas usa box-shadow inset para a faixa ativa (ver .nav-item.active acima);
+   a barra ::before genérica fica oculta para não duplicar */
 .nav-item.active::before {
-    transform: translateY(-50%) scaleY(1);
+    display: none;
 }
 
 .nav-item-icon {
@@ -296,7 +300,7 @@
 .card {
     background: var(--surface-card);
     border: 1px solid var(--surface-border);
-    border-radius: var(--radius-xl);
+    border-radius: var(--radius-2xl);
     overflow: hidden;
     box-shadow: var(--shadow-card);
     transition:
@@ -308,7 +312,7 @@
 .card:hover {
     border-color: var(--surface-border-light);
     box-shadow: var(--shadow-lg);
-    transform: translateY(-1px);
+    transform: translateY(-3px);
 }
 
 .card-glass {
@@ -447,11 +451,12 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: var(--space-2);
-    padding: var(--space-2) var(--space-4);
+    gap: 8px;
+    height: 43px;
+    padding: 0 17px;
     font-family: var(--font-family);
-    font-size: var(--text-sm);
-    font-weight: var(--font-semibold);
+    font-size: 12px;
+    font-weight: 700;
     letter-spacing: -0.006em;
     border-radius: var(--radius-lg);
     border: 1px solid transparent;
@@ -577,21 +582,24 @@
 }
 
 .btn-icon {
-    width: 36px;
-    height: 36px;
+    width: 39px;
+    height: 39px;
     padding: 0;
-    border-radius: var(--radius-lg);
+    border-radius: var(--radius-md);
 }
 
 .btn-lg {
-    padding: var(--space-3) var(--space-6);
-    font-size: var(--text-base);
-    border-radius: var(--radius-xl);
+    height: 50px;
+    padding: 0 24px;
+    font-size: 13px;
+    border-radius: var(--radius-2xl);
 }
 
 .btn-sm {
-    padding: var(--space-1) var(--space-3);
-    font-size: var(--text-xs);
+    height: 33px;
+    padding: 0 12px;
+    font-size: 10px;
+    font-weight: 800;
 }
 
 /* =========================================
@@ -2699,25 +2707,26 @@ path.flux-connection {
 }
 
 .nav-item {
-    color: #c5cbe0 !important;
-    padding: 10px 12px;
+    color: #939db9 !important;
+    height: 43px;
+    padding: 0 12px;
     border-radius: 12px;
-    gap: 12px;
-    margin-bottom: 2px;
+    gap: 13px;
+    margin-bottom: 3px;
 }
 .nav-item .nav-item-icon,
 .nav-item .nav-item-icon i {
-    color: #9aa2bd !important;
+    color: #939db9 !important;
     width: 20px;
     text-align: center;
     font-size: 15px;
     transition: color var(--transition-fast);
 }
 .nav-item:hover {
-    background: rgba(255, 255, 255, 0.06) !important;
+    background: #181f35 !important;
     color: #ffffff !important;
 }
-.nav-item:hover .nav-item-icon i { color: #eaf6ff !important; }
+.nav-item:hover .nav-item-icon i { color: #ffffff !important; }
 
 /* Item ativo: faixa gradiente violet→cyan + texto claro */
 .nav-item.active {
