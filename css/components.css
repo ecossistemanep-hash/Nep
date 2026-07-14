@@ -121,21 +121,16 @@
 }
 
 .nav-item.active {
-    background: linear-gradient(90deg, rgba(117, 85, 232, 0.24), rgba(18, 188, 212, 0.07));
-    color: #ffffff !important;
-    box-shadow: inset 3px 0 var(--primary-500);
+    background: linear-gradient(90deg, rgba(0, 224, 255, 0.10), rgba(168, 85, 247, 0.06));
+    color: var(--accent-400);
 }
-.nav-item.active .nav-item-icon i,
-.nav-item.active .nav-item-icon svg { color: #ffffff !important; stroke: currentColor; }
 
 [data-theme="light"] .nav-item.active {
-    background: linear-gradient(90deg, rgba(117, 85, 232, 0.24), rgba(18, 188, 212, 0.07));
+    background: linear-gradient(90deg, rgba(8, 145, 178, 0.10), rgba(147, 51, 234, 0.05));
 }
 
-/* Atlas usa box-shadow inset para a faixa ativa (ver .nav-item.active acima);
-   a barra ::before genérica fica oculta para não duplicar */
 .nav-item.active::before {
-    display: none;
+    transform: translateY(-50%) scaleY(1);
 }
 
 .nav-item-icon {
@@ -301,7 +296,7 @@
 .card {
     background: var(--surface-card);
     border: 1px solid var(--surface-border);
-    border-radius: var(--radius-2xl);
+    border-radius: var(--radius-xl);
     overflow: hidden;
     box-shadow: var(--shadow-card);
     transition:
@@ -313,7 +308,7 @@
 .card:hover {
     border-color: var(--surface-border-light);
     box-shadow: var(--shadow-lg);
-    transform: translateY(-3px);
+    transform: translateY(-1px);
 }
 
 .card-glass {
@@ -452,12 +447,11 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    height: 43px;
-    padding: 0 17px;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-4);
     font-family: var(--font-family);
-    font-size: 12px;
-    font-weight: 700;
+    font-size: var(--text-sm);
+    font-weight: var(--font-semibold);
     letter-spacing: -0.006em;
     border-radius: var(--radius-lg);
     border: 1px solid transparent;
@@ -515,14 +509,14 @@
     box-shadow:
         inset 0 1px 0 rgba(255, 255, 255, 0.22),
         0 1px 2px rgba(0, 0, 0, 0.25),
-        0 3px 10px -2px rgba(117, 85, 232, 0.35);
+        0 3px 10px -2px rgba(120, 100, 250, 0.35);
 }
 
 .btn-primary:hover:not(:disabled) {
     box-shadow:
         inset 0 1px 0 rgba(255, 255, 255, 0.28),
         0 2px 4px rgba(0, 0, 0, 0.25),
-        0 6px 20px -4px rgba(117, 85, 232, 0.5);
+        0 6px 20px -4px rgba(120, 130, 250, 0.5);
     transform: translateY(-1px);
     filter: brightness(1.06);
 }
@@ -583,24 +577,21 @@
 }
 
 .btn-icon {
-    width: 39px;
-    height: 39px;
+    width: 36px;
+    height: 36px;
     padding: 0;
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-lg);
 }
 
 .btn-lg {
-    height: 50px;
-    padding: 0 24px;
-    font-size: 13px;
-    border-radius: var(--radius-2xl);
+    padding: var(--space-3) var(--space-6);
+    font-size: var(--text-base);
+    border-radius: var(--radius-xl);
 }
 
 .btn-sm {
-    height: 33px;
-    padding: 0 12px;
-    font-size: 10px;
-    font-weight: 800;
+    padding: var(--space-1) var(--space-3);
+    font-size: var(--text-xs);
 }
 
 /* =========================================
@@ -2399,7 +2390,7 @@ path.flux-connection {
    PREMIUM REFINEMENTS 2.0
    Camada de polimento visual — coerente nos
    modos claro e escuro. Mantém a identidade
-   (roxo #7555e8 + ciano #12bcd4).
+   (roxo #A855F7 + ciano #00E0FF).
    ========================================= */
 
 /* ── Entrada suave do conteúdo de página ── */
@@ -2419,7 +2410,7 @@ path.flux-connection {
 .sidebar-logo-icon {
     box-shadow:
         inset 0 1px 0 rgba(255, 255, 255, 0.25),
-        0 4px 12px -2px rgba(18, 188, 212, 0.35);
+        0 4px 12px -2px rgba(0, 224, 255, 0.35);
 }
 
 .nav-section-title {
@@ -2594,11 +2585,11 @@ path.flux-connection {
     letter-spacing: 2px;
     line-height: 1;
     background: linear-gradient(100deg,
-            #12bcd4 0%,
-            #5cd8e6 22%,
-            #7555e8 48%,
-            #12bcd4 72%,
-            #7555e8 100%);
+            #00E0FF 0%,
+            #7dd3fc 22%,
+            #A855F7 48%,
+            #00E0FF 72%,
+            #A855F7 100%);
     background-size: 300% 100%;
     -webkit-background-clip: text;
     background-clip: text;
@@ -2606,23 +2597,23 @@ path.flux-connection {
     animation:
         brandGradientFlow 9s var(--ease-in-out) infinite,
         brandLogoIn 600ms var(--ease-spring) backwards;
-    filter: drop-shadow(0 0 14px rgba(18, 188, 212, 0.25));
+    filter: drop-shadow(0 0 14px rgba(0, 224, 255, 0.25));
     transition: filter var(--transition-slow), transform var(--transition-spring);
 }
 
 [data-theme="light"] .brand-logo-text {
     background-image: linear-gradient(100deg,
-            #0e9db3 0%,
+            #0891b2 0%,
             #06b6d4 22%,
-            #6544d0 48%,
-            #0e9db3 72%,
-            #6544d0 100%);
+            #9333EA 48%,
+            #0891b2 72%,
+            #9333EA 100%);
     background-size: 300% 100%;
     filter: drop-shadow(0 1px 6px rgba(8, 145, 178, 0.18));
 }
 
 .brand-logo:hover .brand-logo-text {
-    filter: drop-shadow(0 0 20px rgba(117, 85, 232, 0.45));
+    filter: drop-shadow(0 0 20px rgba(168, 85, 247, 0.45));
     transform: translateY(-1px);
     animation-duration: 3s, 600ms;
 }
@@ -2685,75 +2676,3 @@ path.flux-connection {
         letter-spacing: 0.32em;
     }
 }
-
-/* =========================================
-   SIDEBAR ATLAS — sempre escura (claro + escuro)
-   Menu com cores explícitas para nunca sumir no tema claro.
-   ========================================= */
-.sidebar {
-    background: linear-gradient(180deg, #11162a 0%, #0c1020 100%) !important;
-    border-right: none !important;
-    box-shadow: 14px 0 36px rgba(6, 9, 20, 0.16);
-    padding: 6px 12px;
-}
-.sidebar-header { border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important; padding: 18px 12px; }
-
-.sidebar-nav { padding: 14px 8px; }
-.nav-section { margin-bottom: 18px; }
-.nav-section-title {
-    color: #8892b1 !important;
-    font-size: 10px;
-    letter-spacing: 0.14em;
-    padding: 0 12px 8px;
-}
-
-.nav-item {
-    color: #939db9 !important;
-    height: 43px;
-    padding: 0 12px;
-    border-radius: 12px;
-    gap: 13px;
-    margin-bottom: 3px;
-}
-.nav-item .nav-item-icon,
-.nav-item .nav-item-icon i,
-.nav-item .nav-item-icon svg {
-    color: #939db9 !important;
-    stroke: currentColor;
-    width: 19px;
-    height: 19px;
-    text-align: center;
-    font-size: 15px;
-    transition: color var(--transition-fast);
-    flex-shrink: 0;
-}
-.nav-item-icon { display: inline-flex; align-items: center; justify-content: center; }
-.nav-item:hover {
-    background: #181f35 !important;
-    color: #ffffff !important;
-}
-.nav-item:hover .nav-item-icon i,
-.nav-item:hover .nav-item-icon svg { color: #ffffff !important; stroke: currentColor; }
-
-/* Item ativo: faixa gradiente violet→cyan + texto claro */
-.nav-item.active {
-    background: linear-gradient(90deg, rgba(117, 85, 232, 0.22), rgba(18, 188, 212, 0.10)) !important;
-    color: #ffffff !important;
-}
-.nav-item.active::before {
-    background: linear-gradient(180deg, #7555e8, #12bcd4) !important;
-}
-.nav-item.active .nav-item-icon i,
-.nav-item.active .nav-item-icon svg {
-    color: #74e4ef !important;
-    stroke: currentColor;
-}
-
-/* Rodapé/usuário da sidebar, se houver */
-.sidebar-footer { border-top: 1px solid rgba(255, 255, 255, 0.06) !important; }
-.sidebar-user-name { color: #eef1ff !important; }
-.sidebar-user-role { color: #8892b1 !important; }
-.sidebar-user:hover { background: rgba(255, 255, 255, 0.06) !important; }
-
-/* Marca já usa o gradiente Atlas (brand-logo-text). Sub-título alinhado. */
-.brand-logo-sub { color: #8892b1 !important; }

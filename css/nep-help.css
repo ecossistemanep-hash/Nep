@@ -7,7 +7,7 @@
     right: 30px;
     width: 60px;
     height: 60px;
-    background: linear-gradient(135deg, #7555e8, #4f46e5);
+    background: linear-gradient(135deg, #6366f1, #4f46e5);
     border-radius: 50%;
     box-shadow: 0 4px 15px rgba(79, 70, 229, 0.4);
     display: flex;
@@ -60,7 +60,7 @@
 
 /* Header */
 .nep-help-header {
-    background: linear-gradient(90deg, #7555e8, #818cf8);
+    background: linear-gradient(90deg, #6366f1, #818cf8);
     padding: 16px 20px;
     display: flex;
     justify-content: space-between;
@@ -145,7 +145,7 @@
 }
 
 .msg.user {
-    background: linear-gradient(135deg, #7555e8, #4f46e5);
+    background: linear-gradient(135deg, #6366f1, #4f46e5);
     align-self: flex-end;
     border-top-right-radius: 2px;
     color: white;
@@ -195,7 +195,7 @@
 }
 
 .nep-help-input:focus {
-    border-color: #7555e8;
+    border-color: #6366f1;
     background: rgba(255, 255, 255, 0.08);
 }
 
@@ -204,7 +204,7 @@
     height: 46px;
     border-radius: 50%;
     border: none;
-    background: #7555e8;
+    background: #6366f1;
     color: white;
     cursor: pointer;
     transition: background 0.2s;
@@ -313,7 +313,7 @@
 }
 
 [data-theme="light"] .nep-help-input:focus {
-    border-color: #7555e8;
+    border-color: #6366f1;
     background: #ffffff;
 }
 

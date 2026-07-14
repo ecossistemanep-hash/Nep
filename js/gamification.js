@@ -319,7 +319,7 @@ const NexusGamification = {
             1: { name: 'Iniciante', color: '#6b7280', icon: '🌱' },
             2: { name: 'Aprendiz', color: '#22c55e', icon: '📚' },
             3: { name: 'Praticante', color: '#3b82f6', icon: '⚡' },
-            4: { name: 'Especialista', color: '#9c5cff', icon: '🎯' },
+            4: { name: 'Especialista', color: '#8b5cf6', icon: '🎯' },
             5: { name: 'Veterano', color: '#f59e0b', icon: '🏆' },
             6: { name: 'Mestre', color: '#ef4444', icon: '👑' },
             7: { name: 'Grandmestre', color: '#ec4899', icon: '💎' },

@@ -85,7 +85,7 @@ const GUTPro = {
           <div class="gp2-scores-grid">
             ${this._renderScoreSelector('g', 'Gravidade', '🔥', '#ef4444')}
             ${this._renderScoreSelector('u', 'Urgência', '⏰', '#f59e0b')}
-            ${this._renderScoreSelector('t', 'Tendência', '📈', '#9c5cff')}
+            ${this._renderScoreSelector('t', 'Tendência', '📈', '#8b5cf6')}
           </div>
 
           <div class="gp2-preview-row">
@@ -208,12 +208,12 @@ const GUTPro = {
         .gp2 { max-width: 960px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
         .gp2-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
         .gp2-header-left { display: flex; align-items: center; gap: 14px; }
-        .gp2-icon { width: 48px; height: 48px; background: linear-gradient(135deg,#7555e8,#6544d0); border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 22px; color: white; }
+        .gp2-icon { width: 48px; height: 48px; background: linear-gradient(135deg,#a855f7,#7c3aed); border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 22px; color: white; }
         .gp2-header h2 { margin: 0; font-size: 22px; color: var(--text-primary); }
         .gp2-header p { margin: 2px 0 0; font-size: 13px; color: var(--text-tertiary); }
         .gp2-header-actions { display: flex; gap: 8px; }
         .gp2-btn { padding: 9px 16px; border: none; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; font-family: inherit; transition: all .2s; }
-        .gp2-btn-primary { background: linear-gradient(135deg,#7555e8,#6544d0); color: white; box-shadow: 0 2px 8px rgba(168,85,247,.3); }
+        .gp2-btn-primary { background: linear-gradient(135deg,#a855f7,#7c3aed); color: white; box-shadow: 0 2px 8px rgba(168,85,247,.3); }
         .gp2-btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(168,85,247,.4); }
         .gp2-btn-sec { background: var(--surface-card,#1e293b); color: var(--text-primary); border: 1px solid var(--surface-border,#334155); }
         .gp2-btn-sec:hover { background: var(--surface-hover,#334155); }
@@ -229,7 +229,7 @@ const GUTPro = {
           border: 1px solid var(--surface-border,#2D3A4F); border-radius: 10px;
           color: var(--text-primary); font-size: 14px; font-family: inherit; transition: border-color .2s;
         }
-        .gp2-form-problem input:focus { outline: none; border-color: #7555e8; }
+        .gp2-form-problem input:focus { outline: none; border-color: #a855f7; }
 
         /* Score Selectors */
         .gp2-scores-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; margin-bottom: 20px; }
@@ -246,7 +246,7 @@ const GUTPro = {
         .gp2-score-btn.active { color: white; transform: scale(1.08); }
         .gp2-score-btn.active.g { background: #ef4444; border-color: #ef4444; }
         .gp2-score-btn.active.u { background: #f59e0b; border-color: #f59e0b; }
-        .gp2-score-btn.active.t { background: #9c5cff; border-color: #9c5cff; }
+        .gp2-score-btn.active.t { background: #8b5cf6; border-color: #8b5cf6; }
         .gp2-score-desc { font-size: 11px; color: var(--text-tertiary); min-height: 16px; }
 
         /* Preview */
@@ -293,7 +293,7 @@ const GUTPro = {
         .gp2-score-dot { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 6px; font-size: 13px; font-weight: 700; }
         .gp2-score-dot.g { background: rgba(239,68,68,.12); color: #f87171; }
         .gp2-score-dot.u { background: rgba(245,158,11,.12); color: #fbbf24; }
-        .gp2-score-dot.t { background: rgba(139,92,246,.12); color: #ad97ee; }
+        .gp2-score-dot.t { background: rgba(139,92,246,.12); color: #a78bfa; }
         .gp2-gut-cell { display: flex; align-items: center; gap: 8px; }
         .gp2-gut-val { font-weight: 800; font-size: 14px; min-width: 32px; }
         .gp2-gut-val.critical { color: #ef4444; } .gp2-gut-val.high { color: #f59e0b; } .gp2-gut-val.medium { color: #eab308; } .gp2-gut-val.low { color: #22c55e; }
@@ -330,7 +330,7 @@ const GUTPro = {
         [data-theme="light"] .gp2-score-btn { background: #f8fafc !important; border-color: #cbd5e1 !important; color: #475569 !important; }
         [data-theme="light"] .gp2-score-btn.active.g { background: #ef4444 !important; border-color: #ef4444 !important; color: white !important; }
         [data-theme="light"] .gp2-score-btn.active.u { background: #f59e0b !important; border-color: #f59e0b !important; color: white !important; }
-        [data-theme="light"] .gp2-score-btn.active.t { background: #9c5cff !important; border-color: #9c5cff !important; color: white !important; }
+        [data-theme="light"] .gp2-score-btn.active.t { background: #8b5cf6 !important; border-color: #8b5cf6 !important; color: white !important; }
         [data-theme="light"] .gp2-table td { color: #0f172a !important; border-color: #f1f5f9 !important; }
         [data-theme="light"] .gp2-table th { color: #64748b !important; border-color: #e2e8f0 !important; }
         [data-theme="light"] .gp2-table tr:hover { background: rgba(168,85,247,.04) !important; }

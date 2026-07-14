@@ -10,35 +10,29 @@
    CSS VARIABLES - DESIGN TOKENS
    ========================================= */
 :root {
-  /* Primary Colors - Violeta Atlas (#7555e8) */
-  --primary-50: #f2effc;
-  --primary-100: #e5ddf9;
-  --primary-200: #cabcf3;
-  --primary-300: #ad97ee;
-  --primary-400: #9c7cf0;
-  --primary-500: #7555e8;
-  --primary-600: #6544d0;
-  --primary-700: #5436b0;
-  --primary-800: #432c8c;
-  --primary-900: #33236a;
+  /* Primary Colors - Roxo Neon */
+  --primary-50: #faf5ff;
+  --primary-100: #f3e8ff;
+  --primary-200: #e9d5ff;
+  --primary-300: #d8b4fe;
+  --primary-400: #c084fc;
+  --primary-500: #A855F7;
+  --primary-600: #9333EA;
+  --primary-700: #7c3aed;
+  --primary-800: #6b21a8;
+  --primary-900: #581c87;
 
-  /* Accent Colors - Ciano Atlas (#12bcd4) */
-  --accent-50: #e8fbfd;
-  --accent-100: #c8f4f9;
-  --accent-200: #92e8f1;
-  --accent-300: #5cd8e6;
-  --accent-400: #12bcd4;
-  --accent-500: #12bcd4;
-  --accent-600: #0fa2b8;
-  --accent-700: #0d8697;
-  --accent-800: #0b6b78;
-  --accent-900: #094f59;
-
-  /* Cores de destaque Atlas */
-  --atlas-violet-2: #9c5cff;
-  --atlas-magenta: #e83f84;
-  --atlas-amber: #f0ac32;
-  --atlas-green: #21aa78;
+  /* Accent Colors - Ciano Vibrante */
+  --accent-50: #ecfeff;
+  --accent-100: #cffafe;
+  --accent-200: #a5f3fc;
+  --accent-300: #67e8f9;
+  --accent-400: #00E0FF;
+  --accent-500: #00E0FF;
+  --accent-600: #00c4d9;
+  --accent-700: #00a3b3;
+  --accent-800: #00838f;
+  --accent-900: #006064;
 
   /* Success Colors - Verde Esmeralda */
   --success-50: #ecfdf5;
@@ -73,31 +67,31 @@
   --neutral-800: #424242;
   --neutral-900: #212121;
 
-  /* Dark Theme Surfaces - Azul-noite Atlas */
-  --surface-bg: #0b1020;
-  --surface-card: #141a2b;
-  --surface-elevated: #101627;
-  --surface-hover: #1d2540;
-  --surface-border: #283149;
-  --surface-border-light: #3a4568;
+  /* Dark Theme Surfaces - Preto Profundo */
+  --surface-bg: #020408;
+  --surface-card: #131B29;
+  --surface-elevated: #1C2438;
+  --surface-hover: #263148;
+  --surface-border: #2D3A4F;
+  --surface-border-light: #3D4A5F;
 
-  /* Text Colors - Atlas dark */
-  --text-primary: #f4f6ff;
-  --text-secondary: #a6aec4;
-  --text-tertiary: #7c86a3;
-  --text-disabled: #566179;
-  --text-inverse: #101526;
+  /* Text Colors */
+  --text-primary: #f9fafb;
+  --text-secondary: #9ca3af;
+  --text-tertiary: #6b7280;
+  --text-disabled: #4b5563;
+  --text-inverse: #111827;
 
-  /* Gradient Definitions - Violeta + Ciano Atlas */
-  --gradient-primary: linear-gradient(135deg, #7555e8 0%, #9c5cff 100%);
-  --gradient-accent: linear-gradient(135deg, #7555e8 0%, #12bcd4 100%);
-  --gradient-success: linear-gradient(135deg, #21aa78 0%, #199163 100%);
-  --gradient-warning: linear-gradient(135deg, #f0ac32 0%, #d9931f 100%);
-  --gradient-error: linear-gradient(135deg, #e83f84 0%, #cc2e6d 100%);
+  /* Gradient Definitions - Roxo Neon + Ciano Vibrante */
+  --gradient-primary: linear-gradient(135deg, #A855F7 0%, #00E0FF 100%);
+  --gradient-accent: linear-gradient(135deg, #00E0FF 0%, #A855F7 100%);
+  --gradient-success: linear-gradient(135deg, #10B981 0%, #059669 100%);
+  --gradient-warning: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  --gradient-error: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
   --gradient-glass: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 100%);
-  --gradient-mesh: radial-gradient(at 40% 20%, hsla(254, 74%, 62%, 0.16) 0px, transparent 50%),
-    radial-gradient(at 80% 0%, hsla(188, 84%, 45%, 0.12) 0px, transparent 50%),
-    radial-gradient(at 0% 50%, hsla(254, 74%, 55%, 0.10) 0px, transparent 50%);
+  --gradient-mesh: radial-gradient(at 40% 20%, hsla(270, 100%, 60%, 0.15) 0px, transparent 50%),
+    radial-gradient(at 80% 0%, hsla(185, 100%, 50%, 0.12) 0px, transparent 50%),
+    radial-gradient(at 0% 50%, hsla(270, 100%, 50%, 0.1) 0px, transparent 50%);
 
   /* Typography */
   --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -144,23 +138,24 @@
   --space-20: 5rem;
   --space-24: 6rem;
 
-  /* Border Radius — valores literais do Atlas (--radius:18px base) */
-  --radius-sm: 0.5rem;    /* 8px  — badges/chips pequenos */
-  --radius-md: 0.625rem;  /* 10px — inputs, botões de ícone */
-  --radius-lg: 0.6875rem; /* 11px — .btn do Atlas */
-  --radius-xl: 1rem;      /* 16px — cards menores */
-  --radius-2xl: 1.125rem; /* 18px — --radius do Atlas (cards, hero, modais) */
+  /* Border Radius */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
   --radius-full: 9999px;
 
-  /* Shadows — valores literais do Atlas: --shadow:0 12px 32px rgba(24,32,49,.08) */
-  --shadow-sm: 0 5px 15px rgba(20, 30, 50, 0.025);
-  --shadow-md: 0 5px 18px rgba(20, 30, 50, 0.035);
-  --shadow-lg: 0 12px 32px rgba(24, 32, 49, 0.08);
-  --shadow-xl: 0 22px 50px rgba(15, 19, 39, 0.2);
-  --shadow-glow: 0 0 0 1px rgba(18, 188, 212, 0.12), 0 8px 18px rgba(18, 188, 212, 0.25);
-  --shadow-glow-primary: 0 0 0 1px rgba(117, 85, 232, 0.12), 0 8px 18px rgba(117, 85, 232, 0.25);
+  /* Shadows — camadas suaves (estilo Stripe/Linear) + glow sutil da marca */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35), 0 1px 1px rgba(0, 0, 0, 0.22);
+  --shadow-md: 0 2px 4px rgba(0, 0, 0, 0.32), 0 6px 16px -4px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 4px 8px rgba(0, 0, 0, 0.3), 0 16px 32px -8px rgba(0, 0, 0, 0.5);
+  --shadow-xl: 0 8px 16px rgba(0, 0, 0, 0.3), 0 28px 56px -12px rgba(0, 0, 0, 0.55);
+  --shadow-glow: 0 0 0 1px rgba(0, 224, 255, 0.12), 0 4px 20px -2px rgba(0, 224, 255, 0.25);
+  --shadow-glow-primary: 0 0 0 1px rgba(168, 85, 247, 0.12), 0 4px 24px -2px rgba(168, 85, 247, 0.22);
+  /* Realce interno no topo do elemento — profundidade sutil em superfícies escuras */
   --highlight-inset: inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  --shadow-card: 0 5px 20px rgba(20, 30, 50, 0.04);
+  --shadow-card: var(--highlight-inset), 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px -8px rgba(0, 0, 0, 0.4);
 
   /* Transitions — 150–350ms, curvas naturais */
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
@@ -183,56 +178,55 @@
   --z-tooltip: 500;
   --z-toast: 600;
 
-  /* Layout — medidas literais do Atlas */
-  --sidebar-width: 264px;
-  --sidebar-collapsed: 82px;
-  --header-height: 76px;
-  --content-max-width: 1600px;
+  /* Layout */
+  --sidebar-width: 280px;
+  --sidebar-collapsed: 80px;
+  --header-height: 64px;
+  --content-max-width: 1400px;
 }
 
 /* =========================================
    LIGHT THEME VARIABLES
    ========================================= */
 [data-theme="light"] {
-  /* Light Theme Surfaces — Atlas claro (fundo #f5f7fb, cards brancos) */
-  --surface-bg: #f5f7fb;
+  /* Light Theme Surfaces — neutros quentes, bordas discretas (Notion-like) */
+  --surface-bg: #f7f8fa;
   --surface-card: #ffffff;
-  --surface-elevated: #f8f9fc;
-  --surface-hover: #eef1f8;
-  --surface-border: #e5e8f0;
-  --surface-border-light: #d3d9e6;
+  --surface-elevated: #f3f4f6;
+  --surface-hover: #eceef1;
+  --surface-border: #e4e7ec;
+  --surface-border-light: #d0d5dd;
 
-  /* Text Colors — Atlas claro (ink #182031) com contraste AA */
-  --text-primary: #182031;
-  --text-secondary: #687086;
-  --text-tertiary: #8a92a8;
-  --text-disabled: #aab0c0;
-  --text-inverse: #ffffff;
+  /* Text Colors — contraste AA garantido sobre branco */
+  --text-primary: #101828;
+  --text-secondary: #475467;
+  --text-tertiary: #667085;
+  --text-disabled: #98a2b3;
+  --text-inverse: #f8fafc;
 
-  /* Acentos com contraste AA sobre branco (violeta/ciano Atlas aprofundados) */
-  --accent-400: #0e9db3;
-  --accent-500: #0d8697;
-  --accent-300: #12bcd4;
-  --primary-400: #7555e8;
-  --primary-500: #6544d0;
+  /* Acento com contraste adequado sobre fundos claros
+     (ciano puro #00E0FF falha AA no claro — usar tom mais profundo) */
+  --accent-400: #0891b2;
+  --accent-500: #0e7490;
+  --accent-300: #06b6d4;
 
   /* Adjusted Gradients for Light */
-  --gradient-mesh: radial-gradient(at 40% 20%, hsla(254, 74%, 90%, 0.5) 0px, transparent 50%),
-    radial-gradient(at 80% 0%, hsla(188, 74%, 86%, 0.4) 0px, transparent 50%),
-    radial-gradient(at 0% 50%, hsla(220, 60%, 93%, 0.5) 0px, transparent 50%);
+  --gradient-mesh: radial-gradient(at 40% 20%, hsla(270, 80%, 92%, 0.5) 0px, transparent 50%),
+    radial-gradient(at 80% 0%, hsla(189, 90%, 88%, 0.4) 0px, transparent 50%),
+    radial-gradient(at 0% 50%, hsla(220, 60%, 94%, 0.5) 0px, transparent 50%);
 
-  /* Shadows — valores literais do Atlas claro */
-  --shadow-sm: 0 5px 15px rgba(20, 30, 50, 0.025);
-  --shadow-md: 0 5px 18px rgba(20, 30, 50, 0.035);
-  --shadow-lg: 0 12px 32px rgba(24, 32, 49, 0.08);
-  --shadow-xl: 0 22px 50px rgba(15, 19, 39, 0.15);
-  --shadow-glow: 0 0 0 1px rgba(18, 188, 212, 0.14), 0 8px 18px rgba(18, 188, 212, 0.18);
-  --shadow-glow-primary: 0 0 0 1px rgba(117, 85, 232, 0.12), 0 8px 18px rgba(117, 85, 232, 0.18);
+  /* Shadows — suaves e difusas no claro (sem glow, com sombra ambiente) */
+  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.05);
+  --shadow-md: 0 2px 4px rgba(16, 24, 40, 0.05), 0 6px 16px -4px rgba(16, 24, 40, 0.08);
+  --shadow-lg: 0 4px 8px rgba(16, 24, 40, 0.05), 0 16px 32px -8px rgba(16, 24, 40, 0.1);
+  --shadow-xl: 0 8px 16px rgba(16, 24, 40, 0.06), 0 28px 56px -12px rgba(16, 24, 40, 0.14);
+  --shadow-glow: 0 0 0 1px rgba(8, 145, 178, 0.14), 0 4px 16px -2px rgba(8, 145, 178, 0.18);
+  --shadow-glow-primary: 0 0 0 1px rgba(147, 51, 234, 0.12), 0 4px 16px -2px rgba(147, 51, 234, 0.16);
   --highlight-inset: inset 0 1px 0 rgba(255, 255, 255, 0.9);
-  --shadow-card: 0 5px 20px rgba(20, 30, 50, 0.04);
+  --shadow-card: 0 1px 2px rgba(16, 24, 40, 0.04), 0 4px 12px -2px rgba(16, 24, 40, 0.06);
 
-  --focus-ring: 0 0 0 3px rgba(117, 85, 232, 0.1);
-  --focus-ring-primary: 0 0 0 3px rgba(117, 85, 232, 0.1);
+  --focus-ring: 0 0 0 3px rgba(8, 145, 178, 0.22);
+  --focus-ring-primary: 0 0 0 3px rgba(147, 51, 234, 0.22);
 }
 
 /* Light Theme Scrollbar */
@@ -291,8 +285,7 @@ body {
   }
 }
 
-/* Background: flat surface color only (Atlas scopes mesh gradients to hero
-   banners, not the whole app shell) */
+/* Background Mesh Effect */
 body::before {
   content: '';
   position: fixed;
@@ -300,7 +293,7 @@ body::before {
   left: 0;
   right: 0;
   bottom: 0;
-  background: var(--surface-bg);
+  background: var(--gradient-mesh);
   pointer-events: none;
   z-index: -1;
 }

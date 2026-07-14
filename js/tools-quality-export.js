@@ -180,7 +180,7 @@ const QualityExport = {
           border-color: rgba(139, 92, 246, 0.5);
           transform: translateY(-2px);
         }
-        .quality-export-option i { font-size: 24px; color: #9c5cff; }
+        .quality-export-option i { font-size: 24px; color: #8b5cf6; }
         .quality-export-option span { font-weight: 600; }
         .quality-export-option small { font-size: 11px; color: var(--text-tertiary, #888); }
         .quality-export-cancel {

@@ -684,7 +684,7 @@ const NexusForum = {
 
   // ============ HELPERS ============
   getAvatarGradient(id) {
-    const colors = ['#3b82f6', '#9c5cff', '#ec4899', '#f59e0b', '#10b981', '#ef4444'];
+    const colors = ['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#ef4444'];
     let hash = 0;
     const str = String(id || 'user');
     for (let i = 0; i < str.length; i++) {

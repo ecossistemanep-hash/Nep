@@ -1902,7 +1902,7 @@ const NexusKanban = {
       .kb-subtitle { font-size: 12px; color: var(--text-tertiary, #64748b); margin: 4px 0 0; }
       .kb-header-right { display: flex; gap: 10px; flex-wrap: wrap; }
       .kb-btn { padding: 10px 16px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s; }
-      .kb-btn-primary { background: linear-gradient(135deg, #3b82f6, #9c5cff); color: white; }
+      .kb-btn-primary { background: linear-gradient(135deg, #3b82f6, #8b5cf6); color: white; }
       .kb-btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(59,130,246,0.4); }
       .kb-btn-secondary { background: var(--surface-card, #1e293b); color: var(--text-primary, #e2e8f0); border: 1px solid var(--surface-border, #334155); }
       .kb-btn-secondary:hover { background: var(--surface-hover, #334155); }
@@ -1958,7 +1958,7 @@ const NexusKanban = {
       .kb-p-medio { background: rgba(59,130,246,0.3); color: #60a5fa; }
       .kb-p-alto { background: rgba(245,158,11,0.3); color: #fbbf24; }
       .kb-p-urgente { background: rgba(239,68,68,0.3); color: #f87171; }
-      .kb-points { background: rgba(139,92,246,0.3); color: #ad97ee; }
+      .kb-points { background: rgba(139,92,246,0.3); color: #a78bfa; }
       .kb-card-date { font-size: 10px; color: var(--text-tertiary, #64748b); text-align: right; margin-top: 8px; }
       .kb-archive-zone { padding: 20px; text-align: center; border: 2px dashed var(--surface-border, #334155); border-radius: 10px; color: var(--text-tertiary, #64748b); margin-top: 20px; transition: all 0.2s; }
       .kb-archive-zone.kb-drag-over { border-color: #f59e0b; background: rgba(245,158,11,0.1); color: #f59e0b; }
@@ -2073,7 +2073,7 @@ const NexusKanban = {
         box-shadow: 0 1px 4px rgba(0,0,0,0.07) !important;
       }
       [data-theme="light"] .kb-card:hover {
-        border-color: #7555e8 !important;
+        border-color: #6366f1 !important;
         box-shadow: 0 4px 14px rgba(99,102,241,0.15) !important;
       }
       [data-theme="light"] .kb-card-title {
@@ -2096,7 +2096,7 @@ const NexusKanban = {
         color: #64748b !important;
       }
       [data-theme="light"] .kb-act-btn:hover {
-        color: #7555e8 !important;
+        color: #6366f1 !important;
         background: #f1f5f9 !important;
       }
 
@@ -2105,7 +2105,7 @@ const NexusKanban = {
       [data-theme="light"] .kb-p-medio { background: rgba(59,130,246,0.12) !important; color: #2563eb !important; }
       [data-theme="light"] .kb-p-alto  { background: rgba(245,158,11,0.15) !important; color: #d97706 !important; }
       [data-theme="light"] .kb-p-urgente { background: rgba(239,68,68,0.12) !important; color: #dc2626 !important; }
-      [data-theme="light"] .kb-points { background: rgba(139,92,246,0.12) !important; color: #6544d0 !important; }
+      [data-theme="light"] .kb-points { background: rgba(139,92,246,0.12) !important; color: #7c3aed !important; }
 
       /* Filtros */
       [data-theme="light"] .kb-filter-group label { color: #475569 !important; }
@@ -2135,7 +2135,7 @@ const NexusKanban = {
       [data-theme="light"] .kb-form-group input:focus,
       [data-theme="light"] .kb-form-group select:focus,
       [data-theme="light"] .kb-form-group textarea:focus {
-        border-color: #7555e8 !important;
+        border-color: #6366f1 !important;
         background: #ffffff !important;
       }
       [data-theme="light"] .kb-evidence-box {

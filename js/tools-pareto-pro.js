@@ -327,14 +327,14 @@ const ParetoPro = {
                         type: 'line',
                         label: '% Acumulado',
                         data: cumulativeData,
-                        borderColor: '#7555e8',
+                        borderColor: '#6366f1',
                         backgroundColor: 'rgba(99, 102, 241, 0.1)',
                         borderWidth: 3,
                         fill: true,
                         tension: 0.2,
                         yAxisID: 'y1',
                         pointRadius: 4,
-                        pointBackgroundColor: '#7555e8'
+                        pointBackgroundColor: '#6366f1'
                     }
                 ]
             },

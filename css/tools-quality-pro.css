@@ -12,18 +12,18 @@
   --quality-pdca-check: #f59e0b;
   --quality-pdca-act: #ef4444;
   
-  --quality-dmaic-d: #7555e8;
+  --quality-dmaic-d: #6366f1;
   --quality-dmaic-m: #22c55e;
   --quality-dmaic-a: #f59e0b;
   --quality-dmaic-i: #3b82f6;
   --quality-dmaic-c: #ef4444;
   
-  --quality-ishi-metodo: #7555e8;
+  --quality-ishi-metodo: #6366f1;
   --quality-ishi-maquina: #3b82f6;
   --quality-ishi-mao-obra: #22c55e;
   --quality-ishi-material: #f59e0b;
   --quality-ishi-medicao: #ef4444;
-  --quality-ishi-meio: #9c5cff;
+  --quality-ishi-meio: #8b5cf6;
   
   --quality-gut-critical: #ef4444;
   --quality-gut-high: #f59e0b;
@@ -1469,7 +1469,7 @@
 }
 
 .quality-btn-ai {
-  background: linear-gradient(135deg, #9c5cff, #7555e8);
+  background: linear-gradient(135deg, #8b5cf6, #6366f1);
   color: white;
 }
 

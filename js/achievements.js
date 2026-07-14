@@ -321,7 +321,7 @@ const NexusAchievements = {
         streak: { name: 'Streak', icon: '🔥', color: '#F97316' },
         pontos: { name: 'Pontos & Níveis', icon: '🏆', color: '#F59E0B' },
         explorador: { name: 'Explorador', icon: '🔍', color: '#06B6D4' },
-        gestao: { name: 'Gestão', icon: '📊', color: '#7555e8' },
+        gestao: { name: 'Gestão', icon: '📊', color: '#6366F1' },
         ranking: { name: 'Ranking', icon: '👑', color: '#EF4444' }
     },
 
@@ -340,7 +340,7 @@ const NexusAchievements = {
         'comum': '#9CA3AF',
         'incomum': '#10B981',
         'raro': '#3B82F6',
-        'épico': '#9c5cff',
+        'épico': '#8B5CF6',
         'lendário': '#F59E0B'
     },
 
@@ -753,7 +753,7 @@ achievementStyles.textContent = `
   .achievement-card { display: flex; gap: 14px; padding: 14px; background: #0f172a; border: 1px solid #1e293b; border-radius: 12px; transition: all 0.2s; }
   .achievement-card:hover { transform: translateY(-2px); border-color: #334155; }
   .achievement-card.locked { opacity: 0.5; filter: grayscale(0.3); }
-  .achievement-card.unlocked { border-color: #9c5cff; box-shadow: 0 0 20px rgba(139, 92, 246, 0.15); }
+  .achievement-card.unlocked { border-color: #8b5cf6; box-shadow: 0 0 20px rgba(139, 92, 246, 0.15); }
   .achievement-icon { width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; font-size: 28px; border-radius: 12px; flex-shrink: 0; }
   .achievement-info { flex: 1; min-width: 0; }
   .achievement-name { font-weight: 600; color: #e5e7eb; margin-bottom: 4px; }
@@ -761,7 +761,7 @@ achievementStyles.textContent = `
   .achievement-meta { display: flex; gap: 12px; font-size: 11px; flex-wrap: wrap; }
   .achievement-category { font-weight: 500; }
   .achievement-rarity { font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
-  .achievement-points { color: #9c5cff; font-weight: 600; }
+  .achievement-points { color: #8b5cf6; font-weight: 600; }
   
   .xp-animation { position: fixed; transform: translate(-50%, -50%); z-index: 10000; pointer-events: none; }
   .xp-value { display: inline-block; font-size: 24px; font-weight: 800; color: #10b981; text-shadow: 0 2px 10px rgba(16, 185, 129, 0.5); opacity: 0; transform: translateY(20px); transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
@@ -777,7 +777,7 @@ achievementStyles.textContent = `
   .achievement-modal h3 { font-size: 24px; color: #fff; margin-bottom: 10px; }
   .achievement-modal p { color: #94a3b8; margin-bottom: 20px; }
   .achievement-reward { font-size: 28px; font-weight: 800; color: #10b981; margin-bottom: 24px; }
-  .achievement-close-btn { background: linear-gradient(135deg, #9c5cff, #7555e8); border: none; color: white; padding: 12px 32px; border-radius: 30px; font-size: 16px; font-weight: 600; cursor: pointer; transition: transform 0.2s; }
+  .achievement-close-btn { background: linear-gradient(135deg, #8b5cf6, #6366f1); border: none; color: white; padding: 12px 32px; border-radius: 30px; font-size: 16px; font-weight: 600; cursor: pointer; transition: transform 0.2s; }
   .achievement-close-btn:hover { transform: scale(1.05); }
   
   .streak-widget { display: flex; align-items: center; gap: 8px; background: linear-gradient(135deg, #f97316, #ea580c); padding: 8px 16px; border-radius: 30px; }

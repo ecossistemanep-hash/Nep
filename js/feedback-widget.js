@@ -27,7 +27,7 @@ const NexusFeedbackWidget = {
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.12);
-    color: #12bcd4;
+    color: #00E0FF;
     font-size: 22px;
     cursor: pointer;
     display: flex;
@@ -89,7 +89,7 @@ const NexusFeedbackWidget = {
     top: 0; left: 0;
     width: 100%;
     height: 3px;
-    background: linear-gradient(90deg, #12bcd4, #7555e8, #10B981);
+    background: linear-gradient(90deg, #00E0FF, #A855F7, #10B981);
     border-radius: 20px 20px 0 0;
 }
 
@@ -149,7 +149,7 @@ const NexusFeedbackWidget = {
 }
 .nfb-input::placeholder, .nfb-textarea::placeholder { color: var(--text-tertiary, #4B5563); }
 .nfb-input:focus, .nfb-textarea:focus, .nfb-select:focus {
-    border-color: #12bcd4;
+    border-color: #00E0FF;
     outline: none;
     box-shadow: 0 0 0 3px rgba(0, 224, 255, 0.12);
     background: var(--surface-elevated);
@@ -178,11 +178,11 @@ const NexusFeedbackWidget = {
     transition: all 0.3s;
     text-align: center;
 }
-.nfb-type-btn:hover { border-color: #12bcd4; color: #12bcd4; }
+.nfb-type-btn:hover { border-color: #00E0FF; color: #00E0FF; }
 .nfb-type-btn.active {
     background: linear-gradient(135deg, rgba(0, 224, 255, 0.15), rgba(168, 85, 247, 0.15));
-    border-color: #12bcd4;
-    color: #12bcd4;
+    border-color: #00E0FF;
+    color: #00E0FF;
     font-weight: 600;
 }
 
@@ -191,7 +191,7 @@ const NexusFeedbackWidget = {
 .nfb-submit {
     width: 100%;
     padding: 14px;
-    background: linear-gradient(135deg, #12bcd4, #7555e8);
+    background: linear-gradient(135deg, #00E0FF, #A855F7);
     color: white;
     border: none;
     border-radius: 12px;

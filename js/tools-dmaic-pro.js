@@ -17,7 +17,7 @@ const DMAICPro = {
     },
 
     phases: [
-        { key: 'define', label: 'Define', icon: 'fa-bullseye', color: '#7555e8', desc: 'Defina o problema, escopo e objetivos do projeto' },
+        { key: 'define', label: 'Define', icon: 'fa-bullseye', color: '#6366f1', desc: 'Defina o problema, escopo e objetivos do projeto' },
         { key: 'measure', label: 'Measure', icon: 'fa-ruler', color: '#22c55e', desc: 'Meça o desempenho atual do processo' },
         { key: 'analyze', label: 'Analyze', icon: 'fa-magnifying-glass-chart', color: '#f59e0b', desc: 'Analise as causas raiz do problema' },
         { key: 'improve', label: 'Improve', icon: 'fa-arrow-trend-up', color: '#3b82f6', desc: 'Implemente soluções e melhorias' },
@@ -147,7 +147,7 @@ const DMAICPro = {
                       background: var(--quality-card-bg); border-radius: 12px; border: 1px solid var(--quality-card-border);">
             <span style="color: var(--text-secondary);">Progresso do Projeto:</span>
             <div style="width: 200px; height: 8px; background: var(--quality-card-border); border-radius: 4px; overflow: hidden;">
-              <div style="width: ${this.getProgress()}%; height: 100%; background: linear-gradient(90deg, #7555e8, #22c55e); 
+              <div style="width: ${this.getProgress()}%; height: 100%; background: linear-gradient(90deg, #6366f1, #22c55e); 
                           transition: width 0.3s;"></div>
             </div>
             <span style="font-weight: 700; color: var(--text-primary);">${this.getProgress()}%</span>

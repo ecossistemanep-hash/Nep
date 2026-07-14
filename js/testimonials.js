@@ -746,7 +746,7 @@ const NexusTestimonials = {
         style.textContent = `
             .testimonials-page { padding: 2rem; max-width: 1400px; margin: 0 auto; }
             .tm-header { display: flex; justify-content: space-between; margin-bottom: 2rem; align-items: center; flex-wrap: wrap; gap: 1rem; }
-            .tm-title { font-size: 2rem; font-family: 'Orbitron', sans-serif; background: linear-gradient(135deg, #12bcd4, #7555e8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0; }
+            .tm-title { font-size: 2rem; font-family: 'Orbitron', sans-serif; background: linear-gradient(135deg, #00E0FF, #A855F7); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0; }
             .tm-actions { display: flex; gap: 1rem; flex-wrap: wrap; }
             
             .tm-badge {
@@ -868,12 +868,12 @@ const NexusTestimonials = {
             
             .tm-origin-badge.public {
                 background: rgba(0, 224, 255, 0.15);
-                color: #12bcd4;
+                color: #00E0FF;
             }
             
             .tm-origin-badge.internal {
                 background: rgba(139, 92, 246, 0.15);
-                color: #7555e8;
+                color: #A855F7;
             }
             
             .tm-grid { 
@@ -894,12 +894,12 @@ const NexusTestimonials = {
                 transition: transform 0.2s, box-shadow 0.2s;
             }
 
-            .tm-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); border-color: #12bcd4; }
+            .tm-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); border-color: #00E0FF; }
 
             .tm-card-header { display: flex; gap: 1rem; align-items: center; }
             .tm-avatar { 
                 width: 40px; height: 40px; 
-                background: linear-gradient(135deg, #12bcd4, #7555e8); 
+                background: linear-gradient(135deg, #00E0FF, #A855F7); 
                 color: white; border-radius: 50%; 
                 display: flex; align-items: center; justify-content: center;
                 font-weight: bold;
@@ -927,7 +927,7 @@ const NexusTestimonials = {
             .tm-tags { display: flex; gap: 0.5rem; flex-wrap: wrap; }
             .tm-tag { 
                 font-size: 0.75rem; 
-                color: #12bcd4; 
+                color: #00E0FF; 
                 background: rgba(0, 224, 255, 0.1); 
                 padding: 2px 8px; 
                 border-radius: 12px; 
@@ -943,7 +943,7 @@ const NexusTestimonials = {
                 border-radius: 16px;
                 border: 2px dashed var(--border-dim);
             }
-            .tm-empty i { font-size: 3rem; margin-bottom: 1rem; color: #12bcd4; display: block; }
+            .tm-empty i { font-size: 3rem; margin-bottom: 1rem; color: #00E0FF; display: block; }
 
             /* Tags in Form */
             .tags-grid { display: flex; gap: 0.5rem; flex-wrap: wrap; }
@@ -955,8 +955,8 @@ const NexusTestimonials = {
                 font-size: 0.9rem;
                 transition: all 0.2s;
             }
-            .tag-opt:hover { border-color: #12bcd4; }
-            .tag-opt.selected { background: linear-gradient(135deg, #12bcd4, #7555e8); color: white; border-color: #12bcd4; }
+            .tag-opt:hover { border-color: #00E0FF; }
+            .tag-opt.selected { background: linear-gradient(135deg, #00E0FF, #A855F7); color: white; border-color: #00E0FF; }
 
             /* Modal Styles - Hidden by default */
             #modal-tm,
@@ -1013,7 +1013,7 @@ const NexusTestimonials = {
             #modal-tm .modal-header h3 {
                 margin: 0;
                 font-size: 1.25rem;
-                background: linear-gradient(135deg, #12bcd4, #7555e8);
+                background: linear-gradient(135deg, #00E0FF, #A855F7);
                 -webkit-background-clip: text;
                 -webkit-text-fill-color: transparent;
             }
@@ -1045,7 +1045,7 @@ const NexusTestimonials = {
             }
 
             #modal-tm #btn-save-tm {
-                background: linear-gradient(135deg, #12bcd4, #7555e8);
+                background: linear-gradient(135deg, #00E0FF, #A855F7);
                 border: none;
                 padding: 0.75rem 1.5rem;
                 border-radius: 12px;
@@ -1104,7 +1104,7 @@ const NexusTestimonials = {
                 width: 32px;
                 height: 32px;
                 border-radius: 50%;
-                background: linear-gradient(135deg, #12bcd4, #7555e8);
+                background: linear-gradient(135deg, #00E0FF, #A855F7);
                 display: flex;
                 align-items: center;
                 justify-content: center;

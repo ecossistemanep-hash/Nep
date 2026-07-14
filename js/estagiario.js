@@ -557,7 +557,7 @@ estagiarioStyles.textContent = `
   .estagiario-page { max-width: 1400px; margin: 0 auto; height: 100%; display: flex; flex-direction: column; }
   .estagiario-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
   .estagiario-icon { font-size: 2rem; margin-right: 0.5rem; }
-  .version-badge { background: linear-gradient(135deg, #7555e8, #9c5cff); color: white; font-size: 0.65rem; padding: 0.2rem 0.5rem; border-radius: 4px; margin-left: 0.5rem; font-weight: 600; }
+  .version-badge { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; font-size: 0.65rem; padding: 0.2rem 0.5rem; border-radius: 4px; margin-left: 0.5rem; font-weight: 600; }
   
   .status-active { background: rgba(16, 185, 129, 0.1); color: #10B981; padding: 0.25rem 0.75rem; border-radius: 999px; font-weight: 600; font-size: 0.875rem; display: flex; align-items: center; gap: 0.5rem; border: 1px solid rgba(16, 185, 129, 0.2); }
 
@@ -566,14 +566,14 @@ estagiarioStyles.textContent = `
   .chat-area { background: var(--surface-card, #1f2937); border: 1px solid var(--surface-border, #374151); border-radius: 1rem; display: flex; flex-direction: column; overflow: hidden; height: calc(100vh - 200px); }
   
   .chat-messages { flex: 1; overflow-y: auto; padding: 2rem; display: flex; flex-direction: column; gap: 1.5rem; }
-  .chat-messages.drag-over { background: rgba(99, 102, 241, 0.1); border: 2px dashed #7555e8; }
+  .chat-messages.drag-over { background: rgba(99, 102, 241, 0.1); border: 2px dashed #6366f1; }
   
   .message { display: flex; gap: 1rem; max-width: 85%; animation: slideIn 0.3s ease; }
   .message.user { align-self: flex-end; flex-direction: row-reverse; }
   .message.assistant { align-self: flex-start; }
   
   .message-avatar { width: 2.5rem; height: 2.5rem; border-radius: 0.5rem; background: var(--primary-bg, #3b82f6); display: flex; align-items: center; justify-content: center; font-size: 1.25rem; flex-shrink: 0; color: white; }
-  .message.user .message-avatar { background: var(--secondary-bg, #7555e8); }
+  .message.user .message-avatar { background: var(--secondary-bg, #6366f1); }
   
   .message-content { background: var(--surface-hover, #374151); padding: 1rem 1.5rem; border-radius: 0 1rem 1rem 1rem; font-size: 0.95rem; line-height: 1.6; color: var(--text-primary, #f3f4f6); }
   .message.user .message-content { background: var(--primary-600, #2563eb); color: white; border-radius: 1rem 0 1rem 1rem; }
@@ -581,14 +581,14 @@ estagiarioStyles.textContent = `
   /* File Upload Zone */
   .file-upload-zone { padding: 0 1.5rem; }
   .upload-indicator { display: none; align-items: center; gap: 0.5rem; background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.3); padding: 0.5rem 1rem; border-radius: 0.5rem; margin-bottom: 0.5rem; }
-  .upload-indicator i { color: #7555e8; }
+  .upload-indicator i { color: #6366f1; }
   .upload-indicator span { flex: 1; font-size: 0.85rem; color: var(--text-secondary); }
   .btn-remove-file { background: none; border: none; color: #ef4444; cursor: pointer; font-size: 1rem; }
 
   .chat-input-area { padding: 1.5rem; border-top: 1px solid var(--surface-border, #374151); background: var(--surface-card, #1f2937); }
   .chat-input-wrapper { display: flex; gap: 0.75rem; align-items: center; }
   .btn-upload { width: 40px; height: 40px; border-radius: 0.5rem; background: var(--surface-hover, #374151); border: 1px solid var(--surface-border, #4b5563); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-secondary); transition: all 0.2s; }
-  .btn-upload:hover { background: var(--primary-600, #7555e8); color: white; border-color: transparent; }
+  .btn-upload:hover { background: var(--primary-600, #6366f1); color: white; border-color: transparent; }
   .chat-input { flex: 1; padding: 0.75rem 1rem; border-radius: 0.75rem; border: 1px solid var(--surface-border, #4b5563); background: var(--bg-body, #111827); color: white; }
   .chat-input:focus { outline: none; border-color: var(--primary-500, #3b82f6); box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); }
   
@@ -613,7 +613,7 @@ estagiarioStyles.textContent = `
   .theme-selector { display: flex; gap: 0.5rem; }
   .theme-btn { width: 40px; height: 40px; border-radius: 0.5rem; border: 2px solid var(--surface-border, #4b5563); background: var(--surface-hover, #374151); cursor: pointer; font-size: 1.2rem; transition: all 0.2s; }
   .theme-btn:hover { border-color: var(--primary-500); }
-  .theme-btn.active { border-color: var(--primary-500, #7555e8); background: rgba(99, 102, 241, 0.2); }
+  .theme-btn.active { border-color: var(--primary-500, #6366f1); background: rgba(99, 102, 241, 0.2); }
 
   /* Typing Dots */
   .typing-indicator .dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #9ca3af; margin-right: 4px; animation: typing 1.4s infinite ease-in-out both; }

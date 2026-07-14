@@ -435,17 +435,17 @@ const CartaControlePro = {
                     {
                         label: 'Valor',
                         data: this.data,
-                        borderColor: '#9c5cff',
+                        borderColor: '#8b5cf6',
                         backgroundColor: 'rgba(139, 92, 246, 0.1)',
                         borderWidth: 2,
                         fill: false,
                         tension: 0.1,
                         pointRadius: this.data.map((_, i) => oocPoints.some(p => p.index === i) ? 8 : 4),
                         pointBackgroundColor: this.data.map((_, i) =>
-                            oocPoints.some(p => p.index === i) ? '#ef4444' : '#9c5cff'
+                            oocPoints.some(p => p.index === i) ? '#ef4444' : '#8b5cf6'
                         ),
                         pointBorderColor: this.data.map((_, i) =>
-                            oocPoints.some(p => p.index === i) ? '#dc2626' : '#6544d0'
+                            oocPoints.some(p => p.index === i) ? '#dc2626' : '#7c3aed'
                         ),
                         pointBorderWidth: this.data.map((_, i) => oocPoints.some(p => p.index === i) ? 3 : 1)
                     },

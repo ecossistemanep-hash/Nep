@@ -55,7 +55,7 @@ const NexusPodcast = {
       title: 'Temporada 2',
       subtitle: 'IA Aplicada',
       description: 'Inteligência Artificial na operação de qualidade.',
-      color: '#9c5cff',
+      color: '#8b5cf6',
       icon: '🤖',
       episodes: [
         { id: 'ep2.1', title: 'Fundamentos de IA', duration: 75, points: 5 },
@@ -145,7 +145,7 @@ const NexusPodcast = {
       title: 'Temporada 8',
       subtitle: 'Futuro',
       description: 'Posicionar-se na fronteira da inovação.',
-      color: '#7555e8',
+      color: '#a855f7',
       icon: '🔮',
       episodes: [
         { id: 'ep8.1', title: 'Tendências Globais', duration: 70, points: 5 },
@@ -715,7 +715,7 @@ podcastStyles.textContent = `
 
   .podcast-badge {
     display: inline-block;
-    background: linear-gradient(135deg, #ec4899, #9c5cff);
+    background: linear-gradient(135deg, #ec4899, #8b5cf6);
     color: white;
     padding: 6px 16px;
     border-radius: var(--radius-full);

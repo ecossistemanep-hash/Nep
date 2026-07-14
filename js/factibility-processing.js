@@ -118,7 +118,7 @@ Object.assign(NexusTools, {
 
         // Big Numbers KPIs
         document.getElementById('fact-kpis').innerHTML = `
-      <div class="kpi-card" style="background: linear-gradient(135deg, #7555e8, #9c5cff); color: white; padding: 16px; border-radius: 12px; text-align: center;">
+      <div class="kpi-card" style="background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; padding: 16px; border-radius: 12px; text-align: center;">
         <div style="font-size: 12px; opacity: 0.9; margin-bottom: 4px;">Média</div>
         <div style="font-size: 28px; font-weight: 700;">${stats.mean}</div>
       </div>
@@ -198,7 +198,7 @@ Object.assign(NexusTools, {
         </div>
         <div style="background: var(--surface-elevated); padding: 16px; border-radius: 8px; text-align: center;">
           <div style="font-size: 11px; opacity: 0.7; margin-bottom: 4px;">Q4 (100%)</div>
-          <div style="font-size: 22px; font-weight: 700; color: #7555e8;">${stats.max}</div>
+          <div style="font-size: 22px; font-weight: 700; color: #6366f1;">${stats.max}</div>
           <div style="font-size: 10px; margin-top: 4px;">${quartiles.distribution.Q4} valores</div>
         </div>
       </div>
