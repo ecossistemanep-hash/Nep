@@ -27,6 +27,8 @@
     rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+  <!-- Lucide Icons — mesma biblioteca do design Atlas (traço fino, sem cara de emoji/IA) -->
+  <script src="https://unpkg.com/lucide@latest"></script>
 
   <!-- PDF/Image Export Libraries -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -95,15 +97,15 @@
         <div class="nav-section">
           <div class="nav-section-title">Minha Jornada</div>
           <div class="nav-item" data-page="profile">
-            <span class="nav-item-icon"><i class="fa-solid fa-user"></i></span>
+            <span class="nav-item-icon"><i data-lucide="user" style="width:19px;height:19px;stroke-width:1.8"></i></span>
             <span class="nav-item-text">Meu Perfil</span>
           </div>
           <div class="nav-item active" data-page="dashboard">
-            <span class="nav-item-icon"><i class="fa-solid fa-chart-line"></i></span>
+            <span class="nav-item-icon"><i data-lucide="layout-dashboard" style="width:19px;height:19px;stroke-width:1.8"></i></span>
             <span class="nav-item-text">Dashboard</span>
           </div>
           <div class="nav-item" data-page="announcements">
-            <span class="nav-item-icon"><i class="fa-solid fa-bullhorn"></i></span>
+            <span class="nav-item-icon"><i data-lucide="megaphone" style="width:19px;height:19px;stroke-width:1.8"></i></span>
             <span class="nav-item-text">Avisos</span>
           </div>
         </div>
@@ -112,19 +114,19 @@
         <div class="nav-section">
           <div class="nav-section-title">Execução & Rotina</div>
           <div class="nav-item" data-page="kanban">
-            <span class="nav-item-icon"><i class="fa-solid fa-clipboard-list"></i></span>
+            <span class="nav-item-icon"><i data-lucide="kanban" style="width:19px;height:19px;stroke-width:1.8"></i></span>
             <span class="nav-item-text">Kanban</span>
           </div>
           <div class="nav-item" data-page="checklist">
-            <span class="nav-item-icon"><i class="fa-solid fa-list-check"></i></span>
+            <span class="nav-item-icon"><i data-lucide="list-checks" style="width:19px;height:19px;stroke-width:1.8"></i></span>
             <span class="nav-item-text">Rotina ADM</span>
           </div>
           <div class="nav-item" data-page="tools">
-            <span class="nav-item-icon"><i class="fa-solid fa-toolbox"></i></span>
+            <span class="nav-item-icon"><i data-lucide="wrench" style="width:19px;height:19px;stroke-width:1.8"></i></span>
             <span class="nav-item-text">Ferramentas</span>
           </div>
           <div class="nav-item" data-page="tickets">
-            <span class="nav-item-icon"><i class="fa-solid fa-ticket"></i></span>
+            <span class="nav-item-icon"><i data-lucide="ticket" style="width:19px;height:19px;stroke-width:1.8"></i></span>
             <span class="nav-item-text">Chamados</span>
           </div>
         </div>
@@ -133,11 +135,11 @@
         <div class="nav-section">
           <div class="nav-section-title">Performance & Resultados</div>
           <div class="nav-item" data-page="results">
-            <span class="nav-item-icon"><i class="fa-solid fa-chart-column"></i></span>
+            <span class="nav-item-icon"><i data-lucide="bar-chart-3" style="width:19px;height:19px;stroke-width:1.8"></i></span>
             <span class="nav-item-text">Resultados</span>
           </div>
           <div class="nav-item" data-page="ranking">
-            <span class="nav-item-icon"><i class="fa-solid fa-trophy"></i></span>
+            <span class="nav-item-icon"><i data-lucide="trophy" style="width:19px;height:19px;stroke-width:1.8"></i></span>
             <span class="nav-item-text">Ranking</span>
           </div>
         </div>
@@ -146,19 +148,19 @@
         <div class="nav-section">
           <div class="nav-section-title">Gestão & Governança</div>
           <div class="nav-item" data-page="paineis">
-            <span class="nav-item-icon"><i class="fa-solid fa-satellite-dish"></i></span>
+            <span class="nav-item-icon"><i data-lucide="radio" style="width:19px;height:19px;stroke-width:1.8"></i></span>
             <span class="nav-item-text">Painéis Corporativos</span>
           </div>
           <div class="nav-item" data-page="teams-calendar">
-            <span class="nav-item-icon"><i class="fa-solid fa-calendar-days"></i></span>
+            <span class="nav-item-icon"><i data-lucide="calendar-days" style="width:19px;height:19px;stroke-width:1.8"></i></span>
             <span class="nav-item-text">Calendário</span>
           </div>
           <div class="nav-item" data-page="vacation">
-            <span class="nav-item-icon"><i class="fa-solid fa-umbrella-beach"></i></span>
+            <span class="nav-item-icon"><i data-lucide="palmtree" style="width:19px;height:19px;stroke-width:1.8"></i></span>
             <span class="nav-item-text">Férias</span>
           </div>
           <div class="nav-item" data-page="admin">
-            <span class="nav-item-icon"><i class="fa-solid fa-shield-halved"></i></span>
+            <span class="nav-item-icon"><i data-lucide="shield-check" style="width:19px;height:19px;stroke-width:1.8"></i></span>
             <span class="nav-item-text">Admin</span>
           </div>
         </div>
@@ -168,15 +170,15 @@
           <div class="nav-section-title">Aprendizado & Evolução</div>
 
           <div class="nav-item" data-page="testimonials">
-            <span class="nav-item-icon"><i class="fa-solid fa-heart"></i></span>
+            <span class="nav-item-icon"><i data-lucide="heart" style="width:19px;height:19px;stroke-width:1.8"></i></span>
             <span class="nav-item-text">Depoimentos</span>
           </div>
           <div class="nav-item" data-page="forum">
-            <span class="nav-item-icon"><i class="fa-solid fa-comments"></i></span>
+            <span class="nav-item-icon"><i data-lucide="message-square" style="width:19px;height:19px;stroke-width:1.8"></i></span>
             <span class="nav-item-text">Fórum</span>
           </div>
           <div class="nav-item" data-page="estagiario">
-            <span class="nav-item-icon"><i class="fa-solid fa-microchip"></i></span>
+            <span class="nav-item-icon"><i data-lucide="bot" style="width:19px;height:19px;stroke-width:1.8"></i></span>
             <span class="nav-item-text">Neuronyo</span>
           </div>
         </div>

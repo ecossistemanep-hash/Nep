@@ -125,7 +125,8 @@
     color: #ffffff !important;
     box-shadow: inset 3px 0 var(--primary-500);
 }
-.nav-item.active .nav-item-icon i { color: #ffffff !important; }
+.nav-item.active .nav-item-icon i,
+.nav-item.active .nav-item-icon svg { color: #ffffff !important; stroke: currentColor; }
 
 [data-theme="light"] .nav-item.active {
     background: linear-gradient(90deg, rgba(117, 85, 232, 0.24), rgba(18, 188, 212, 0.07));
@@ -2715,18 +2716,24 @@ path.flux-connection {
     margin-bottom: 3px;
 }
 .nav-item .nav-item-icon,
-.nav-item .nav-item-icon i {
+.nav-item .nav-item-icon i,
+.nav-item .nav-item-icon svg {
     color: #939db9 !important;
-    width: 20px;
+    stroke: currentColor;
+    width: 19px;
+    height: 19px;
     text-align: center;
     font-size: 15px;
     transition: color var(--transition-fast);
+    flex-shrink: 0;
 }
+.nav-item-icon { display: inline-flex; align-items: center; justify-content: center; }
 .nav-item:hover {
     background: #181f35 !important;
     color: #ffffff !important;
 }
-.nav-item:hover .nav-item-icon i { color: #ffffff !important; }
+.nav-item:hover .nav-item-icon i,
+.nav-item:hover .nav-item-icon svg { color: #ffffff !important; stroke: currentColor; }
 
 /* Item ativo: faixa gradiente violet→cyan + texto claro */
 .nav-item.active {
@@ -2736,8 +2743,10 @@ path.flux-connection {
 .nav-item.active::before {
     background: linear-gradient(180deg, #7555e8, #12bcd4) !important;
 }
-.nav-item.active .nav-item-icon i {
+.nav-item.active .nav-item-icon i,
+.nav-item.active .nav-item-icon svg {
     color: #74e4ef !important;
+    stroke: currentColor;
 }
 
 /* Rodapé/usuário da sidebar, se houver */

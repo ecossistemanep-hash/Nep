@@ -59,6 +59,10 @@ const NepApp = {
     this.setupNotifications();
     this.renderSidebar();
 
+    // Ícones do menu (Lucide, traço fino — fiel ao design Atlas).
+    // O menu é HTML estático; só precisa rodar uma vez no boot.
+    if (window.lucide) window.lucide.createIcons();
+
     const hash = window.location.hash.replace('#', '');
     this.navigate(hash || 'dashboard');
   },
