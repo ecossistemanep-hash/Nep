@@ -1,0 +1,11 @@
+{
+  "name": "nep-scripts",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "send-usage-report": "node send-usage-report.js"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.1.0"
+  }
+}
