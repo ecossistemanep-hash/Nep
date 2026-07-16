@@ -14,7 +14,6 @@
       "messages": {
         ".indexOn": ["timestamp"],
         "$messageId": {
-          "//": "Cria/edita a própria mensagem; qualquer ativo pode apagar mensagens com mais de 24h (limpeza automática, sem histórico permanente)",
           ".write": "auth != null && (!data.exists() || data.child('uid').val() == auth.uid || (!newData.exists() && data.child('timestamp').val() < (now - 86400000)))",
           ".validate": "newData.hasChildren(['uid', 'nome', 'texto', 'timestamp']) && newData.child('texto').isString() && newData.child('texto').val().length > 0 && newData.child('texto').val().length <= 500 && newData.child('uid').val() == auth.uid"
         }
