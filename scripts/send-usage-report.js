@@ -75,18 +75,31 @@ async function main() {
   const today = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
   console.log(`[UsageReport] Enviando para ${recipients.length} destinatário(s)...`);
+  let sent = 0;
+  let failed = 0;
   for (const recipient of recipients) {
-    await sendEmail({
-      apiKey: resendApiKey,
-      from: fromEmail,
-      to: recipient.email,
-      subject: `[NEP] Relatório diário de uso — ${today}`,
-      html
-    });
-    console.log(`[UsageReport] Enviado para ${recipient.email}`);
+    try {
+      await sendEmail({
+        apiKey: resendApiKey,
+        from: fromEmail,
+        to: recipient.email,
+        subject: `[NEP] Relatório diário de uso — ${today}`,
+        html
+      });
+      console.log(`[UsageReport] Enviado para ${recipient.email}`);
+      sent++;
+    } catch (err) {
+      // Uma falha (ex: destinatário fora do sandbox da Resend sem domínio
+      // verificado) não pode impedir o envio para os demais destinatários.
+      console.error(`[UsageReport] Falha ao enviar para ${recipient.email}:`, err.message);
+      failed++;
+    }
   }
 
-  console.log('[UsageReport] Concluído.');
+  console.log(`[UsageReport] Concluído. Enviados: ${sent}. Falhas: ${failed}.`);
+  if (sent === 0 && failed > 0) {
+    process.exitCode = 1;
+  }
 }
 
 function isValidEmail(email) {
