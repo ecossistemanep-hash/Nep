@@ -59,13 +59,23 @@ const NepDashboard = {
     const withTimeout = (promise, ms) => Promise.race([promise, this.timeout(ms)]);
     const noop = Promise.resolve(null);
 
+    const ticketsQuery = (window.db && uid)
+      ? Promise.all([
+          window.db.collection('tickets').where('created_by', '==', uid).get(),
+          window.db.collection('tickets').where('assigned_to', '==', uid).get()
+        ]).then(([createdSnap, assignedSnap]) => {
+          const byId = new Map();
+          createdSnap.forEach(d => byId.set(d.id, d.data()));
+          assignedSnap.forEach(d => byId.set(d.id, d.data()));
+          return Array.from(byId.values());
+        })
+      : Promise.resolve([]);
+
     const [pointsRes, streakRes, rankingRes, ticketsRes] = await Promise.allSettled([
       (window.PointsService && uid) ? withTimeout(window.PointsService.getUserPoints(uid), 3000) : noop,
       (window.NexusAchievements && uid) ? withTimeout(window.NexusAchievements.updateStreak(uid), 3000) : noop,
       (window.PointsService) ? withTimeout(window.PointsService.getRanking(5), 2000) : Promise.resolve([]),
-      (window.sb && uid)
-        ? withTimeout(window.sb.from('tickets').select('status, assigned_to, created_by').or(`created_by.eq.${uid},assigned_to.eq.${uid}`), 3000)
-        : noop
+      withTimeout(ticketsQuery, 3000)
     ]);
 
     if (pointsRes.status === 'fulfilled' && pointsRes.value) {
@@ -87,15 +97,15 @@ const NepDashboard = {
       console.warn('[Dashboard] Timeout/erro ao carregar ranking');
     }
 
-    // Chamados (Supabase): "Ação Necessária", "Em Andamento" e "Resolvidos"
-    if (ticketsRes.status === 'fulfilled' && ticketsRes.value && !ticketsRes.value.error && Array.isArray(ticketsRes.value.data)) {
-      const tickets = ticketsRes.value.data;
+    // Chamados (Firestore): "Ação Necessária", "Em Andamento" e "Resolvidos"
+    if (ticketsRes.status === 'fulfilled' && Array.isArray(ticketsRes.value)) {
+      const tickets = ticketsRes.value;
       ticketStats.actionNeeded = tickets.filter(t => (t.assigned_to === uid && t.status === 'new') || (t.created_by === uid && t.status === 'returned')).length;
       ticketStats.pending = ticketStats.actionNeeded;
       ticketStats.inProgress = tickets.filter(t => t.status === 'in_progress').length;
       ticketStats.resolved = tickets.filter(t => t.status === 'resolved' || t.status === 'closed').length;
     } else if (ticketsRes.status === 'rejected') {
-      console.warn('[Dashboard] Timeout/erro ao carregar chamados (Supabase)');
+      console.warn('[Dashboard] Timeout/erro ao carregar chamados');
     }
 
     // Get overdue tasks

@@ -1,6 +1,6 @@
 /**
  * Módulo de Gestão de Chamados (Ticket Management)
- * Integrado ao Supabase
+ * Firestore (dados) + Supabase Storage (apenas anexos de arquivo)
  */
 
 window.TicketManagement = {
@@ -14,14 +14,10 @@ window.TicketManagement = {
         await this.loadUsers();
     },
 
-    attachMenu() {
-        // Se já existe no HTML, apenas vincula. Se não, cria.
-        if (!document.querySelector('[data-page="tickets"]')) {
-            // Inserir no menu de gestão (assumindo estrutura do index.html)
-            const gestaoSection = document.querySelector('.nav-section-title')?.parentElement; // Ajustar seletor conforme necessário
-            // Como o index.html é estático, melhor o usuário adicionar manualmente ou eu injeto com cuidado.
-            // Para garantir, vamos usar o router do app.js
-        }
+    getDb() {
+        if (window.db) return window.db;
+        if (typeof firebase !== 'undefined' && firebase.firestore) return firebase.firestore();
+        return null;
     },
 
     async loadUsers() {
@@ -38,24 +34,12 @@ window.TicketManagement = {
         }
 
         // 2. Fallback: Firestore Compat SDK (window.db)
-        if (window.db) {
+        const db = this.getDb();
+        if (db) {
             try {
-                // Suporte a collection() ou db.collection
-                const col = window.db.collection ? window.db.collection('users') : window.collection(window.db, 'users');
-
-                let snap;
-                if (window.db.collection) { // Compat
-                    snap = await col.get();
-                    this.usersCache = [];
-                    snap.forEach(d => this.usersCache.push({ uid: d.id, ...d.data() }));
-                } else { // Modular (via window methods se expostos)
-                    if (window.getDocs) {
-                        snap = await window.getDocs(col);
-                        this.usersCache = [];
-                        snap.forEach(d => this.usersCache.push({ uid: d.id, ...d.data() }));
-                    }
-                }
-
+                const snap = await db.collection('users').get();
+                this.usersCache = [];
+                snap.forEach(d => this.usersCache.push({ uid: d.id, ...d.data() }));
                 console.log('[Tickets] Users loaded via Firestore:', this.usersCache.length);
             } catch (e) {
                 console.warn('Firestore User Load Error:', e);
@@ -68,31 +52,26 @@ window.TicketManagement = {
     },
 
     async loadTickets() {
-        const client = window.sb || window.SupabaseClient?.client;
+        const db = this.getDb();
         const user = window.NepAuth?.getUser();
-        if (!user || !client) {
-            // console.warn('Supabase client or User not ready');
-            return;
-        }
+        if (!user || !db) return;
 
         try {
-            // Carregar tickets onde sou criador ou destinatário
-            const { data, error } = await client
-                .from('tickets')
-                .select('*')
-                .or(`created_by.eq.${user.uid},assigned_to.eq.${user.uid}`)
-                .order('created_at', { ascending: false });
+            const [createdSnap, assignedSnap] = await Promise.all([
+                db.collection('tickets').where('created_by', '==', user.uid).get(),
+                db.collection('tickets').where('assigned_to', '==', user.uid).get()
+            ]);
 
-            if (error) {
-                // Se o erro for de "tabela não existe" (42P01), ignorar silenciosamente e retornar lista vazia
-                if (error.code === '42P01' || error.message?.includes('relation "tickets" does not exist')) {
-                    console.warn('Tabela tickets não existe. Execute o SQL de criação.');
-                    this.tickets = [];
-                    return;
-                }
-                throw error;
-            }
-            this.tickets = data || [];
+            const byId = new Map();
+            createdSnap.forEach(d => byId.set(d.id, { id: d.id, ...d.data() }));
+            assignedSnap.forEach(d => byId.set(d.id, { id: d.id, ...d.data() }));
+
+            this.tickets = Array.from(byId.values()).sort((a, b) => {
+                const ta = a.created_at?.toMillis ? a.created_at.toMillis() : new Date(a.created_at || 0).getTime();
+                const tb = b.created_at?.toMillis ? b.created_at.toMillis() : new Date(b.created_at || 0).getTime();
+                return tb - ta;
+            });
+
             console.log(`[Tickets] Carregados ${this.tickets.length} chamados.`);
         } catch (e) {
             console.error('[Tickets] Erro ao carregar:', e);
@@ -101,18 +80,10 @@ window.TicketManagement = {
     },
 
     render(container) {
-        const client = window.sb || window.SupabaseClient?.client;
-        if (!client) {
-            // Try init if configured
-            if (window.SupabaseClient && window.SupabaseClient.isConfigured()) {
-                window.SupabaseClient.init();
-                if (!window.sb && window.SupabaseClient.client) window.sb = window.SupabaseClient.client;
-            }
-
-            if (!window.sb) {
-                container.innerHTML = '<div class="empty-state"><h3>Supabase não conectado</h3><p>Verifique a configuração em js/supabase-client.js</p></div>';
-                return;
-            }
+        const db = this.getDb();
+        if (!db) {
+            container.innerHTML = '<div class="empty-state"><h3>Firestore não conectado</h3><p>Verifique a configuração do Firebase.</p></div>';
+            return;
         }
 
         this.loadTickets().then(() => {
@@ -163,11 +134,11 @@ window.TicketManagement = {
               </div>
 
               <div class="tkt-tabs">
-                  <button class="tkt-tab ${this.currentTab === 'received' ? 'active' : ''}" 
+                  <button class="tkt-tab ${this.currentTab === 'received' ? 'active' : ''}"
                           onclick="TicketManagement.switchTab('received')">
                       Recebidos (${myReceived.length})
                   </button>
-                  <button class="tkt-tab ${this.currentTab === 'created' ? 'active' : ''}" 
+                  <button class="tkt-tab ${this.currentTab === 'created' ? 'active' : ''}"
                           onclick="TicketManagement.switchTab('created')">
                       Criados por Mim (${myCreated.length})
                   </button>
@@ -183,7 +154,7 @@ window.TicketManagement = {
             }
               </div>
           </div>
-          
+
           ${this.renderModals()}
       `;
     },
@@ -205,6 +176,7 @@ window.TicketManagement = {
         const st = statusMap[t.status] || { l: t.status, c: '' };
         const priorityLabel = { 'low': 'Baixa', 'medium': 'Média', 'high': 'Alta', 'critical': 'Crítica' }[t.priority];
         const priorityClass = `prio-${t.priority}`;
+        const createdAt = t.created_at?.toDate ? t.created_at.toDate() : new Date(t.created_at || Date.now());
 
         return `
           <div class="tkt-item" onclick="TicketManagement.openTicketDetail('${t.id}')">
@@ -219,7 +191,7 @@ window.TicketManagement = {
               </div>
               <span class="tkt-badge ${st.c}">${st.l}</span>
               <span class="${priorityClass}">${priorityLabel}</span>
-              <span class="tkt-meta">${new Date(t.created_at).toLocaleDateString()}</span>
+              <span class="tkt-meta">${createdAt.toLocaleDateString()}</span>
           </div>
       `;
     },
@@ -347,19 +319,16 @@ window.TicketManagement = {
         try {
             NexusApp.showToast('Criando chamado...', 'info');
             const user = window.NepAuth.getUser();
+            const db = this.getDb();
+            if (!db) throw new Error('Firestore não inicializado.');
 
-            // Garantir que o client existe
-            let client = window.sb;
-            if (!client && window.SupabaseClient) {
-                client = window.SupabaseClient.client; // Getter forces init
-                if (client) window.sb = client;
-            }
-
-            if (!client) throw new Error("Cliente Supabase não inicializado. Verifique a configuração.");
-
+            // Anexo: continua usando Supabase Storage (arquivo binário), só o registro vai para o Firestore
             let attachmentUrl = null;
             if (file) {
-                const { data, error } = await client.storage
+                const client = window.sb || window.SupabaseClient?.client;
+                if (!client) throw new Error('Storage de anexos (Supabase) não configurado.');
+
+                const { error } = await client.storage
                     .from('tickets')
                     .upload(`${num}/${file.name}`, file);
 
@@ -368,22 +337,19 @@ window.TicketManagement = {
                 attachmentUrl = publicUrl.publicUrl;
             }
 
-            const { error: dbError } = await client
-                .from('tickets')
-                .insert({
-                    ticket_number: num,
-                    title,
-                    description: desc,
-                    created_by: user.uid,
-                    assigned_to: assignee,
-                    status: 'new',
-                    priority: prio,
-                    deadline: deadline || null,
-                    attachment_url: attachmentUrl,
-                    created_at: new Date().toISOString()
-                });
-
-            if (dbError) throw dbError;
+            await db.collection('tickets').add({
+                ticket_number: num,
+                title,
+                description: desc,
+                created_by: user.uid,
+                assigned_to: assignee,
+                status: 'new',
+                priority: prio,
+                deadline: deadline || null,
+                attachment_url: attachmentUrl,
+                created_at: firebase.firestore.FieldValue.serverTimestamp(),
+                updated_at: firebase.firestore.FieldValue.serverTimestamp()
+            });
 
             NexusApp.showToast('Chamado criado com sucesso!', 'success');
             document.getElementById('tkt-modal-new').classList.remove('active');
@@ -397,7 +363,7 @@ window.TicketManagement = {
                     mensagem: `${user.nome || 'Alguém'} abriu um chamado para você: "${title}"`,
                     destinatario_uid: assignee,
                     referencia_tipo: 'ticket',
-                    referencia_id: num // ou ID real se possível, mas num serve
+                    referencia_id: num
                 });
             }
 
@@ -420,6 +386,7 @@ window.TicketManagement = {
         const user = window.NepAuth.getUser();
         const isMyReceived = ticket.assigned_to === user.uid;
         const isMyCreated = ticket.created_by === user.uid;
+        const deadlineDate = ticket.deadline ? new Date(ticket.deadline).toLocaleDateString() : 'Não definido';
 
         // HTML do corpo do modal
         const body = `
@@ -429,7 +396,7 @@ window.TicketManagement = {
                       <span class="tkt-badge ${this.getStatusClass(ticket.status)}">${this.getStatusLabel(ticket.status)}</span>
                       <h2 style="margin-top:10px;">${ticket.title}</h2>
                   </div>
-                  
+
                   <div class="msg-bubble">
                       <p><strong>Descrição:</strong></p>
                       <p>${ticket.description}</p>
@@ -456,7 +423,7 @@ window.TicketManagement = {
                    </div>
                    <div class="form-group">
                        <label class="form-label">Prazo</label>
-                       <span>${ticket.deadline ? new Date(ticket.deadline).toLocaleDateString() : 'Não definido'}</span>
+                       <span>${deadlineDate}</span>
                    </div>
 
                    <!-- ACTIONS -->
@@ -506,13 +473,11 @@ window.TicketManagement = {
 
     async updateStatus(id, newStatus) {
         try {
-            const client = window.sb;
-            const { error } = await client
-                .from('tickets')
-                .update({ status: newStatus, updated_at: new Date().toISOString() })
-                .eq('id', id);
-
-            if (error) throw error;
+            const db = this.getDb();
+            await db.collection('tickets').doc(id).update({
+                status: newStatus,
+                updated_at: firebase.firestore.FieldValue.serverTimestamp()
+            });
 
             NexusApp.showToast(`Status atualizado para: ${this.getStatusLabel(newStatus)}`, 'success');
 
@@ -568,13 +533,8 @@ window.TicketManagement = {
         if (!confirm('Tem certeza que deseja excluir este chamado? Esta ação não pode ser desfeita.')) return;
 
         try {
-            const client = window.sb;
-            const { error } = await client
-                .from('tickets')
-                .delete()
-                .eq('id', id);
-
-            if (error) throw error;
+            const db = this.getDb();
+            await db.collection('tickets').doc(id).delete();
 
             NexusApp.showToast('Chamado excluído com sucesso.', 'success');
             document.getElementById('tkt-modal-detail').classList.remove('active');

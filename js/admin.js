@@ -1067,7 +1067,7 @@ const NexusAdmin = {
         db.collection('vacations').get(),
         db.collection('users').where('status', '==', 'PENDENTE').get(),
         db.collection('deliveries').get(),
-        sb ? sb.from('tickets').select('*') : Promise.resolve({ data: [] }),
+        db.collection('tickets').get(),
         db.collection('user_analytics').where('timestamp', '>', last7d).get(),
         db.collection('points').orderBy('total_points', 'desc').limit(5).get(),
         db.collection('audit_logs').where('timestamp', '>', last12h).get()
@@ -1077,7 +1077,7 @@ const NexusAdmin = {
       const vacations = vacationsSnap.docs.map(d => d.data());
       const pendingUsers = usersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
       const deliveries = okrSnap.docs.map(d => d.data());
-      const tickets = ticketsSnap.data || [];
+      const tickets = ticketsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
       const analytics = analyticsSnap.docs.map(d => d.data());
       const ranking = pointsSnap.docs.map(d => d.data());
       const recentAudit = auditSnap.docs.map(d => d.data());
@@ -2465,28 +2465,24 @@ const NexusAdmin = {
       });
       console.log(`[Admin] ${testCount} depoimentos contabilizados.`);
 
-      // 5. Somar CHAMADOS (Supabase)
-      if (window.sb) {
-        const { data: tickets, error } = await window.sb
-          .from('tickets')
-          .select('*');
+      // 5. Somar CHAMADOS (Firestore)
+      {
+        const ticketsSnap = await window.db.collection('tickets').get();
+        let ticketCount = 0;
+        ticketsSnap.forEach(doc => {
+          const t = doc.data();
+          // Criou (+5)
+          add(t.created_by, 5);
+          // incStat(t.created_by, 'tickets_created', 1); // If we had this stat
 
-        if (!error && tickets) {
-          let ticketCount = 0;
-          tickets.forEach(t => {
-            // Criou (+5)
-            add(t.created_by, 5);
-            // incStat(t.created_by, 'tickets_created', 1); // If we had this stat
-
-            // Resolveu (+15) - Apenas se status for resolved/closed
-            if ((t.status === 'resolved' || t.status === 'closed') && t.assigned_to) {
-              add(t.assigned_to, 15);
-              // incStat(t.assigned_to, 'tickets_resolved', 1);
-            }
-            ticketCount++;
-          });
-          console.log(`[Admin] ${ticketCount} chamados contabilizados.`);
-        }
+          // Resolveu (+15) - Apenas se status for resolved/closed
+          if ((t.status === 'resolved' || t.status === 'closed') && t.assigned_to) {
+            add(t.assigned_to, 15);
+            // incStat(t.assigned_to, 'tickets_resolved', 1);
+          }
+          ticketCount++;
+        });
+        console.log(`[Admin] ${ticketCount} chamados contabilizados.`);
       }
 
       // 6. Salvar no Firestore (Batch)

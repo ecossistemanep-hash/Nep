@@ -1,7 +1,6 @@
 /**
  * NEXUS PLATFORM - FORUM
- * Fórum Colaborativo com Supabase
- * Migrado de Firestore para Supabase
+ * Fórum Colaborativo — Firestore (dados) + Supabase Storage (apenas anexos)
  */
 
 const NexusForum = {
@@ -16,8 +15,9 @@ const NexusForum = {
   topics: [],
   replies: [],
 
-  // Supabase client reference
-  supabase: null,
+  // Firestore (dados) + Supabase (apenas Storage de anexos)
+  db: null,
+  storage: null,
 
   // ATTACHMENTS STATE & HELPERS
   fileState: { topic: [], reply: [] },
@@ -32,14 +32,15 @@ const NexusForum = {
     { id: 'geral', name: 'Geral', icon: '💬', color: 'secondary' }
   ],
 
-  // Initialize Supabase
+  // Initialize Firestore (dados) + Supabase (só Storage de anexos)
   init() {
-    if (window.supabaseClient) {
-      this.supabase = window.supabaseClient;
-      console.log('[Forum] Supabase inicializado');
+    this.db = window.db || (typeof firebase !== 'undefined' && firebase.firestore ? firebase.firestore() : null);
+    if (window.supabaseClient) this.storage = window.supabaseClient;
+    if (this.db) {
+      console.log('[Forum] Firestore inicializado');
       return true;
     }
-    console.warn('[Forum] Supabase não disponível');
+    console.warn('[Forum] Firestore não disponível');
     return false;
   },
 
@@ -113,14 +114,15 @@ const NexusForum = {
       return false;
     }
 
-    if (!this.supabase) {
-      console.error('[Forum] Supabase não disponível!');
-      NexusApp?.showToast?.('Erro: Supabase não conectado', 'error');
+    if (!this.storage) {
+      console.error('[Forum] Supabase Storage não disponível!');
+      NexusApp?.showToast?.('Erro: Storage de anexos não conectado', 'error');
       return false;
     }
 
     const user = this.getCurrentUser();
-    let uploaded = false;
+    const collectionName = type === 'topic' ? 'forum_topics' : 'forum_replies';
+    const records = [];
 
     for (const file of files) {
       try {
@@ -129,10 +131,8 @@ const NexusForum = {
         const fileExt = file.name.split('.').pop();
         const fileName = `${parentId}/${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
 
-        console.log('[Forum] Path do arquivo:', fileName);
-
-        // Upload to Supabase Storage
-        const { data, error } = await this.supabase.storage
+        // Upload to Supabase Storage (só o binário; o registro vai para o Firestore)
+        const { data, error } = await this.storage.storage
           .from('forum-attachments')
           .upload(fileName, file, {
             cacheControl: '3600',
@@ -145,88 +145,73 @@ const NexusForum = {
           throw error;
         }
 
-        console.log('[Forum] Upload storage OK:', data);
-
-        // Get public URL
-        const { data: urlData } = this.supabase.storage
+        const { data: urlData } = this.storage.storage
           .from('forum-attachments')
           .getPublicUrl(fileName);
 
-        console.log('[Forum] URL pública:', urlData?.publicUrl);
+        records.push({
+          file_name: file.name,
+          file_url: urlData.publicUrl,
+          file_type: file.type,
+          file_size: file.size,
+          uploaded_by: user.uid
+        });
 
-        // Save attachment record
-        const { data: insertData, error: insertError } = await this.supabase
-          .from('forum_attachments')
-          .insert({
-            parent_type: type,
-            parent_id: parentId,
-            file_name: file.name,
-            file_url: urlData.publicUrl,
-            file_type: file.type,
-            file_size: file.size,
-            uploaded_by: user.uid
-          })
-          .select();
-
-        if (insertError) {
-          console.error('[Forum] Erro ao salvar registro:', insertError);
-          NexusApp?.showToast?.(`Erro ao registrar: ${insertError.message}`, 'error');
-        } else {
-          console.log('[Forum] Registro salvo:', insertData);
-          uploaded = true;
-          NexusApp?.showToast?.(`📎 ${file.name} enviado!`, 'success');
-        }
+        NexusApp?.showToast?.(`📎 ${file.name} enviado!`, 'success');
       } catch (e) {
         console.error('[Forum] Erro upload completo:', e);
         NexusApp?.showToast?.(`Erro ao enviar ${file.name}: ${e.message}`, 'error');
       }
     }
 
+    if (records.length > 0 && this.db) {
+      try {
+        await this.db.collection(collectionName).doc(parentId).update({
+          attachments: firebase.firestore.FieldValue.arrayUnion(...records),
+          has_attachments: true
+        });
+      } catch (e) {
+        console.error('[Forum] Erro ao salvar registro de anexos:', e);
+      }
+    }
+
     this.fileState[type] = [];
     this.renderAttachmentsPreview(type);
-    return uploaded;
+    return records.length > 0;
   },
 
-  async renderAttachmentsList(parentId, container) {
-    if (!this.supabase || !container) return;
+  renderAttachmentsList(parentId, container) {
+    if (!container) return;
 
-    try {
-      const { data: attachments, error } = await this.supabase
-        .from('forum_attachments')
-        .select('*')
-        .eq('parent_id', parentId)
-        .order('created_at', { ascending: true });
+    const parent = this.topics.find(t => t.id === parentId) || this.replies.find(r => r.id === parentId);
+    const attachments = parent?.attachments;
+    if (!attachments || attachments.length === 0) return;
 
-      if (error || !attachments || attachments.length === 0) return;
-
-      let html = `<div class="forum-attachments-list">`;
-      attachments.forEach(f => {
-        const isImg = f.file_name.match(/\.(jpg|jpeg|png|webp|gif)$/i);
-        if (isImg) {
-          html += `
-            <a href="${f.file_url}" target="_blank" class="forum-attach-img-card" title="${f.file_name}">
-              <img src="${f.file_url}" alt="${f.file_name}">
-            </a>
-          `;
-        } else {
-          html += `
-            <a href="${f.file_url}" target="_blank" class="forum-attach-file-card" title="${f.file_name}">
-              <i class="fa-solid fa-paperclip"></i>
-              <span>${f.file_name}</span>
-            </a>
-          `;
-        }
-      });
-      html += `</div>`;
-      container.innerHTML += html;
-    } catch (e) {
-      console.error('[Forum] Erro ao listar anexos:', e);
-    }
+    let html = `<div class="forum-attachments-list">`;
+    attachments.forEach(f => {
+      const isImg = f.file_name.match(/\.(jpg|jpeg|png|webp|gif)$/i);
+      if (isImg) {
+        html += `
+          <a href="${f.file_url}" target="_blank" class="forum-attach-img-card" title="${f.file_name}">
+            <img src="${f.file_url}" alt="${f.file_name}">
+          </a>
+        `;
+      } else {
+        html += `
+          <a href="${f.file_url}" target="_blank" class="forum-attach-file-card" title="${f.file_name}">
+            <i class="fa-solid fa-paperclip"></i>
+            <span>${f.file_name}</span>
+          </a>
+        `;
+      }
+    });
+    html += `</div>`;
+    container.innerHTML += html;
   },
 
   // ============ MAIN RENDER ============
   async render(container) {
-    if (!this.supabase) this.init();
+    if (!this.db) this.init();
 
     try {
       await this.loadTopics();
@@ -251,43 +236,30 @@ const NexusForum = {
 
   // ============ LOAD DATA & FILTERS ============
   async loadTopics() {
-    if (!this.supabase) {
+    if (!this.db) {
       this.loadFromLocalStorage();
       return;
     }
 
     try {
-      let query = this.supabase
-        .from('forum_topics')
-        .select('*');
+      const snap = await this.db.collection('forum_topics')
+        .orderBy('created_at', 'desc')
+        .limit(200)
+        .get();
 
-      // Ordenação baseada no filtro
-      if (this.currentCategory === 'populares') {
-        query = query.order('views', { ascending: false });
-      } else if (this.currentCategory === 'sem_resposta') {
-        query = query.eq('replies_count', 0);
-      } else if (this.currentCategory === 'meus') {
-        const user = this.getCurrentUser();
-        query = query.eq('author_uid', user.uid);
-      } else if (this.currentCategory !== 'all' && !['populares', 'sem_resposta', 'meus'].includes(this.currentCategory)) {
-        query = query.eq('category_id', this.currentCategory);
-      }
-
-      // Default sort
-      query = query.order('pinned', { ascending: false }).order('created_at', { ascending: false }).limit(100);
-
-      const { data, error } = await query;
-      if (error) throw error;
-
-      this.topics = data.map(t => ({
-        ...t,
-        categoryId: t.category_id,
-        authorUid: t.author_uid,
-        authorNome: t.author_nome,
-        authorCargo: t.author_cargo,
-        replies: t.replies_count || 0,
-        createdAt: t.created_at
-      }));
+      this.topics = snap.docs.map(doc => {
+        const t = doc.data();
+        return {
+          id: doc.id,
+          ...t,
+          categoryId: t.category_id,
+          authorUid: t.author_uid,
+          authorNome: t.author_nome,
+          authorCargo: t.author_cargo,
+          replies: t.replies_count || 0,
+          createdAt: t.created_at?.toDate ? t.created_at.toDate().toISOString() : t.created_at
+        };
+      });
 
     } catch (error) {
       console.warn('[Forum] Erro ao carregar:', error);
@@ -296,30 +268,30 @@ const NexusForum = {
   },
 
   async loadReplies(topicId) {
-    if (!this.supabase) {
+    if (!this.db) {
       this.replies = [];
       return;
     }
 
     try {
-      const { data, error } = await this.supabase
-        .from('forum_replies')
-        .select('*')
-        .eq('topic_id', topicId)
-        .order('created_at', { ascending: true });
+      const snap = await this.db.collection('forum_replies')
+        .where('topic_id', '==', topicId)
+        .get();
 
-      if (error) throw error;
-
-      this.replies = data.map(r => ({
-        ...r,
-        topicId: r.topic_id,
-        authorUid: r.author_uid,
-        authorNome: r.author_nome,
-        authorCargo: r.author_cargo,
-        isSolution: r.is_solution,
-        liked_by: r.liked_by || [],
-        createdAt: r.created_at
-      }));
+      this.replies = snap.docs.map(doc => {
+        const r = doc.data();
+        return {
+          id: doc.id,
+          ...r,
+          topicId: r.topic_id,
+          authorUid: r.author_uid,
+          authorNome: r.author_nome,
+          authorCargo: r.author_cargo,
+          isSolution: r.is_solution,
+          liked_by: r.liked_by || [],
+          createdAt: r.created_at?.toDate ? r.created_at.toDate().toISOString() : r.created_at
+        };
+      }).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
 
       console.log(`[Forum] ${this.replies.length} respostas carregadas`);
     } catch (error) {
@@ -364,32 +336,26 @@ const NexusForum = {
     const user = this.getCurrentUser();
 
     try {
-      if (this.supabase) {
-        // Insert to Supabase
-        const { data, error } = await this.supabase
-          .from('forum_topics')
-          .insert({
-            category_id: categoryId,
-            titulo,
-            conteudo,
-            author_uid: user.uid,
-            author_nome: user.nome,
-            author_cargo: user.cargo
-          })
-          .select()
-          .single();
+      if (this.db) {
+        const docRef = await this.db.collection('forum_topics').add({
+          category_id: categoryId,
+          titulo,
+          conteudo,
+          author_uid: user.uid,
+          author_nome: user.nome,
+          author_cargo: user.cargo,
+          views: 0,
+          replies_count: 0,
+          solved: false,
+          pinned: false,
+          created_at: firebase.firestore.FieldValue.serverTimestamp()
+        });
 
-        if (error) throw error;
-
-        console.log('[Forum] Tópico criado:', data.id);
+        console.log('[Forum] Tópico criado:', docRef.id);
 
         // Upload attachments
         if (this.fileState.topic.length > 0) {
-          await this.uploadAttachments('topic', data.id);
-          await this.supabase
-            .from('forum_topics')
-            .update({ has_attachments: true })
-            .eq('id', data.id);
+          await this.uploadAttachments('topic', docRef.id);
         }
 
         // Gamification (Safe check)
@@ -449,28 +415,26 @@ const NexusForum = {
     }
 
     try {
-      if (this.supabase) {
-        const { data, error } = await this.supabase
-          .from('forum_replies')
-          .insert({
-            topic_id: topicId,
-            conteudo,
-            author_uid: user.uid,
-            author_nome: user.nome,
-            author_cargo: user.cargo
-          })
-          .select()
-          .single();
+      if (this.db) {
+        const docRef = await this.db.collection('forum_replies').add({
+          topic_id: topicId,
+          conteudo,
+          author_uid: user.uid,
+          author_nome: user.nome,
+          author_cargo: user.cargo,
+          likes: 0,
+          liked_by: [],
+          is_solution: false,
+          created_at: firebase.firestore.FieldValue.serverTimestamp()
+        });
 
-        if (error) throw error;
+        await this.db.collection('forum_topics').doc(topicId).update({
+          replies_count: firebase.firestore.FieldValue.increment(1)
+        });
 
         // Upload attachments
         if (this.fileState.reply.length > 0) {
-          await this.uploadAttachments('reply', data.id);
-          await this.supabase
-            .from('forum_replies')
-            .update({ has_attachments: true })
-            .eq('id', data.id);
+          await this.uploadAttachments('reply', docRef.id);
         }
 
         // Gamification (Safe Check)
@@ -521,11 +485,12 @@ const NexusForum = {
     if (!confirm('Tem certeza que deseja excluir este tópico? Todas as respostas serão perdidas.')) return;
 
     try {
-      // Deletar anexos e respostas cascateiam se configurado no SQL, 
-      // mas vamos deletar o tópico direto
-      const { error } = await this.supabase.from('forum_topics').delete().eq('id', topicId);
-
-      if (error) throw error;
+      // Apaga respostas do tópico e o tópico em si
+      const repliesSnap = await this.db.collection('forum_replies').where('topic_id', '==', topicId).get();
+      const batch = this.db.batch();
+      repliesSnap.forEach(doc => batch.delete(doc.ref));
+      batch.delete(this.db.collection('forum_topics').doc(topicId));
+      await batch.commit();
 
       NexusApp?.showToast?.('Tópico excluído com sucesso.', 'success');
       this.currentTopic = null;
@@ -541,8 +506,13 @@ const NexusForum = {
     if (!confirm('Excluir esta resposta?')) return;
 
     try {
-      const { error } = await this.supabase.from('forum_replies').delete().eq('id', replyId);
-      if (error) throw error;
+      const reply = this.replies.find(r => r.id === replyId);
+      await this.db.collection('forum_replies').doc(replyId).delete();
+      if (reply?.topicId) {
+        await this.db.collection('forum_topics').doc(reply.topicId).update({
+          replies_count: firebase.firestore.FieldValue.increment(-1)
+        });
+      }
 
       NexusApp?.showToast?.('Resposta excluída.', 'success');
       this.render(document.getElementById('page-content')); // Recarrega view do tópico
@@ -560,13 +530,27 @@ const NexusForum = {
     if (btn) btn.disabled = true;
 
     try {
-      // Usar a RPC criada no SQL Upgrade
-      const { data: liked, error } = await this.supabase.rpc('toggle_forum_like', {
-        reply_uuid: replyId,
-        user_uid: user.uid
-      });
+      const ref = this.db.collection('forum_replies').doc(replyId);
+      const liked = await this.db.runTransaction(async (tx) => {
+        const snap = await tx.get(ref);
+        const data = snap.data() || {};
+        const likedBy = data.liked_by || [];
+        const alreadyLiked = likedBy.includes(user.uid);
 
-      if (error) throw error;
+        if (alreadyLiked) {
+          tx.update(ref, {
+            liked_by: firebase.firestore.FieldValue.arrayRemove(user.uid),
+            likes: Math.max(0, (data.likes || 0) - 1)
+          });
+          return false;
+        } else {
+          tx.update(ref, {
+            liked_by: firebase.firestore.FieldValue.arrayUnion(user.uid),
+            likes: (data.likes || 0) + 1
+          });
+          return true;
+        }
+      });
 
       // Update Local State
       const reply = this.replies.find(r => r.id === replyId);
@@ -602,7 +586,7 @@ const NexusForum = {
       this.renderTopicView(document.getElementById('page-content'));
 
     } catch (error) {
-      console.error('[Forum] Erro like RPC:', error);
+      console.error('[Forum] Erro ao curtir:', error);
       NexusApp?.showToast?.('Erro ao curtir', 'error');
       if (btn) btn.disabled = false;
     }
@@ -611,18 +595,17 @@ const NexusForum = {
   // ============ MARK AS SOLUTION ============
   async markAsSolution(topicId, replyId) {
     try {
-      if (this.supabase) {
+      if (this.db) {
         // Update topic
-        await this.supabase
-          .from('forum_topics')
-          .update({ solved: true, solution_reply_id: replyId })
-          .eq('id', topicId);
+        await this.db.collection('forum_topics').doc(topicId).update({
+          solved: true,
+          solution_reply_id: replyId
+        });
 
         // Update reply
-        await this.supabase
-          .from('forum_replies')
-          .update({ is_solution: true })
-          .eq('id', replyId);
+        await this.db.collection('forum_replies').doc(replyId).update({
+          is_solution: true
+        });
 
         // Gamification for answer author
         if (window.NexusGamification) {
@@ -649,8 +632,10 @@ const NexusForum = {
     }
 
     try {
-      if (this.supabase && topicId && !topicId.startsWith('local_')) {
-        await this.supabase.rpc('increment_forum_views', { topic_id: topicId });
+      if (this.db && topicId && !topicId.startsWith('local_')) {
+        await this.db.collection('forum_topics').doc(topicId).update({
+          views: firebase.firestore.FieldValue.increment(1)
+        });
       }
     } catch (error) {
       // Silent fail for views
@@ -661,10 +646,14 @@ const NexusForum = {
   getFilteredTopics() {
     let topics = this.topics;
 
-    if (this.currentCategory && this.currentCategory !== 'all' && !['populares', 'sem_resposta', 'meus'].includes(this.currentCategory)) {
+    if (this.currentCategory === 'meus') {
+      const user = this.getCurrentUser();
+      topics = topics.filter(t => (t.authorUid || t.author_uid) === user.uid);
+    } else if (this.currentCategory === 'sem_resposta') {
+      topics = topics.filter(t => (t.replies || t.replies_count || 0) === 0);
+    } else if (this.currentCategory && this.currentCategory !== 'all' && this.currentCategory !== 'populares') {
       topics = topics.filter(t => t.categoryId === this.currentCategory || t.category_id === this.currentCategory);
     }
-    // The actual filtering for 'populares', 'sem_resposta', 'meus' is now done in loadTopics()
 
     if (this.searchQuery) {
       const query = this.searchQuery.toLowerCase();
@@ -674,7 +663,10 @@ const NexusForum = {
       );
     }
 
-    // Default sort is now handled in loadTopics(), but we keep this for local fallback or if search reorders
+    if (this.currentCategory === 'populares') {
+      return topics.sort((a, b) => (b.views || 0) - (a.views || 0));
+    }
+
     return topics.sort((a, b) => {
       if (a.pinned && !b.pinned) return -1;
       if (!a.pinned && b.pinned) return 1;
@@ -767,11 +759,10 @@ const NexusForum = {
           </aside>
 
           <main class="forum-main">
-             ${this.topics.length === 0 ? this.renderEmptyState() :
+             ${(() => { const filtered = this.getFilteredTopics(); return filtered.length === 0 ? this.renderEmptyState() :
         `<div class="forum-topics-list">
-                  ${this.topics.map(topic => this.renderTopicCard(topic)).join('')}
-                </div>`
-      }
+                  ${filtered.map(topic => this.renderTopicCard(topic)).join('')}
+                </div>`; })()}
           </main>
         </div>
       </div>

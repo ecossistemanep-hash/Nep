@@ -39,7 +39,7 @@ const NepGrafo = {
 
             // INFRASTRUCTURE (ring 2)
             { id: 'firebase', label: 'Firebase', category: 'infra', icon: '🔥', size: 28, desc: 'Auth, Firestore, Hosting, Storage', ring: 2 },
-            { id: 'supabase', label: 'Supabase', category: 'infra', icon: '⚡', size: 24, desc: 'PostgreSQL, Sync, Tickets, Vector Search', ring: 2 },
+            { id: 'supabase', label: 'Supabase', category: 'infra', icon: '⚡', size: 24, desc: 'Storage de arquivos (anexos de Kanban, Fórum, Chamados)', ring: 2 },
             { id: 'gemini', label: 'Gemini AI', category: 'ia', icon: '🧠', size: 28, desc: 'Google Gemini 2.5 Flash — Motor de IA', ring: 2 },
             { id: 'auth', label: 'Autenticação', category: 'infra', icon: '🔑', size: 22, desc: 'Login, sessão, JWT via Firebase Auth', ring: 2 },
 
@@ -128,10 +128,10 @@ const NepGrafo = {
             { from: 'firebase', to: 'okr' }, { from: 'firebase', to: 'calendar' },
             { from: 'firebase', to: 'reports' }, { from: 'firebase', to: 'courses' },
             { from: 'firebase', to: 'checklist' }, { from: 'firebase', to: 'status_page' },
-            { from: 'firebase', to: 'feedback_req' },
+            { from: 'firebase', to: 'feedback_req' }, { from: 'firebase', to: 'tickets' },
 
-            // Supabase
-            { from: 'supabase', to: 'tickets' }, { from: 'supabase', to: 'kanban' },
+            // Supabase (só Storage de arquivos: anexos de Kanban/Fórum/Chamados)
+            { from: 'supabase', to: 'kanban' },
             { from: 'supabase', to: 'analytics' }, { from: 'supabase', to: 'permissions' },
 
             // Admin

@@ -191,7 +191,7 @@ service cloud.firestore {
 
     match /forum_topics/{topicId} {
       allow read, create, update: if isActive();
-      allow delete: if isAdmin();
+      allow delete: if isAdmin() || (isActive() && resource.data.author_uid == request.auth.uid);
 
       match /replies/{replyId} {
         allow read, create, update: if isActive();
@@ -201,7 +201,20 @@ service cloud.firestore {
 
     match /forum_replies/{replyId} {
       allow read, create, update: if isActive();
-      allow delete: if isAdmin();
+      allow delete: if isAdmin() || (isActive() && resource.data.author_uid == request.auth.uid);
+    }
+
+    // ========================================================================
+    // CENTRAL DE CHAMADOS (TICKETS)
+    // ========================================================================
+
+    match /tickets/{ticketId} {
+      allow read: if isActive()
+        && (resource.data.created_by == request.auth.uid || resource.data.assigned_to == request.auth.uid || isAdmin());
+      allow create: if isActive() && request.resource.data.created_by == request.auth.uid;
+      allow update: if isActive()
+        && (resource.data.created_by == request.auth.uid || resource.data.assigned_to == request.auth.uid || isAdmin());
+      allow delete: if isAdmin() || (isActive() && resource.data.created_by == request.auth.uid);
     }
 
     // ========================================================================

@@ -1,69 +1,63 @@
 # Mapa de Backends — Ecossistema NEP
 
-> Auditoria da tarefa #6 (saneamento de arquitetura). Documenta qual módulo
-> usa qual backend **hoje**, para orientar a decisão de consolidação.
+> Atualização da tarefa #6 (saneamento de arquitetura). Documenta o estado
+> **após** a consolidação em Firebase (Fórum e Central de Chamados migrados).
 
-## Situação atual: sistema HÍBRIDO (dois backends)
+## Situação atual: Firebase como banco único + Supabase só para arquivos
 
-O sistema roda simultaneamente em **dois bancos de dados diferentes**:
+- **Firebase (Firestore)** — projeto `ecossistema-nep`, plano Spark gratuito.
+  Único banco de dados da aplicação.
+- **Supabase Storage** — usado exclusivamente para **arquivos binários**
+  (anexos de Kanban, avatar de perfil, relatórios, anexos de Fórum e de
+  Chamados). Não há mais tabelas de dados de negócio no Supabase.
 
-- **Firebase (Firestore)** — projeto `ecossistema-nep`, plano Spark gratuito
-- **Supabase (PostgreSQL)** — projeto `kwmhmurddlxuewbyobgr.supabase.co`
+### Módulos e onde vivem hoje
 
-### Módulos que vivem 100% no Firebase
-| Módulo | Arquivo | Coleções |
-|---|---|---|
-| Usuários / Auth | auth-firebase.js, user-management.js | `users` |
-| Kanban (demandas) | kanban.js | `tasks` |
-| Gamificação / Ranking | gamification.js, points-service.js | `user_points`, `points_transactions` |
-| Conquistas | achievements.js | `user_stats`, `user_achievements` |
-| Depoimentos | testimonials.js | `testimonials` |
-| Avisos | announcements.js | `announcements` |
-| Férias | vacation-control.js | `vacations` |
-| Rotina ADM | rotina-adm.js | `rotinas_adm` |
-| Auditoria | audit-service.js | `audit_logs` |
-| Permissões de módulo | module-permission-service.js | `module_permissions` |
-| Painéis Corporativos (novo) | panels-portal.js | `panels`, `panel_favorites`, `panel_reports` |
-| Notificações | notifications.js | `notifications` |
-
-### Módulos que vivem 100% (ou quase) no Supabase
-| Módulo | Arquivo | Tabelas Supabase | Refs Firebase |
+| Módulo | Arquivo | Backend de dados | Storage de arquivos |
 |---|---|---|---|
-| **Fórum** | forum.js | `forum_topics`, `forum_replies`, `forum_attachments` | 0 |
-| **Agendas Executivas** | calendar.js | `agendas` | 0 |
-| **Central de Chamados** | ticket-management.js | `tickets` | 5 (fallback parcial) |
-| **Governança / OKR** | okr-management.js | `gov_okrs`, `gov_cases`, `gov_suggestions`, `gov_rituals`, `gov_recovery`, `gov_compliments` | 2 |
+| Usuários / Auth | auth-firebase.js, user-management.js | Firestore (`users`) | — |
+| Kanban (demandas) | kanban.js | Firestore (`tasks`) | Supabase Storage |
+| Gamificação / Ranking | gamification.js, points-service.js | Firestore | — |
+| Conquistas | achievements.js | Firestore | — |
+| Depoimentos | testimonials.js | Firestore | — |
+| Avisos | announcements.js | Firestore | — |
+| Férias | vacation-control.js | Firestore | — |
+| Rotina ADM | rotina-adm.js | Firestore | — |
+| Auditoria | audit-service.js | Firestore | — |
+| Painéis Corporativos | panels-portal.js | Firestore | — |
+| Notificações | notifications.js | Firestore | — |
+| **Fórum** | forum.js | **Firestore** (`forum_topics`, `forum_replies`) | Supabase Storage (bucket `forum-attachments`) |
+| **Central de Chamados** | ticket-management.js | **Firestore** (`tickets`) | Supabase Storage (bucket `tickets`) |
 
-### Armazenamento de arquivos (uploads)
-`storage-service.js` usa **Supabase Storage** (buckets) para anexos em:
-kanban.js (anexos de tarefas), profile.js (avatar), reports.js.
-> O Firebase Storage não foi ativado (decisão do 1º ciclo, plano Spark).
+## O que mudou nesta migração
 
-## Inconsistências detectadas
-1. **Regras órfãs**: `firestore.rules` define `forum_topics`/`forum_replies`,
-   mas o fórum real roda no Supabase — essas regras não protegem nada.
-2. **Dupla fonte de verdade** no Chamados: ticket-management.js tem código
-   para os dois backends, o que confunde qual é o oficial.
-3. A chave `anonKey` do Supabase é pública por design (protegida por RLS no
-   servidor) — expô-la no front é seguro, **desde que as políticas RLS do
-   Supabase estejam configuradas corretamente** (precisa ser verificado no
-   painel do Supabase).
+1. **Fórum**: `forum_topics`/`forum_replies` deixaram de ser tabelas Supabase
+   e passaram a ser coleções Firestore. Curtidas (antes uma RPC SQL
+   `toggle_forum_like`) agora são uma transação Firestore que alterna
+   `liked_by`/`likes` no documento da resposta. Anexos continuam sendo
+   enviados ao Supabase Storage, mas o *registro* do anexo agora é um array
+   `attachments` dentro do próprio documento do tópico/resposta — não existe
+   mais a tabela/coleção separada `forum_attachments`.
+2. **Central de Chamados**: `tickets` deixou de ser tabela Supabase e virou
+   coleção Firestore. O upload de anexo de chamado continua no bucket
+   Supabase `tickets`, só a URL pública é salva no documento Firestore.
+3. **Regras do Firestore**: adicionada a coleção `tickets` (leitura/escrita
+   restrita ao criador, ao responsável ou a admin) e corrigida a regra de
+   exclusão de `forum_topics`/`forum_replies` para permitir que o próprio
+   autor exclua seu conteúdo (antes só admin podia, o que não refletia o
+   comportamento real da UI).
+4. **Sem migração de dados**: por decisão explícita, o histórico antigo que
+   estava nas tabelas Supabase (`forum_topics`, `forum_replies`, `tickets`)
+   **não foi copiado** para o Firestore — o app começa essas coleções do
+   zero. Os dados antigos continuam fisicamente no Supabase caso seja
+   necessário consultá-los manualmente no futuro, mas não são mais lidos
+   pelo app.
 
-## Caminhos possíveis (decisão do responsável)
+## Pendências conhecidas
 
-### A) Consolidar tudo no Firebase (visão original "custo zero, um backend")
-- Migrar Fórum, Agendas, Chamados e Governança/OKR de Supabase → Firestore.
-- Prós: um só backend, alinhado à decisão original, menos superfície de falha,
-  segurança unificada nas Firestore Rules.
-- Contras: migração real (dados + código dos 4 módulos), risco de regressão,
-  precisa migrar os dados já existentes no Supabase.
-
-### B) Manter híbrido, mas documentado e saneado
-- Manter os dois backends, remover as regras órfãs, deixar claro no código
-  qual módulo usa qual banco, garantir RLS do Supabase configurado.
-- Prós: baixo risco, nada quebra, entrega rápida.
-- Contras: dois backends para manter, contraria o princípio "Firebase only".
-
-### C) Remover Supabase (NÃO recomendado sem migração)
-- Quebraria imediatamente Fórum, Agendas, Chamados e Governança/OKR.
-- Só viável **depois** de migrar esses módulos (= caminho A).
+- OKR e Agendas Executivas foram removidos do sistema (tarefa #10), então já
+  não usavam mais Supabase — não fazem parte desta migração.
+- O Supabase Storage permanece como única opção de armazenamento de
+  arquivos, já que o Firebase Storage exige o plano pago Blaze. Se o volume
+  de arquivos se aproximar do limite gratuito de 1GB, será necessário
+  reavaliar (upgrade pago, limpeza de anexos antigos, ou outro provedor).
