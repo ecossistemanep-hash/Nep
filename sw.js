@@ -181,9 +181,11 @@ self.addEventListener('notificationclick', (event) => {
     } else if (data.referencia_tipo) {
         const moduleMap = {
             'task': 'kanban',
-            'forum': 'forum',
-            'announcement': 'announcements',
-            'okr': 'okr',
+            'forum_topic': 'forum',
+            'aviso': 'announcements',
+            'ticket': 'tickets',
+            'vacation': 'vacation',
+            'paineis': 'paineis',
             'achievement': 'scoring'
         };
         urlToOpen = `/?module=${moduleMap[data.referencia_tipo] || 'dashboard'}`;
