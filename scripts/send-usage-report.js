@@ -4,16 +4,18 @@
  * último acesso de cada usuário ativo.
  *
  * Rodado via GitHub Actions (agendado), não pelo app. Usa a Admin SDK do
- * Firebase (acesso total, ignora as regras de segurança do cliente) e a
- * API da Resend para envio de e-mail.
+ * Firebase (acesso total, ignora as regras de segurança do cliente) e o
+ * SMTP do Gmail (conta existente do projeto) para envio de e-mail — sem
+ * precisar verificar domínio nem cadastrar serviço externo novo.
  *
  * Variáveis de ambiente esperadas:
  *   FIREBASE_SERVICE_ACCOUNT - JSON da chave de conta de serviço (string)
- *   RESEND_API_KEY           - chave de API da Resend
- *   RESEND_FROM_EMAIL        - remetente verificado na Resend
+ *   GMAIL_USER               - conta Gmail remetente (ex: ecossistemanep@gmail.com)
+ *   GMAIL_APP_PASSWORD       - senha de app gerada na conta Google (16 caracteres)
  */
 
 import admin from 'firebase-admin';
+import nodemailer from 'nodemailer';
 
 const MANAGER_ROLES = ['COORDENADOR', 'GERENTE', 'SUPERINTENDENTE', 'DIRETOR', 'ADMIN'];
 const ANALYTICS_WINDOW_DAYS = 30;
@@ -29,8 +31,13 @@ function requireEnv(name) {
 
 async function main() {
   const serviceAccount = JSON.parse(requireEnv('FIREBASE_SERVICE_ACCOUNT'));
-  const resendApiKey = requireEnv('RESEND_API_KEY');
-  const fromEmail = requireEnv('RESEND_FROM_EMAIL');
+  const gmailUser = requireEnv('GMAIL_USER');
+  const gmailAppPassword = requireEnv('GMAIL_APP_PASSWORD');
+
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: { user: gmailUser, pass: gmailAppPassword }
+  });
 
   admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
   const db = admin.firestore();
@@ -79,9 +86,8 @@ async function main() {
   let failed = 0;
   for (const recipient of recipients) {
     try {
-      await sendEmail({
-        apiKey: resendApiKey,
-        from: fromEmail,
+      await transporter.sendMail({
+        from: `"NEP Delivery Control" <${gmailUser}>`,
         to: recipient.email,
         subject: `[NEP] Relatório diário de uso — ${today}`,
         html
@@ -89,8 +95,8 @@ async function main() {
       console.log(`[UsageReport] Enviado para ${recipient.email}`);
       sent++;
     } catch (err) {
-      // Uma falha (ex: destinatário fora do sandbox da Resend sem domínio
-      // verificado) não pode impedir o envio para os demais destinatários.
+      // Uma falha pontual (ex: e-mail inválido) não pode impedir o envio
+      // para os demais destinatários.
       console.error(`[UsageReport] Falha ao enviar para ${recipient.email}:`, err.message);
       failed++;
     }
@@ -148,22 +154,6 @@ function buildReportHtml(activeUsers) {
       <p style="color:#9ca3af;font-size:11px;margin-top:16px;">Enviado automaticamente todo dia pelo Ecossistema NEP.</p>
     </div>
   `;
-}
-
-async function sendEmail({ apiKey, from, to, subject, html }) {
-  const response = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ from, to, subject, html })
-  });
-
-  if (!response.ok) {
-    const body = await response.text();
-    throw new Error(`Falha ao enviar e-mail para ${to}: ${response.status} ${body}`);
-  }
 }
 
 main().catch(err => {
