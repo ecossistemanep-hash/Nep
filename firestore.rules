@@ -44,6 +44,19 @@ service cloud.firestore {
         && myProfile().cargo in ['ADMIN', 'DIRETOR', 'SUPERINTENDENTE', 'GERENTE', 'COORDENADOR'];
     }
 
+    // Nível hierárquico de um cargo (espelha ROLE_HIERARCHY em notifications.js)
+    function cargoLevel(cargo) {
+      return cargo == 'ADMIN' ? 100
+        : cargo == 'DIRETOR' ? 95
+        : cargo == 'SUPERINTENDENTE' ? 90
+        : cargo == 'GERENTE' ? 70
+        : cargo == 'CONSULTOR' ? 60
+        : cargo == 'COORDENADOR' ? 50
+        : cargo == 'ANALISTA' ? 30
+        : cargo == 'MONITOR' ? 10
+        : 0;
+    }
+
     // ========================================================================
     // USERS
     // ========================================================================
@@ -107,7 +120,18 @@ service cloud.firestore {
           && request.resource.data.referencia_tipo == 'testimonials'
           && request.resource.data.keys().hasOnly(['titulo', 'mensagem', 'destinatario_uid', 'lida', 'data', 'tipo', 'referencia_tipo'])
         );
-      allow read, update, delete: if isActive();
+
+      // Leitura restrita a quem a notificação é endereçada (uid, cargo,
+      // broadcast 'ALL' ou hierarquia por destinatario_cargo) ou admin —
+      // impede que qualquer ativo baixe notificações de outras pessoas.
+      allow read, update, delete: if isActive() && (
+        isAdmin()
+        || resource.data.destinatario_uid == request.auth.uid
+        || resource.data.destinatario_uid == 'ALL'
+        || resource.data.destinatario_uid == myProfile().cargo
+        || (resource.data.destinatario_cargo != null
+            && cargoLevel(resource.data.destinatario_cargo) <= cargoLevel(myProfile().cargo))
+      );
     }
 
     // ========================================================================

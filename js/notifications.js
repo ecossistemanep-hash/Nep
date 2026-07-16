@@ -6,7 +6,7 @@
 const NexusNotifications = {
   COLLECTION: 'notifications',
   notifications: [],
-  unsubscribe: null,
+  unsubscribe: null, // array de funções de unsubscribe (uma por query)
   isInitialLoad: true,
 
   // Hierarquia de cargos (level maior = mais permissões)
@@ -75,34 +75,56 @@ const NexusNotifications = {
     }
 
     try {
-      // Limpar listener anterior
+      // Limpar listeners anteriores
       if (this.unsubscribe) {
-        this.unsubscribe();
+        this.unsubscribe.forEach(fn => fn());
+      }
+      this.unsubscribe = [];
+
+      // SEGURANÇA: nunca fazer uma query "traga tudo e filtra no cliente" —
+      // isso baixa notificações de outras pessoas para o navegador, mesmo
+      // que a UI esconda depois. Cada query já busca só o que é do usuário
+      // (por UID, cargo ou broadcast 'ALL'), espelhando as regras do Firestore.
+      const directTargets = Array.from(new Set([user.uid, 'ALL', user.cargo])).filter(Boolean);
+      const queries = [
+        db.collection(this.COLLECTION)
+          .where('destinatario_uid', 'in', directTargets)
+          .orderBy('created_at', 'desc')
+          .limit(50)
+      ];
+
+      // Hierarquia: cargos com nível <= ao meu, endereçados por destinatario_cargo
+      const meuNivel = this.ROLE_HIERARCHY[user.cargo] || 0;
+      const cargosVisiveis = Object.entries(this.ROLE_HIERARCHY)
+        .filter(([, nivel]) => nivel <= meuNivel)
+        .map(([cargo]) => cargo);
+      if (cargosVisiveis.length > 0) {
+        queries.push(
+          db.collection(this.COLLECTION)
+            .where('destinatario_cargo', 'in', cargosVisiveis.slice(0, 30))
+            .orderBy('created_at', 'desc')
+            .limit(50)
+        );
       }
 
-      // Query simplificada: buscar notificações recentes e filtrar no cliente
-      // (Firestore tem limitações com 'in' + 'orderBy' em campos diferentes)
-      const query = db.collection(this.COLLECTION)
-        .orderBy('created_at', 'desc')
-        .limit(100);
+      // Admin vê tudo (mantém a query ampla, mas só para quem já é admin)
+      if (user.isAdmin) {
+        queries.push(db.collection(this.COLLECTION).orderBy('created_at', 'desc').limit(100));
+      }
 
-      // Listener em tempo real
-      this.unsubscribe = query.onSnapshot(snapshot => {
-        let hasChanges = false;
+      queries.forEach(query => {
+        const unsub = query.onSnapshot(snapshot => {
+          let hasChanges = false;
 
-        // Processar mudanças
-        snapshot.docChanges().forEach(change => {
-          if (change.type === 'added') {
-            const data = change.doc.data();
-            const notif = {
-              id: change.doc.id,
-              ...data,
-              createdAt: data.created_at?.toDate?.()?.toISOString() || new Date().toISOString()
-            };
+          snapshot.docChanges().forEach(change => {
+            if (change.type === 'added') {
+              const data = change.doc.data();
+              const notif = {
+                id: change.doc.id,
+                ...data,
+                createdAt: data.created_at?.toDate?.()?.toISOString() || new Date().toISOString()
+              };
 
-            // Verificar se é relevante para o usuário
-            if (this.isRelevantForUser(notif, user)) {
-              // Verificar se já existe (evitar duplicatas)
               if (!this.notifications.some(n => n.id === notif.id)) {
                 this.notifications.unshift(notif);
                 hasChanges = true;
@@ -118,36 +140,37 @@ const NexusNotifications = {
                 }
               }
             }
-          }
-          // Handle modifications (e.g. read status update)
-          if (change.type === 'modified') {
-            const data = change.doc.data();
-            const index = this.notifications.findIndex(n => n.id === change.doc.id);
-            if (index !== -1) {
-              this.notifications[index] = { ...this.notifications[index], ...data };
-              hasChanges = true;
+            // Handle modifications (e.g. read status update)
+            if (change.type === 'modified') {
+              const data = change.doc.data();
+              const index = this.notifications.findIndex(n => n.id === change.doc.id);
+              if (index !== -1) {
+                this.notifications[index] = { ...this.notifications[index], ...data };
+                hasChanges = true;
+              }
             }
+          });
+
+          if (hasChanges || this.notifications.length === 0) {
+            // Re-ordenar e limitar
+            this.notifications.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            this.notifications = this.notifications.slice(0, 50);
+            this.renderBadge();
+            window.dispatchEvent(new CustomEvent('nexus-notifications-updated'));
           }
+
+          // Após o primeiro carregamento completo, desativa a flag se vier do servidor
+          if (this.isInitialLoad && !snapshot.metadata.fromCache) {
+            this.isInitialLoad = false;
+          }
+
+        }, error => {
+          console.warn('[Notifications] Erro no listener:', error);
+          this.loadFromLocalStorage();
+          this.isInitialLoad = false; // Ensure flag is reset on error
         });
 
-        if (hasChanges || this.notifications.length === 0) {
-          // Re-ordenar e limitar
-          this.notifications.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-          this.notifications = this.notifications.slice(0, 50);
-          this.renderBadge();
-          // Atualizar UI se o painel estiver aberto (opcional, mas bom ter um evento)
-          window.dispatchEvent(new CustomEvent('nexus-notifications-updated'));
-        }
-
-        // Após o primeiro carregamento completo, desativa a flag se vier do servidor
-        if (this.isInitialLoad && !snapshot.metadata.fromCache) {
-          this.isInitialLoad = false;
-        }
-
-      }, error => {
-        console.warn('[Notifications] Erro no listener:', error);
-        this.loadFromLocalStorage();
-        this.isInitialLoad = false; // Ensure flag is reset on error
+        this.unsubscribe.push(unsub);
       });
 
     } catch (error) {
@@ -155,32 +178,6 @@ const NexusNotifications = {
       this.loadFromLocalStorage();
       this.isInitialLoad = false; // Ensure flag is reset on error
     }
-  },
-
-  /**
-   * Verificar se notificação é relevante para o usuário
-   */
-  isRelevantForUser(n, user) {
-    // Admin vê tudo
-    if (user.isAdmin) return true;
-
-    // Próprias notificações (destinatário é meu UID)
-    if (n.destinatario_uid === user.uid) return true;
-
-    // Broadcast para todos
-    if (n.destinatario_uid === 'ALL') return true;
-
-    // Para meu cargo específico
-    if (n.destinatario_uid === user.cargo) return true;
-
-    // Hierarquia: vejo notificações de cargos com nivel <= ao meu
-    if (n.destinatario_cargo) {
-      const meuNivel = this.ROLE_HIERARCHY[user.cargo] || 0;
-      const nivelNotif = this.ROLE_HIERARCHY[n.destinatario_cargo] || 0;
-      if (nivelNotif <= meuNivel) return true;
-    }
-
-    return false;
   },
 
   /**
@@ -533,7 +530,7 @@ const NexusNotifications = {
    */
   destroy() {
     if (this.unsubscribe) {
-      this.unsubscribe();
+      this.unsubscribe.forEach(fn => fn());
       this.unsubscribe = null;
     }
   }
