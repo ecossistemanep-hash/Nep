@@ -59,6 +59,9 @@ const NepApp = {
     this.setupNotifications();
     this.renderSidebar();
 
+    // Presença global: conta quem está online independente da página aberta
+    if (typeof NexusChat !== 'undefined') NexusChat.initPresence();
+
     const hash = window.location.hash.replace('#', '');
     this.navigate(hash || 'dashboard');
   },
@@ -187,6 +190,7 @@ const NepApp = {
       results: 'Resultados Operacionais',
       tools: 'Ferramentas',
       announcements: 'Avisos',
+      chat: 'Chat Geral',
       testimonials: 'NEP Depoimentos',
       vacation: 'Controle de Férias',
       paineis: 'Painéis Corporativos'
@@ -295,6 +299,9 @@ const NepApp = {
           break;
         case 'announcements':
           if (typeof NexusAnnouncements !== 'undefined') NexusAnnouncements.render(content);
+          break;
+        case 'chat':
+          if (typeof NexusChat !== 'undefined') NexusChat.render(content);
           break;
         case 'testimonials':
           if (typeof NexusTestimonials !== 'undefined') NexusTestimonials.render(content);
