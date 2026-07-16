@@ -4,7 +4,7 @@
  */
 
 import {
-    auth,
+    app,
     db,
     collection,
     doc,
@@ -21,6 +21,8 @@ import {
     updateEmail,
     deleteUser
 } from './firebase-config.js';
+import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getAuth, signOut as signOutSecondary } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 const UserManagement = {
     COLLECTION: 'users',
@@ -64,19 +66,31 @@ const UserManagement = {
                 throw new Error('Cargo inválido');
             }
 
-            // Criar usuário no Firebase Auth
-            // NOTA: Em produção, isso deveria ser feito via Cloud Functions
-            // para não expor a criação de usuários no cliente
-            const userCredential = await createUserWithEmailAndPassword(
-                auth,
-                email,
-                this.DEFAULT_PASSWORD
-            );
+            // Criar usuário no Firebase Auth usando um app secundário isolado:
+            // criar direto na instância principal trocaria a sessão logada
+            // para o usuário recém-criado (o SDK do client faz login
+            // automático), derrubando o admin E fazendo a gravação do
+            // Firestore logo abaixo ser feita com a identidade do usuário
+            // novo em vez do admin — abrindo brecha para autopromoção.
+            const secondaryApp = initializeApp(app.options, 'user-creation-' + Date.now());
+            const secondaryAuth = getAuth(secondaryApp);
 
-            const newUser = userCredential.user;
+            let newUser;
+            try {
+                const userCredential = await createUserWithEmailAndPassword(
+                    secondaryAuth,
+                    email,
+                    this.DEFAULT_PASSWORD
+                );
+                newUser = userCredential.user;
+                await signOutSecondary(secondaryAuth);
+            } finally {
+                await deleteApp(secondaryApp);
+            }
+
             const executorUid = window.NexusAuthService?.currentUser?.uid || 'SISTEMA';
 
-            // Criar documento no Firestore
+            // Criar documento no Firestore (com a sessão do admin intacta)
             const userData = {
                 nome: nome.trim(),
                 email: email.toLowerCase().trim(),
@@ -108,9 +122,6 @@ const UserManagement = {
                     `Usuário criado: ${nome} (${email}) com cargo ${cargo}`
                 );
             }
-
-            // Fazer logout do usuário recém criado (para não deslogar o admin)
-            // Em produção, usar Cloud Functions para evitar isso
 
             return {
                 success: true,

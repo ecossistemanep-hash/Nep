@@ -3,9 +3,24 @@ import { viteStaticCopy } from 'vite-plugin-static-copy';
 import { resolve } from 'path';
 import fs from 'fs';
 
+// Páginas de manutenção/bootstrap com operações destrutivas ou de
+// escalonamento de privilégio e SEM nenhuma checagem de autenticação —
+// nunca devem ser publicadas no site em produção. Ficam disponíveis
+// apenas localmente (rodar via `npm run dev` e abrir o arquivo direto).
+const EXCLUDED_FROM_BUILD = [
+    'setup-admin.html',
+    'clean-system.html',
+    'clean-v2.html',
+    'reset-kanban.html',
+    'recalcular-pontos.html',
+    'seed-analytics.html',
+    'debug-announcements.html',
+    'import-users.html'
+];
+
 // Automatically find all HTML files in the root directory
 const htmlFiles = fs.readdirSync(__dirname)
-    .filter(file => file.endsWith('.html'))
+    .filter(file => file.endsWith('.html') && !EXCLUDED_FROM_BUILD.includes(file))
     .reduce((entries, file) => {
         const name = file.replace('.html', '');
         entries[name] = resolve(__dirname, file);
