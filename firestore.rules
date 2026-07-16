@@ -65,19 +65,25 @@ service cloud.firestore {
       // Leitura: usuários ativos (listas, delegação, rankings) e o próprio
       // usuário (necessário no login, antes da checagem de status)
       allow read: if isActive() || isOwner(userId);
-      // Criação: admin cria com qualquer cargo/status. Autocriação (uid
-      // recém-criado, sem perfil ainda) só é aceita em estado de menor
-      // privilégio possível — nunca ATIVO nem com cargo acima de MONITOR —
-      // para impedir que alguém crie a própria conta do Firebase Auth por
-      // fora do app e já se autopromova a ADMIN direto no Firestore.
+      // Criação: admin cria com qualquer cargo/status. Coordenador/Gerente e
+      // acima (isManager) podem cadastrar novos usuários, mas nunca com
+      // cargo ADMIN. Autocriação (uid recém-criado, sem perfil ainda) só é
+      // aceita em estado de menor privilégio possível — nunca ATIVO nem com
+      // cargo acima de MONITOR — para impedir que alguém crie a própria
+      // conta do Firebase Auth por fora do app e já se autopromova a ADMIN
+      // direto no Firestore.
       allow create: if isAdmin()
+        || (isManager() && request.resource.data.cargo != 'ADMIN')
         || (isOwner(userId)
           && request.resource.data.cargo == 'MONITOR'
           && request.resource.data.status == 'PENDENTE');
-      // Atualização: admin controla tudo; o próprio usuário edita seu perfil,
-      // mas NUNCA pode alterar o próprio cargo ou status (anti-escalação)
+      // Atualização: admin controla tudo. Coordenador/Gerente e acima podem
+      // editar dados básicos de qualquer usuário (nome, gestor, logos), mas
+      // — assim como o próprio usuário editando o próprio perfil — NUNCA
+      // podem alterar cargo ou status (isso continua exclusivo do admin,
+      // é a mesma proteção anti-escalação de sempre).
       allow update: if isAdmin()
-        || (isOwner(userId)
+        || ((isManager() || isOwner(userId))
           && !request.resource.data.diff(resource.data).affectedKeys()
             .hasAny(['cargo', 'status']));
       allow delete: if isAdmin();

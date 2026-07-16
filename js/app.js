@@ -688,9 +688,13 @@ const NepApp = {
       });
     }
 
-    // Show/hide admin nav
+    // Show/hide admin nav — admins veem tudo; coordenadores/gerentes e acima
+    // veem o painel também, mas com acesso restrito a Dashboard e Usuários
+    // (ver gate em NexusAdmin.render)
+    const MANAGER_ROLES = ['coordenador', 'gerente', 'superintendente', 'diretor'];
+    const canSeeAdminPanel = user.isAdmin || MANAGER_ROLES.includes((user.roleKey || '').toLowerCase());
     const adminNav = document.querySelector('[data-page="admin"]');
-    if (adminNav) adminNav.style.display = user.isAdmin ? 'flex' : 'none';
+    if (adminNav) adminNav.style.display = canSeeAdminPanel ? 'flex' : 'none';
   },
 
   getLevel(points) {

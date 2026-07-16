@@ -9,6 +9,8 @@ const NexusAdmin = {
   users: [],
   auditLogs: [],
   modulesReady: false,
+  dashboardPeriodDays: 30,
+  dashCharts: {},
 
   // Helper para aguardar módulos Firebase - versão mais tolerante
   async waitForModules(timeout = 15000) {
@@ -74,64 +76,72 @@ const NexusAdmin = {
     });
   },
 
-  async render(container) {
-    const isAdmin = localStorage.getItem('nep_is_admin') === 'true';
+  MANAGER_ROLES: ['COORDENADOR', 'GERENTE', 'SUPERINTENDENTE', 'DIRETOR'],
 
-    if (!isAdmin) {
+  // Admin pleno (tudo) vs. acesso restrito de gestor (só Dashboard + Usuários,
+  // e dentro de Usuários sem poder alterar cargo/status — a mesma fronteira
+  // que as Firestore rules aplicam no servidor)
+  isFullAdmin() {
+    return localStorage.getItem('nep_is_admin') === 'true';
+  },
+  isManagerAccess() {
+    const roleKey = (localStorage.getItem('nep_user_role_key') || '').toUpperCase();
+    return this.MANAGER_ROLES.includes(roleKey);
+  },
+
+  async render(container) {
+    const isAdmin = this.isFullAdmin();
+    const isManager = this.isManagerAccess();
+
+    if (!isAdmin && !isManager) {
       container.innerHTML = `
         <div class="admin-denied animate-fade-in">
           <div class="admin-denied-icon">🔒</div>
           <h2>Acesso Restrito</h2>
-          <p>Esta área é exclusiva para administradores.</p>
+          <p>Esta área é exclusiva para administradores e gestores.</p>
           <button class="btn btn-primary" onclick="NexusApp.navigate('dashboard')">Voltar ao Dashboard</button>
         </div>`;
       return;
     }
+
+    // Gestores (não-admin) só têm Dashboard e Usuários liberados
+    if (isManager && !isAdmin && !['dashboard', 'users'].includes(this.activeTab)) {
+      this.activeTab = 'dashboard';
+    }
+
+    const allTabs = [
+      { id: 'dashboard', icon: 'fa-chart-line', label: 'Dashboard', adminOnly: false },
+      { id: 'analytics', icon: 'fa-chart-mixed', label: 'Analytics Avançado', adminOnly: true },
+      { id: 'users', icon: 'fa-users-gear', label: 'Usuários', adminOnly: false },
+      { id: 'permissions', icon: 'fa-lock', label: 'Permissões', adminOnly: true },
+      { id: 'audit', icon: 'fa-clipboard-list', label: 'Auditoria', adminOnly: true },
+      { id: 'tools', icon: 'fa-toolbox', label: 'Ferramentas', adminOnly: true },
+      { id: 'statuspage', icon: 'fa-satellite-dish', label: 'Status Page', adminOnly: true },
+      { id: 'backlog', icon: 'fa-inbox', label: 'Backlog', adminOnly: true },
+      { id: 'logos', icon: 'fa-building', label: 'Logos', adminOnly: true },
+      { id: 'settings', icon: 'fa-cog', label: 'Configurações', adminOnly: true }
+    ];
+    const visibleTabs = isAdmin ? allTabs : allTabs.filter(t => !t.adminOnly);
 
     container.innerHTML = `
       <div class="admin-page animate-fade-in">
         <div class="admin-header">
           <div>
             <h1 class="page-title">Painel Administrativo</h1>
-            <p class="page-description">Gerenciamento completo do sistema</p>
+            <p class="page-description">${isAdmin ? 'Gerenciamento completo do sistema' : 'Dashboard de uso e cadastro de usuários'}</p>
           </div>
-          <div class="admin-header-badge"><i class="fa-solid fa-shield-halved"></i> ADMIN</div>
+          <div class="admin-header-badge"><i class="fa-solid fa-shield-halved"></i> ${isAdmin ? 'ADMIN' : 'GESTOR'}</div>
         </div>
         <div class="admin-tabs">
-          <button class="admin-tab ${this.activeTab === 'dashboard' ? 'active' : ''}" data-tab="dashboard">
-            <i class="fa-solid fa-chart-line"></i> Dashboard
-          </button>
-          <button class="admin-tab ${this.activeTab === 'analytics' ? 'active' : ''}" data-tab="analytics">
-            <i class="fa-solid fa-chart-mixed"></i> Analytics Avançado
-          </button>
-          <button class="admin-tab ${this.activeTab === 'users' ? 'active' : ''}" data-tab="users">
-            <i class="fa-solid fa-users-gear"></i> Usuários
-          </button>
-          <button class="admin-tab ${this.activeTab === 'permissions' ? 'active' : ''}" data-tab="permissions">
-            <i class="fa-solid fa-lock"></i> Permissões
-          </button>
-          <button class="admin-tab ${this.activeTab === 'audit' ? 'active' : ''}" data-tab="audit">
-            <i class="fa-solid fa-clipboard-list"></i> Auditoria
-          </button>
-          <button class="admin-tab ${this.activeTab === 'tools' ? 'active' : ''}" data-tab="tools">
-            <i class="fa-solid fa-toolbox"></i> Ferramentas
-          </button>
-          <button class="admin-tab ${this.activeTab === 'statuspage' ? 'active' : ''}" data-tab="statuspage">
-            <i class="fa-solid fa-satellite-dish"></i> Status Page
-          </button>
-          <button class="admin-tab ${this.activeTab === 'backlog' ? 'active' : ''}" data-tab="backlog">
-            <i class="fa-solid fa-inbox"></i> Backlog
-          </button>
-          <button class="admin-tab ${this.activeTab === 'logos' ? 'active' : ''}" data-tab="logos">
-            <i class="fa-solid fa-building"></i> Logos
-          </button>
-          <button class="admin-tab ${this.activeTab === 'settings' ? 'active' : ''}" data-tab="settings">
-            <i class="fa-solid fa-cog"></i> Configurações
-          </button>
+          ${visibleTabs.map(t => `
+            <button class="admin-tab ${this.activeTab === t.id ? 'active' : ''}" data-tab="${t.id}">
+              <i class="fa-solid ${t.icon}"></i> ${t.label}
+            </button>
+          `).join('')}
         </div>
         <div class="admin-content" id="admin-tab-content">
           <div class="loading-spinner">
-            <i class="fa-solid fa-circle-notch fa-spin"></i> 
+            <i class="fa-solid fa-circle-notch fa-spin"></i>
             <span>Carregando dados do Firestore...</span>
           </div>
         </div>
@@ -177,6 +187,14 @@ const NexusAdmin = {
   async loadTabContent() {
     const container = document.getElementById('admin-tab-content');
     if (!container) return;
+
+    // Defesa em profundidade: mesmo que alguém force activeTab via console,
+    // gestores não-admin só carregam Dashboard/Usuários (a proteção real é
+    // nas Firestore rules, isto é só para não tentar renderizar uma aba que
+    // vai falhar de qualquer forma).
+    if (!this.isFullAdmin() && !['dashboard', 'users'].includes(this.activeTab)) {
+      this.activeTab = 'dashboard';
+    }
 
     container.innerHTML = '<div class="loading-spinner"><i class="fa-solid fa-circle-notch fa-spin"></i> Carregando...</div>';
 
@@ -420,13 +438,15 @@ const NexusAdmin = {
                         <button class="admin-action-btn" title="Editar" data-action="edit" data-uid="${user.uid}">
                             <i class="fa-solid fa-pen"></i>
                         </button>
-                        <button class="admin-action-btn" title="${user.status === 'ATIVO' ? 'Desativar' : 'Ativar'}" 
+                        ${this.isFullAdmin() ? `
+                        <button class="admin-action-btn" title="${user.status === 'ATIVO' ? 'Desativar' : 'Ativar'}"
                             data-action="toggle-status" data-uid="${user.uid}" data-status="${user.status}">
                             <i class="fa-solid fa-${user.status === 'ATIVO' ? 'ban' : 'check'}"></i>
                         </button>
                         <button class="admin-action-btn danger" title="Excluir" data-action="delete" data-uid="${user.uid}">
                             <i class="fa-solid fa-trash"></i>
                         </button>
+                        ` : ''}
                     </div>
                 </td>
             </tr>
@@ -507,7 +527,7 @@ const NexusAdmin = {
   },
 
   showCreateUserModal() {
-    const roles = window.UserManagement?.ROLES || [
+    let roles = window.UserManagement?.ROLES || [
       { key: 'ADMIN', label: 'Administrador' },
       { key: 'SUPERINTENDENTE', label: 'Superintendente' },
       { key: 'GERENTE', label: 'Gerente' },
@@ -516,6 +536,9 @@ const NexusAdmin = {
       { key: 'ANALISTA', label: 'Analista' },
       { key: 'MONITOR', label: 'Monitor' }
     ];
+    // Gestores (não-admin) não podem criar outro ADMIN — trava também
+    // aplicada nas Firestore rules, esta é só para não oferecer a opção
+    if (!this.isFullAdmin()) roles = roles.filter(r => r.key !== 'ADMIN');
 
     // Remover modal existente se houver
     document.getElementById('create-user-modal')?.remove();
@@ -686,14 +709,14 @@ const NexusAdmin = {
                         <input type="email" id="edit-user-email" class="form-input" value="${user.email || ''}">
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Cargo</label>
-                        <select id="edit-user-role" class="form-input">
+                        <label class="form-label">Cargo${!this.isFullAdmin() ? ' <span style="color:var(--text-tertiary);font-weight:400;">(somente admin)</span>' : ''}</label>
+                        <select id="edit-user-role" class="form-input" ${!this.isFullAdmin() ? 'disabled' : ''}>
                             ${roles.map(r => `<option value="${r.key}" ${user.cargo === r.key ? 'selected' : ''}>${r.label}</option>`).join('')}
                         </select>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Status</label>
-                        <select id="edit-user-status" class="form-input">
+                        <label class="form-label">Status${!this.isFullAdmin() ? ' <span style="color:var(--text-tertiary);font-weight:400;">(somente admin)</span>' : ''}</label>
+                        <select id="edit-user-status" class="form-input" ${!this.isFullAdmin() ? 'disabled' : ''}>
                             <option value="ATIVO" ${user.status === 'ATIVO' ? 'selected' : ''}>Ativo</option>
                             <option value="INATIVO" ${user.status === 'INATIVO' ? 'selected' : ''}>Inativo</option>
                             <option value="PENDENTE" ${user.status === 'PENDENTE' ? 'selected' : ''}>Pendente</option>
@@ -1049,33 +1072,43 @@ const NexusAdmin = {
       const last24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
       const last7d = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
       const last12h = new Date(now.getTime() - 12 * 60 * 60 * 1000);
+      const periodDays = this.dashboardPeriodDays || 30;
+      const periodStart = new Date(now.getTime() - periodDays * 24 * 60 * 60 * 1000);
 
       // Carregamento paralelo massivo para o BI 360 (ORQUESTRAÇÃO V2)
+      // Cada leitura é isolada com .catch(): gestores (não-admin) não têm
+      // permissão para listar `tickets`/`audit_logs` por inteiro nas
+      // Firestore rules, e uma única query rejeitada não pode derrubar o
+      // dashboard inteiro — ela só aparece vazia nessas seções.
+      const emptySnap = { docs: [] };
       const [
         stats,
         tasksSnap,
         vacationsSnap,
         usersSnap,
+        allUsersSnap,
         okrSnap,
         ticketsSnap,
         analyticsSnap,
         pointsSnap,
         auditSnap
       ] = await Promise.all([
-        window.AnalyticsService?.getOverallStats() || {},
-        db.collection('tasks').get(),
-        db.collection('vacations').get(),
-        db.collection('users').where('status', '==', 'PENDENTE').get(),
-        db.collection('deliveries').get(),
-        db.collection('tickets').get(),
-        db.collection('user_analytics').where('timestamp', '>', last7d).get(),
-        db.collection('points').orderBy('total_points', 'desc').limit(5).get(),
-        db.collection('audit_logs').where('timestamp', '>', last12h).get()
+        (window.AnalyticsService?.getOverallStats() || Promise.resolve({})).catch(() => ({})),
+        db.collection('tasks').get().catch(() => emptySnap),
+        db.collection('vacations').get().catch(() => emptySnap),
+        db.collection('users').where('status', '==', 'PENDENTE').get().catch(() => emptySnap),
+        db.collection('users').get().catch(() => emptySnap),
+        db.collection('deliveries').get().catch(() => emptySnap),
+        db.collection('tickets').get().catch(() => emptySnap),
+        db.collection('user_analytics').where('timestamp', '>', periodStart).get().catch(() => emptySnap),
+        db.collection('points').orderBy('total_points', 'desc').limit(5).get().catch(() => emptySnap),
+        db.collection('audit_logs').where('timestamp', '>', last12h).get().catch(() => emptySnap)
       ]);
 
       const tasks = tasksSnap.docs.map(d => ({ id: d.id, ...d.data() }));
       const vacations = vacationsSnap.docs.map(d => d.data());
       const pendingUsers = usersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const allUsers = allUsersSnap.docs.map(d => ({ uid: d.id, ...d.data() }));
       const deliveries = okrSnap.docs.map(d => d.data());
       const tickets = ticketsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
       const analytics = analyticsSnap.docs.map(d => d.data());
@@ -1113,12 +1146,53 @@ const NexusAdmin = {
       const maxCount = moduleRanking.length > 0 ? moduleRanking[0].count : 1;
 
       const moduleLabels = {
-        dashboard: '🏠 Dashboard', kanban: '📋 Kanban', calendar: '📅 Agendas',
+        dashboard: '🏠 Dashboard', kanban: '📋 Kanban', tickets: '🎫 Chamados',
         forum: '💬 Fórum', announcements: '📢 Avisos', podcast: '🎧 Podcast',
         courses: '📚 Cursos', scoring: '🏆 Ranking', tools: '🛠️ Ferramentas',
         reports: '📊 Relatórios', profile: '👤 Perfil', estagiario: '🤖 Estagiário',
-        admin: '⚙️ Admin'
+        vacation: '🏖️ Férias', paineis: '🛰️ Painéis', admin: '⚙️ Admin'
       };
+
+      // 5. Tendência de atividade no período (para o gráfico de linha)
+      const uidToSetor = new Map(allUsers.map(u => [u.uid, (Array.isArray(u.logos) && u.logos[0]) || u.setor || 'Sem Setor']));
+      const dailyLabels = [];
+      const dailyEvents = [];
+      const dailyActiveUsers = [];
+      for (let i = periodDays - 1; i >= 0; i--) {
+        const d = new Date(now);
+        d.setDate(d.getDate() - i);
+        const dateStr = d.toISOString().split('T')[0];
+        dailyLabels.push(periodDays > 31
+          ? d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+          : d.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit' }));
+        const dayEvents = analytics.filter(a => a.date === dateStr);
+        dailyEvents.push(dayEvents.length);
+        dailyActiveUsers.push(new Set(dayEvents.map(a => a.uid)).size);
+      }
+
+      // 6. Atividade por Equipe/Setor (comparação entre grupos)
+      const teamCounts = {};
+      analytics.forEach(a => {
+        const setor = uidToSetor.get(a.uid) || 'Sem Setor';
+        teamCounts[setor] = (teamCounts[setor] || 0) + 1;
+      });
+      const teamBreakdown = Object.entries(teamCounts)
+        .map(([setor, count]) => ({ setor, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 10);
+
+      // 7. Mapa de calor de horários de uso (dia da semana x hora)
+      const weekdayLabels = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+      const heatmap = Array.from({ length: 7 }, () => Array(24).fill(0));
+      let heatmapMax = 0;
+      analytics.forEach(a => {
+        const ts = a.timestamp?.toDate?.();
+        if (!ts) return;
+        const day = ts.getDay();
+        const hour = ts.getHours();
+        heatmap[day][hour]++;
+        if (heatmap[day][hour] > heatmapMax) heatmapMax = heatmap[day][hour];
+      });
 
       container.innerHTML = `
         <div class="admin-section">
@@ -1127,13 +1201,19 @@ const NexusAdmin = {
               <h3 style="margin-bottom: 4px;"><i class="fa-solid fa-gauge-high"></i> Central de Comando NEP <span style="font-size: 10px; vertical-align: middle; background: #6366f1; padding: 2px 6px; border-radius: 4px;">V2 BETA</span></h3>
               <p style="font-size: 11px; color: var(--text-tertiary);">Visão Total de Operação, Engajamento e Risco</p>
             </div>
-            <div style="display: flex; gap: 10px;">
+            <div style="display: flex; gap: 10px; align-items: center;">
               <span class="status-badge ${sb ? 'status-ativo' : 'status-inativo'}">
                 <i class="fa-solid fa-database"></i> SQL ${sb ? 'OK' : 'OFF'}
               </span>
+              <select id="dash-period-filter" class="form-select" style="padding: 6px 10px; font-size: 12px;">
+                <option value="7" ${this.dashboardPeriodDays === 7 ? 'selected' : ''}>Últimos 7 dias</option>
+                <option value="30" ${this.dashboardPeriodDays === 30 || !this.dashboardPeriodDays ? 'selected' : ''}>Últimos 30 dias</option>
+                <option value="90" ${this.dashboardPeriodDays === 90 ? 'selected' : ''}>Últimos 90 dias</option>
+              </select>
               <button class="btn btn-ghost" onclick="NexusAdmin.loadTabContent();">
                 <i class="fa-solid fa-sync"></i> Refresh
               </button>
+              ${this.isFullAdmin() ? `
               <div class="setting-item">
                 <label>Resetar Kanban</label>
                 <button id="btn-reset-kanban" class="btn btn-sm btn-outline-danger" onclick="NexusAdmin.resetKanban()">
@@ -1146,6 +1226,7 @@ const NexusAdmin = {
                   <i class="fa-solid fa-calculator"></i> Recalcular Ranking
                 </button>
               </div>
+              ` : ''}
             </div>
           </div>
 
@@ -1154,7 +1235,7 @@ const NexusAdmin = {
             <div class="analytics-kpi highlight">
               <div class="analytics-kpi-value">${uids24h}</div>
               <div class="analytics-kpi-label">Ativos (24h)</div>
-              <div style="font-size: 10px; opacity: 0.8;">Semanal: ${uids7d}</div>
+              <div style="font-size: 10px; opacity: 0.8;">${periodDays}d: ${uids7d}</div>
             </div>
             <div class="analytics-kpi active">
               <div class="analytics-kpi-value">${activeTasks}</div>
@@ -1167,9 +1248,9 @@ const NexusAdmin = {
               <div style="font-size: 10px; opacity: 0.8;">Sem move +3d</div>
             </div>
             <div class="analytics-kpi info">
-              <div class="analytics-kpi-value">${openTickets}</div>
+              <div class="analytics-kpi-value">${this.isFullAdmin() ? openTickets : '—'}</div>
               <div class="analytics-kpi-label">Tickets</div>
-              <div style="font-size: 10px; opacity: 0.8;">Suporte Ativo</div>
+              <div style="font-size: 10px; opacity: 0.8;">${this.isFullAdmin() ? 'Suporte Ativo' : 'Restrito a admin'}</div>
             </div>
             <div class="analytics-kpi success">
               <div class="analytics-kpi-value">${avgScore.toFixed(1)}</div>
@@ -1180,6 +1261,47 @@ const NexusAdmin = {
               <div class="analytics-kpi-value">${aiConsultas}</div>
               <div class="analytics-kpi-label">IA Help</div>
               <div style="font-size: 10px; color: #a78bfa;">Insights Gerados</div>
+            </div>
+          </div>
+
+          <!-- TENDÊNCIA DE ATIVIDADE + EQUIPE/SETOR -->
+          <div class="analytics-grid" style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin-bottom: 20px;">
+            <div class="analytics-card">
+              <h4 style="margin-bottom: 4px;"><i class="fa-solid fa-chart-area"></i> Tendência de Atividade (${periodDays} dias)</h4>
+              <p style="font-size: 11px; color: var(--text-tertiary); margin: 0 0 12px;">Eventos registrados e usuários únicos ativos por dia</p>
+              <div style="height: 240px; position: relative;">
+                <canvas id="chart-dash-trend"></canvas>
+              </div>
+            </div>
+            <div class="analytics-card">
+              <h4 style="margin-bottom: 4px;"><i class="fa-solid fa-people-group"></i> Atividade por Equipe/Setor</h4>
+              <p style="font-size: 11px; color: var(--text-tertiary); margin: 0 0 12px;">Eventos no período, por setor</p>
+              <div style="height: 240px; position: relative;">
+                ${teamBreakdown.length > 0
+        ? `<canvas id="chart-dash-team"></canvas>`
+        : '<p class="text-muted text-center" style="margin-top: 80px;">Sem dados de setor suficientes ainda.</p>'}
+              </div>
+            </div>
+          </div>
+
+          <!-- MAPA DE CALOR DE HORÁRIOS DE USO -->
+          <div class="analytics-card" style="margin-bottom: 20px;">
+            <h4 style="margin-bottom: 4px;"><i class="fa-solid fa-fire"></i> Mapa de Calor — Horários de Uso (${periodDays} dias)</h4>
+            <p style="font-size: 11px; color: var(--text-tertiary); margin: 0 0 12px;">Quanto mais escuro, mais eventos registrados naquele dia/horário</p>
+            <div class="usage-heatmap">
+              <div class="usage-heatmap-hours">
+                <span></span>
+                ${[0, 3, 6, 9, 12, 15, 18, 21].map(h => `<span style="grid-column: span 3;">${String(h).padStart(2, '0')}h</span>`).join('')}
+              </div>
+              ${weekdayLabels.map((day, dIdx) => `
+                <div class="usage-heatmap-row">
+                  <span class="usage-heatmap-daylabel">${day}</span>
+                  ${heatmap[dIdx].map((count, hIdx) => {
+          const intensity = heatmapMax > 0 ? count / heatmapMax : 0;
+          return `<span class="usage-heatmap-cell" title="${day} ${String(hIdx).padStart(2, '0')}h: ${count} evento(s)" style="background: rgba(99, 102, 241, ${0.08 + intensity * 0.85});"></span>`;
+        }).join('')}
+                </div>
+              `).join('')}
             </div>
           </div>
 
@@ -1255,13 +1377,14 @@ const NexusAdmin = {
               <div class="analytics-card" style="margin-top: 20px; border-top: 3px solid #ef444499;">
                 <h4><i class="fa-solid fa-eye"></i> Audit Alert (12h)</h4>
                 <div style="font-size: 11px; margin-top: 10px;">
-                  ${recentAudit.length > 0 ? recentAudit.slice(0, 5).map(a => `
+                  ${!this.isFullAdmin() ? '<p class="text-muted" style="font-size: 11px;">Log de auditoria restrito a administradores.</p>' :
+        recentAudit.length > 0 ? recentAudit.slice(0, 5).map(a => `
                     <div style="margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid #ffffff05;">
                       <div style="font-weight: 600; color: #ef4444;">${a.acao}</div>
                       <div style="color: var(--text-tertiary);">${a.executor_email || 'Sistema'}</div>
                     </div>
                   `).join('') : '<p class="text-muted" style="font-size: 11px;">Nenhuma anomalia detectada.</p>'}
-                  ${recentAudit.length > 5 ? `<p style="text-align: center; color: var(--primary-400); cursor: pointer;" onclick="NexusAdmin.activeTab='audit'; NexusAdmin.loadTabContent();">Ver todos logs</p>` : ''}
+                  ${this.isFullAdmin() && recentAudit.length > 5 ? `<p style="text-align: center; color: var(--primary-400); cursor: pointer;" onclick="NexusAdmin.activeTab='audit'; NexusAdmin.loadTabContent();">Ver todos logs</p>` : ''}
                 </div>
               </div>
 
@@ -1299,12 +1422,82 @@ const NexusAdmin = {
               </div>
           </div>
         </div>`;
+
+      document.getElementById('dash-period-filter')?.addEventListener('change', (e) => {
+        this.dashboardPeriodDays = parseInt(e.target.value, 10) || 30;
+        this.loadTabContent();
+      });
+
+      this.renderDashboardCharts(dailyLabels, dailyEvents, dailyActiveUsers, teamBreakdown);
     } catch (error) {
       console.error('[Admin] Erro Crítico no Dashboard:', error);
       container.innerHTML = `
         <div class="admin-section">
           <div class="alert alert-error">Falha ao consolidar BI: ${error.message}</div>
         </div>`;
+    }
+  },
+
+  renderDashboardCharts(dailyLabels, dailyEvents, dailyActiveUsers, teamBreakdown) {
+    if (typeof Chart === 'undefined') return;
+
+    Object.values(this.dashCharts).forEach(c => c?.destroy());
+    this.dashCharts = {};
+
+    const trendCtx = document.getElementById('chart-dash-trend');
+    if (trendCtx) {
+      this.dashCharts.trend = new Chart(trendCtx, {
+        type: 'line',
+        data: {
+          labels: dailyLabels,
+          datasets: [
+            { label: 'Eventos', data: dailyEvents, borderColor: '#6366f1', backgroundColor: 'rgba(99,102,241,0.12)', fill: true, tension: 0.35 },
+            { label: 'Usuários Únicos', data: dailyActiveUsers, borderColor: '#22c55e', backgroundColor: 'rgba(34,197,94,0.08)', fill: true, tension: 0.35 }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'top', labels: { color: '#8fa6c6', boxWidth: 12 } },
+            tooltip: { mode: 'index', intersect: false }
+          },
+          scales: {
+            y: { beginAtZero: true, ticks: { color: '#64748b', precision: 0 }, grid: { color: 'rgba(255,255,255,0.05)' } },
+            x: { ticks: { color: '#8fa6c6', maxRotation: 0, autoSkip: true, maxTicksLimit: 12 }, grid: { display: false } }
+          }
+        }
+      });
+    }
+
+    const teamCtx = document.getElementById('chart-dash-team');
+    if (teamCtx && teamBreakdown.length > 0) {
+      const palette = ['#6366f1', '#22c55e', '#f59e0b', '#ec4899', '#06b6d4', '#8b5cf6', '#ef4444', '#14b8a6', '#f97316', '#3b82f6'];
+      this.dashCharts.team = new Chart(teamCtx, {
+        type: 'bar',
+        data: {
+          labels: teamBreakdown.map(t => t.setor),
+          datasets: [{
+            label: 'Eventos',
+            data: teamBreakdown.map(t => t.count),
+            backgroundColor: teamBreakdown.map((_, i) => palette[i % palette.length]),
+            borderRadius: 6
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: { callbacks: { label: (ctx) => `${ctx.parsed.x} eventos` } }
+          },
+          scales: {
+            x: { beginAtZero: true, ticks: { color: '#64748b', precision: 0 }, grid: { color: 'rgba(255,255,255,0.05)' } },
+            y: { ticks: { color: '#8fa6c6' }, grid: { display: false } }
+          }
+        }
+      });
     }
   },
 
@@ -2601,6 +2794,11 @@ adminStyles.textContent = `
 .admin-tab:hover{color:var(--text-primary);background:var(--surface-hover)}
 .admin-tab.active{background:linear-gradient(135deg,#2f6fed,#8b5cf6);color:white}
 .admin-section{background:var(--surface-card);border:1px solid var(--surface-border);border-radius:16px;padding:24px}
+.usage-heatmap{display:flex;flex-direction:column;gap:3px}
+.usage-heatmap-hours{display:grid;grid-template-columns:48px repeat(24,1fr);gap:3px;font-size:10px;color:var(--text-tertiary);margin-bottom:2px}
+.usage-heatmap-row{display:grid;grid-template-columns:48px repeat(24,1fr);gap:3px;align-items:center}
+.usage-heatmap-daylabel{font-size:11px;color:var(--text-tertiary);font-weight:600}
+.usage-heatmap-cell{height:16px;border-radius:3px;cursor:default}
 .admin-section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:16px}
 .admin-section-left{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
 .admin-stat-badge{background:var(--surface-elevated);padding:6px 12px;border-radius:20px;font-size:12px;color:var(--text-secondary)}
