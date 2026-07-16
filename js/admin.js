@@ -10,6 +10,7 @@ const NexusAdmin = {
   auditLogs: [],
   modulesReady: false,
   dashboardPeriodDays: 30,
+  dashboardUserFilter: '',
   dashCharts: {},
 
   // Helper para aguardar módulos Firebase - versão mais tolerante
@@ -205,8 +206,6 @@ const NexusAdmin = {
         case 'users': await this.renderUsersManagement(container); break;
         case 'permissions': await this.renderPermissionsTab(container); break;
         case 'audit': await this.renderAuditLogs(container); break;
-        case 'seasons': this.renderSeasonsTab(container); break;
-        case 'supabase': await this.renderSupabaseTab(container); break;
         case 'tools': await this.renderToolsManagementTab(container); break;
         case 'statuspage': await this.renderStatusPageTab(container); break;
         case 'backlog': await this.renderBacklogTab(container); break;
@@ -1087,7 +1086,6 @@ const NexusAdmin = {
         vacationsSnap,
         usersSnap,
         allUsersSnap,
-        okrSnap,
         ticketsSnap,
         analyticsSnap,
         pointsSnap,
@@ -1098,7 +1096,6 @@ const NexusAdmin = {
         db.collection('vacations').get().catch(() => emptySnap),
         db.collection('users').where('status', '==', 'PENDENTE').get().catch(() => emptySnap),
         db.collection('users').get().catch(() => emptySnap),
-        db.collection('deliveries').get().catch(() => emptySnap),
         db.collection('tickets').get().catch(() => emptySnap),
         db.collection('user_analytics').where('timestamp', '>', periodStart).get().catch(() => emptySnap),
         db.collection('points').orderBy('total_points', 'desc').limit(5).get().catch(() => emptySnap),
@@ -1109,7 +1106,6 @@ const NexusAdmin = {
       const vacations = vacationsSnap.docs.map(d => d.data());
       const pendingUsers = usersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
       const allUsers = allUsersSnap.docs.map(d => ({ uid: d.id, ...d.data() }));
-      const deliveries = okrSnap.docs.map(d => d.data());
       const tickets = ticketsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
       const analytics = analyticsSnap.docs.map(d => d.data());
       const ranking = pointsSnap.docs.map(d => d.data());
@@ -1135,8 +1131,7 @@ const NexusAdmin = {
         v.endDate >= todayStr
       );
 
-      // 4. OKR & IA
-      const avgScore = deliveries.filter(d => d.finalScore).reduce((acc, d) => acc + parseFloat(d.finalScore), 0) / (deliveries.filter(d => d.finalScore).length || 1);
+      // 4. IA
       const aiConsultas = stats.recentActivity?.filter(a => a.event_type === 'IA_CONSULTA').length || 0;
 
       const moduleRanking = Object.entries(stats.moduleViews || {})
@@ -1154,6 +1149,15 @@ const NexusAdmin = {
       };
 
       // 5. Tendência de atividade no período (para o gráfico de linha)
+      // Filtro por usuário: aplicado só nas vises de uso (tendência, equipe,
+      // mapa de calor) — os KPIs gerais do topo continuam mostrando a
+      // operação inteira.
+      const filteredAnalytics = this.dashboardUserFilter
+        ? analytics.filter(a => a.uid === this.dashboardUserFilter)
+        : analytics;
+      const filteredUserName = this.dashboardUserFilter
+        ? (allUsers.find(u => u.uid === this.dashboardUserFilter)?.nome || 'usuário selecionado')
+        : null;
       const uidToSetor = new Map(allUsers.map(u => [u.uid, (Array.isArray(u.logos) && u.logos[0]) || u.setor || 'Sem Setor']));
       const dailyLabels = [];
       const dailyEvents = [];
@@ -1165,14 +1169,14 @@ const NexusAdmin = {
         dailyLabels.push(periodDays > 31
           ? d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
           : d.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit' }));
-        const dayEvents = analytics.filter(a => a.date === dateStr);
+        const dayEvents = filteredAnalytics.filter(a => a.date === dateStr);
         dailyEvents.push(dayEvents.length);
         dailyActiveUsers.push(new Set(dayEvents.map(a => a.uid)).size);
       }
 
       // 6. Atividade por Equipe/Setor (comparação entre grupos)
       const teamCounts = {};
-      analytics.forEach(a => {
+      filteredAnalytics.forEach(a => {
         const setor = uidToSetor.get(a.uid) || 'Sem Setor';
         teamCounts[setor] = (teamCounts[setor] || 0) + 1;
       });
@@ -1185,7 +1189,7 @@ const NexusAdmin = {
       const weekdayLabels = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
       const heatmap = Array.from({ length: 7 }, () => Array(24).fill(0));
       let heatmapMax = 0;
-      analytics.forEach(a => {
+      filteredAnalytics.forEach(a => {
         const ts = a.timestamp?.toDate?.();
         if (!ts) return;
         const day = ts.getDay();
@@ -1210,16 +1214,18 @@ const NexusAdmin = {
                 <option value="30" ${this.dashboardPeriodDays === 30 || !this.dashboardPeriodDays ? 'selected' : ''}>Últimos 30 dias</option>
                 <option value="90" ${this.dashboardPeriodDays === 90 ? 'selected' : ''}>Últimos 90 dias</option>
               </select>
+              <select id="dash-user-filter" class="form-select" style="padding: 6px 10px; font-size: 12px; max-width: 180px;">
+                <option value="">Todos os usuários</option>
+                ${allUsers
+        .slice()
+        .sort((a, b) => (a.nome || '').localeCompare(b.nome || ''))
+        .map(u => `<option value="${u.uid}" ${this.dashboardUserFilter === u.uid ? 'selected' : ''}>${u.nome || u.email || u.uid}</option>`)
+        .join('')}
+              </select>
               <button class="btn btn-ghost" onclick="NexusAdmin.loadTabContent();">
                 <i class="fa-solid fa-sync"></i> Refresh
               </button>
               ${this.isFullAdmin() ? `
-              <div class="setting-item">
-                <label>Resetar Kanban</label>
-                <button id="btn-reset-kanban" class="btn btn-sm btn-outline-danger" onclick="NexusAdmin.resetKanban()">
-                  <i class="fa-solid fa-bomb"></i> Reset Kanban
-                </button>
-              </div>
               <div class="setting-item">
                 <label>Recalcular Ranking</label>
                 <button id="btn-recalc-ranking" class="btn btn-sm btn-outline-warning" onclick="NexusAdmin.recalculateRanking()">
@@ -1253,9 +1259,9 @@ const NexusAdmin = {
               <div style="font-size: 10px; opacity: 0.8;">${this.isFullAdmin() ? 'Suporte Ativo' : 'Restrito a admin'}</div>
             </div>
             <div class="analytics-kpi success">
-              <div class="analytics-kpi-value">${avgScore.toFixed(1)}</div>
-              <div class="analytics-kpi-label">Score OKR</div>
-              <div style="font-size: 10px; opacity: 0.8;">Média de Entregas</div>
+              <div class="analytics-kpi-value">${teamOffToday.length}</div>
+              <div class="analytics-kpi-label">Em Férias Hoje</div>
+              <div style="font-size: 10px; opacity: 0.8;">Indisponíveis</div>
             </div>
             <div class="analytics-kpi" style="border-color: #8b5cf6;">
               <div class="analytics-kpi-value">${aiConsultas}</div>
@@ -1267,14 +1273,14 @@ const NexusAdmin = {
           <!-- TENDÊNCIA DE ATIVIDADE + EQUIPE/SETOR -->
           <div class="analytics-grid" style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin-bottom: 20px;">
             <div class="analytics-card">
-              <h4 style="margin-bottom: 4px;"><i class="fa-solid fa-chart-area"></i> Tendência de Atividade (${periodDays} dias)</h4>
-              <p style="font-size: 11px; color: var(--text-tertiary); margin: 0 0 12px;">Eventos registrados e usuários únicos ativos por dia</p>
+              <h4 style="margin-bottom: 4px;"><i class="fa-solid fa-chart-area"></i> Tendência de Atividade (${periodDays} dias)${filteredUserName ? ` — ${filteredUserName}` : ''}</h4>
+              <p style="font-size: 11px; color: var(--text-tertiary); margin: 0 0 12px;">Eventos registrados${filteredUserName ? '' : ' e usuários únicos ativos'} por dia</p>
               <div style="height: 240px; position: relative;">
                 <canvas id="chart-dash-trend"></canvas>
               </div>
             </div>
             <div class="analytics-card">
-              <h4 style="margin-bottom: 4px;"><i class="fa-solid fa-people-group"></i> Atividade por Equipe/Setor</h4>
+              <h4 style="margin-bottom: 4px;"><i class="fa-solid fa-people-group"></i> Atividade por Equipe/Setor${filteredUserName ? ` — ${filteredUserName}` : ''}</h4>
               <p style="font-size: 11px; color: var(--text-tertiary); margin: 0 0 12px;">Eventos no período, por setor</p>
               <div style="height: 240px; position: relative;">
                 ${teamBreakdown.length > 0
@@ -1286,7 +1292,7 @@ const NexusAdmin = {
 
           <!-- MAPA DE CALOR DE HORÁRIOS DE USO -->
           <div class="analytics-card" style="margin-bottom: 20px;">
-            <h4 style="margin-bottom: 4px;"><i class="fa-solid fa-fire"></i> Mapa de Calor — Horários de Uso (${periodDays} dias)</h4>
+            <h4 style="margin-bottom: 4px;"><i class="fa-solid fa-fire"></i> Mapa de Calor — Horários de Uso (${periodDays} dias)${filteredUserName ? ` — ${filteredUserName}` : ''}</h4>
             <p style="font-size: 11px; color: var(--text-tertiary); margin: 0 0 12px;">Quanto mais escuro, mais eventos registrados naquele dia/horário</p>
             <div class="usage-heatmap">
               <div class="usage-heatmap-hours">
@@ -1427,8 +1433,12 @@ const NexusAdmin = {
         this.dashboardPeriodDays = parseInt(e.target.value, 10) || 30;
         this.loadTabContent();
       });
+      document.getElementById('dash-user-filter')?.addEventListener('change', (e) => {
+        this.dashboardUserFilter = e.target.value || '';
+        this.loadTabContent();
+      });
 
-      this.renderDashboardCharts(dailyLabels, dailyEvents, dailyActiveUsers, teamBreakdown);
+      this.renderDashboardCharts(dailyLabels, dailyEvents, dailyActiveUsers, teamBreakdown, !!filteredUserName);
     } catch (error) {
       console.error('[Admin] Erro Crítico no Dashboard:', error);
       container.innerHTML = `
@@ -1438,7 +1448,7 @@ const NexusAdmin = {
     }
   },
 
-  renderDashboardCharts(dailyLabels, dailyEvents, dailyActiveUsers, teamBreakdown) {
+  renderDashboardCharts(dailyLabels, dailyEvents, dailyActiveUsers, teamBreakdown, singleUserFiltered) {
     if (typeof Chart === 'undefined') return;
 
     Object.values(this.dashCharts).forEach(c => c?.destroy());
@@ -1446,14 +1456,17 @@ const NexusAdmin = {
 
     const trendCtx = document.getElementById('chart-dash-trend');
     if (trendCtx) {
+      const trendDatasets = [
+        { label: 'Eventos', data: dailyEvents, borderColor: '#6366f1', backgroundColor: 'rgba(99,102,241,0.12)', fill: true, tension: 0.35 }
+      ];
+      if (!singleUserFiltered) {
+        trendDatasets.push({ label: 'Usuários Únicos', data: dailyActiveUsers, borderColor: '#22c55e', backgroundColor: 'rgba(34,197,94,0.08)', fill: true, tension: 0.35 });
+      }
       this.dashCharts.trend = new Chart(trendCtx, {
         type: 'line',
         data: {
           labels: dailyLabels,
-          datasets: [
-            { label: 'Eventos', data: dailyEvents, borderColor: '#6366f1', backgroundColor: 'rgba(99,102,241,0.12)', fill: true, tension: 0.35 },
-            { label: 'Usuários Únicos', data: dailyActiveUsers, borderColor: '#22c55e', backgroundColor: 'rgba(34,197,94,0.08)', fill: true, tension: 0.35 }
-          ]
+          datasets: trendDatasets
         },
         options: {
           responsive: true,
@@ -1632,32 +1645,6 @@ const NexusAdmin = {
   // =========================================
   // TEMPORADAS
   // =========================================
-  renderSeasonsTab(container) {
-    const seasons = window.NexusPodcast?.seasons || [];
-    container.innerHTML = `
-            <div class="admin-section">
-                <div class="admin-section-header">
-                    <h3><i class="fa-solid fa-layer-group"></i> Gerenciar Temporadas</h3>
-                    <button class="btn btn-primary"><i class="fa-solid fa-plus"></i> Nova Temporada</button>
-                </div>
-                <div class="admin-table-container">
-                    <table class="admin-table">
-                        <thead><tr><th>Título</th><th>Episódios</th><th>Status</th><th>Ações</th></tr></thead>
-                        <tbody>
-                            ${seasons.length ? seasons.map(s => `
-                                <tr>
-                                    <td>${s.icon || '📻'} ${s.title || 'Sem título'}</td>
-                                    <td>${s.episodes?.length || 0} eps</td>
-                                    <td><span class="status-badge status-ativo">Ativo</span></td>
-                                    <td><button class="admin-action-btn"><i class="fa-solid fa-pen"></i></button></td>
-                                </tr>
-                            `).join('') : '<tr><td colspan="4" class="text-center" style="padding: 40px; color: #64748b;">Nenhuma temporada cadastrada</td></tr>'}
-                        </tbody>
-                    </table>
-                </div>
-            </div>`;
-  },
-
   // =========================================
   // CONFIGURAÇÕES
   // =========================================
@@ -1973,144 +1960,6 @@ const NexusAdmin = {
         }
       }
     });
-  },
-
-  // =========================================
-  // SUPABASE MANAGEMENT
-  // =========================================
-  async renderSupabaseTab(container) {
-    const isSupabaseReady = !!window.sb;
-
-    container.innerHTML = `
-      <div class="admin-section">
-        <div class="admin-section-header">
-          <h3><i class="fa-solid fa-cloud-bolt"></i> Expansão Supabase (Fase 2)</h3>
-          <span class="status-badge ${isSupabaseReady ? 'status-ativo' : 'status-inativo'}">
-            ${isSupabaseReady ? 'CONECTADO' : 'DESCONECTADO'}
-          </span>
-        </div>
-
-        <div class="analytics-grid">
-          <!-- Status de Sincronização -->
-          <div class="analytics-card">
-            <h4><i class="fa-solid fa-sync"></i> Sincronização de Dados</h4>
-            <p class="text-muted" style="font-size: 13px; margin-bottom: 20px;">
-              Mantenha o PostgreSQL do Supabase atualizado com os dados do Firestore para relatórios complexos.
-            </p>
-            
-            <div style="display: flex; flex-direction: column; gap: 12px;">
-              <div class="sync-row" style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--surface-card); border-radius: 8px;">
-                <div>
-                  <div style="font-weight: 600;">Módulo Kanban</div>
-                  <div style="font-size: 11px; color: var(--text-tertiary);">Tarefas, prazos e entregas</div>
-                </div>
-                <button class="btn btn-sm btn-secondary" onclick="NexusAdmin.bulkSync('kanban')">Sync Full</button>
-              </div>
-
-              <div class="sync-row" style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--surface-card); border-radius: 8px;">
-                <div>
-                  <div style="font-weight: 600;">Módulo Férias</div>
-                  <div style="font-size: 11px; color: var(--text-tertiary);">Calendário de ausências</div>
-                </div>
-                <button class="btn btn-sm btn-secondary" onclick="NexusAdmin.bulkSync('vacation')">Sync Full</button>
-              </div>
-            </div>
-          </div>
-
-          <!-- IA & Vetores -->
-          <div class="analytics-card">
-            <h4><i class="fa-solid fa-brain"></i> Busca Vetorial (RAG)</h4>
-            <p class="text-muted" style="font-size: 13px; margin-bottom: 20px;">
-              Prepare o banco para Busca Vetorial usando pgvector para alimentar o Estagiário IA.
-            </p>
-            <div class="alert alert-info" style="gap:10px; padding:15px; border:1px solid rgba(59,130,246,0.3); background:rgba(59,130,246,0.1); border-radius:10px; font-size:13px; display:flex; align-items:flex-start;">
-              <i class="fa-solid fa-microchip" style="color:#3b82f6; font-size:16px; margin-top:2px;"></i>
-              <div>
-                <strong>Dica:</strong> Para usar busca vetorial, execute o script SQL <code>supabase_schema.sql</code> no seu painel.
-              </div>
-            </div>
-            <button class="btn btn-secondary full" style="margin-top: 16px; width:100%;" onclick="NexusAdmin.setupVectorSearch()">
-              <i class="fa-solid fa-vial-virus"></i> Testar Conectividade RAG
-            </button>
-          </div>
-        </div>
-
-        <div class="settings-card" style="margin-top: 24px; padding:20px; background:var(--surface-elevated); border:1px solid var(--surface-border); border-radius:12px;">
-          <h4><i class="fa-solid fa-terminal"></i> Configuração de Infraestrutura</h4>
-          <p style="font-size: 13px; color: var(--text-secondary); margin-bottom:12px;">
-            Certifique-se de que as tabelas necessárias existem no seu projeto Supabase.
-          </p>
-          <div style="background: #000; padding: 15px; border-radius: 8px; font-family: monospace; font-size: 12px; color: #10b981; max-height: 200px; overflow: auto; border:1px solid #333;">
-            -- SQL de Inicialização (supabase_schema.sql)<br>
-            CREATE TABLE kanban_tasks (...);<br>
-            CREATE TABLE vacation_records (...);
-          </div>
-        </div>
-      </div>`;
-  },
-
-  async bulkSync(module) {
-    if (!window.SupabaseSync) {
-      if (typeof NexusApp !== 'undefined') NexusApp.showToast('Serviço de Sync não carregado', 'error');
-      else alert('Serviço de Sync não carregado');
-      return;
-    }
-
-    try {
-      if (typeof NexusApp !== 'undefined') NexusApp.showToast(`Iniciando sincronização de ${module}...`, 'info');
-
-      let items = [];
-      const db = firebase.firestore();
-
-      if (module === 'kanban') {
-        const snap = await db.collection('tasks').get();
-        items = snap.docs.map(doc => {
-          const d = doc.data();
-          return {
-            id: doc.id,
-            title: d.title || '',
-            owner: d.owner || '',
-            unit: d.unit || '',
-            status: d.status || '',
-            priority: d.priority || '',
-            complexity: d.complexity || '',
-            deadline: d.deadline || null,
-            points: d.points || 0,
-            created_at: d.createdAt || new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          };
-        });
-      } else if (module === 'vacation') {
-        const snap = await db.collection('vacations').get();
-        items = snap.docs.map(doc => {
-          const d = doc.data();
-          return {
-            id: doc.id,
-            user_name: d.employeeName || '',
-            role: d.role || '',
-            product: d.product || '',
-            start_date: d.startDate || null,
-            end_date: d.endDate || null,
-            status: d.status || '',
-            updated_at: new Date().toISOString()
-          };
-        });
-      }
-
-      if (items.length > 0) {
-        await window.SupabaseSync.syncBatch(module, items);
-        if (typeof NexusApp !== 'undefined') NexusApp.showToast(`${items.length} itens sincronizados!`, 'success');
-      } else {
-        if (typeof NexusApp !== 'undefined') NexusApp.showToast('Nenhum dado encontrado.', 'warning');
-      }
-    } catch (e) {
-      console.error(e);
-      if (typeof NexusApp !== 'undefined') NexusApp.showToast('Erro no sync: ' + e.message, 'error');
-    }
-  },
-
-  setupVectorSearch() {
-    if (typeof NexusApp !== 'undefined') NexusApp.showToast('Busca Vetorial pronta para configuração.', 'info');
   },
 
   // =========================================
