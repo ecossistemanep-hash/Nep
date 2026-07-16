@@ -162,7 +162,7 @@ const NexusPWA = {
 
         try {
             // Get FCM Token
-            const vapidPublicKey = 'BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8U';
+            const vapidPublicKey = 'BMtf2hOZwCacMuOFu_w2HSrTdfVnuPUszPOMsfEob802HDCrFmNOW97-Nm1305TXt7BJlt_vOPqb829lTP7lLhY';
 
             const currentToken = await window.messaging.getToken({
                 vapidKey: vapidPublicKey
