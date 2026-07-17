@@ -142,6 +142,12 @@
     flex-shrink: 0;
 }
 
+.nav-item-icon svg {
+    width: 19px;
+    height: 19px;
+    stroke: currentColor;
+}
+
 .nav-item-text {
     font-size: var(--text-sm);
     font-weight: var(--font-medium);
