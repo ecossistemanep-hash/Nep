@@ -18,7 +18,7 @@ window.setPplxApiKey = function (key) {
 };
 
 /**
- * Chave da API Google Gemini (usada em ai-service.js — geração de PPT/IA).
+ * Chave da API Google Gemini (usada pelo Criador de Fluxograma e NEP Help).
  * Mesmo padrão: fica apenas no localStorage deste navegador.
  *   window.setGeminiApiKey('sua-chave-aqui')
  */
@@ -184,7 +184,6 @@ const NepApp = {
       admin: 'Painel Admin',
       checklist: 'Rotina ADM',
       'teams-calendar': 'Calendário Teams',
-      estagiario: 'Neuronyo',
       reports: 'Relatórios',
       profile: 'Meu Perfil',
       results: 'Resultados Operacionais',
@@ -280,9 +279,6 @@ const NepApp = {
           break;
         case 'teams-calendar':
           if (typeof NexusTeamsCalendar !== 'undefined') NexusTeamsCalendar.render(content);
-          break;
-        case 'estagiario':
-          if (typeof NexusEstagiario !== 'undefined') NexusEstagiario.render(content);
           break;
         case 'reports':
           if (typeof NexusReports !== 'undefined') NexusReports.render(content);

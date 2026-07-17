@@ -32,7 +32,6 @@ const ModulePermissionService = {
 
         { id: 'testimonials', name: 'NEP Depoimentos', icon: '💙', category: 'aprendizado' },
         { id: 'forum', name: 'Fórum', icon: '💬', category: 'aprendizado' },
-        { id: 'estagiario', name: 'Neuronyo', icon: '🤖', category: 'aprendizado' },
         { id: 'announcements', name: 'Avisos', icon: '📢', category: 'colaboracao' },
         { id: 'chat', name: 'Chat Geral', icon: '💭', category: 'colaboracao' },
         { id: 'profile', name: 'Perfil', icon: '👤', category: 'usuario' }

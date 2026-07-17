@@ -20,7 +20,6 @@ const NepGrafo = {
             { id: 'ranking', label: 'Ranking', category: 'modulo', icon: '🏆', size: 28, desc: 'Pontuação, níveis e conquistas dos colaboradores', ring: 1 },
             { id: 'forum', label: 'Fórum', category: 'modulo', icon: '💬', size: 26, desc: 'Comunidade: dúvidas, sugestões, conhecimento', ring: 1 },
             { id: 'calendar', label: 'Agendas', category: 'modulo', icon: '📅', size: 28, desc: 'Reuniões executivas com atas geradas por IA', ring: 1 },
-            { id: 'estagiario', label: 'Neurônio', category: 'ia', icon: '🤖', size: 32, desc: 'Assistente IA: análise de dados, PPT, chat inteligente', ring: 1 },
             { id: 'admin', label: 'Admin', category: 'admin', icon: '🛡️', size: 30, desc: 'Painel administrativo: usuários, permissões, backlog', ring: 1 },
             { id: 'tools', label: 'Ferramentas', category: 'ferramentas', icon: '🧰', size: 32, desc: 'Hub com 22+ ferramentas de qualidade e produtividade', ring: 1 },
 
@@ -50,7 +49,6 @@ const NepGrafo = {
             { id: 'analytics', label: 'Analytics', category: 'sistema', icon: '📡', size: 22, desc: 'Rastreamento de acessos e uso', ring: 2 },
             { id: 'permissions', label: 'Permissões', category: 'sistema', icon: '🔐', size: 22, desc: 'Controle de acesso por cargo', ring: 2 },
             { id: 'nep_help', label: 'NEP Help', category: 'ia', icon: '💡', size: 20, desc: 'Chat flutuante de ajuda com IA', ring: 3 },
-            { id: 'ppt_engine', label: 'PPT Engine', category: 'ia', icon: '📽️', size: 22, desc: 'Gerador de apresentações profissionais', ring: 3 },
             { id: 'status_page', label: 'Status Page', category: 'sistema', icon: '📡', size: 18, desc: 'Página pública de atualizações', ring: 3 },
             { id: 'feedback_req', label: 'Backlog Feedback', category: 'sistema', icon: '📥', size: 18, desc: 'Requisições de bugs e melhorias', ring: 3 },
 
@@ -80,8 +78,7 @@ const NepGrafo = {
             // Core hub
             { from: 'nep', to: 'dashboard' }, { from: 'nep', to: 'kanban' },
             { from: 'nep', to: 'tools' }, { from: 'nep', to: 'firebase' },
-            { from: 'nep', to: 'admin' }, { from: 'nep', to: 'estagiario' },
-            { from: 'nep', to: 'ranking' },
+            { from: 'nep', to: 'admin' }, { from: 'nep', to: 'ranking' },
 
             // Dashboard
             { from: 'dashboard', to: 'kanban' }, { from: 'dashboard', to: 'ranking' },
@@ -96,10 +93,7 @@ const NepGrafo = {
             { from: 'points', to: 'achievements' }, { from: 'points', to: 'profile' },
 
             // IA Ecosystem
-            { from: 'estagiario', to: 'gemini' }, { from: 'estagiario', to: 'ppt_engine' },
-            { from: 'estagiario', to: 'kanban' }, { from: 'estagiario', to: 'calendar' },
             { from: 'nep_help', to: 'gemini' }, { from: 'calendar', to: 'gemini' },
-            { from: 'ppt_engine', to: 'gemini' },
 
             // Tools hub
             { from: 'tools', to: 'tool_pdca' }, { from: 'tools', to: 'tool_dmaic' },
