@@ -72,17 +72,11 @@ const NexusTools = {
       { id: 'ishikawa', name: 'Diagrama de Ishikawa', desc: 'Espinha de peixe para análise de causa raiz (6M)', tag: 'Causa Raiz', icon: 'fa-fish', color: '#0ea5e9, #0284c7' },
       { id: 'gut', name: 'Matriz GUT', desc: 'Priorização por Gravidade × Urgência × Tendência', tag: 'Priorização', icon: 'fa-ranking-star', color: '#a855f7, #7c3aed' },
       { id: 'cronometro', name: 'Cronômetro/Pomodoro', desc: 'Timer de produtividade com técnica Pomodoro', tag: 'Produtividade', icon: 'fa-stopwatch', color: '#f43f5e, #e11d48' },
-      { id: 'news_br', name: 'NEP News Brasil', desc: 'Notícias do Brasil em tempo real (GNews)', tag: 'Notícias', icon: 'fa-newspaper', color: '#ef4444, #dc2626' },
-      { id: 'news_world', name: 'NEP Mundo Updates', desc: 'Giro de notícias globais em português', tag: 'Mundo', icon: 'fa-globe', color: '#8b5cf6, #6d28d9' },
-      { id: 'dict', name: 'NEP Dicionário', desc: 'Consulta lexicográfica e sinônimos', tag: 'Educação', icon: 'fa-book-bookmark', color: '#10b981, #059669' },
-      { id: 'brasil', name: 'NEP Brasil Data', desc: 'Dados públicos: CNPJ, CEP, FIPE, Feriados (BrasilAPI)', tag: 'Dados', icon: 'fa-flag', color: '#f59e0b, #d97706' },
       { id: 'fluxograma', name: 'Criador de Fluxograma', desc: 'Monte fluxogramas visuais interativos', tag: 'Fluxo', icon: 'fa-diagram-project', color: '#06b6d4, #0891b2' },
       { id: 'cincoporques', name: '5 Porquês', desc: 'Técnica de análise de causa raiz com gráfico', tag: 'Causa Raiz', icon: 'fa-question', color: '#84cc16, #65a30d' },
       { id: 'cartacontrole', name: 'Carta de Controle', desc: 'Gráfico de controle estatístico de processos', tag: 'CEP', icon: 'fa-chart-line', color: '#6366f1, #4f46e5' },
       { id: 'geradorgraficos', name: 'Gerador de Gráficos', desc: 'Crie qualquer tipo de gráfico com exportação visual', tag: 'Gráficos', icon: 'fa-chart-pie', color: '#f97316, #ea580c' },
       { id: 'nexus', name: 'NEP Nexus', desc: 'Visualização interativa do ecossistema NEP com mandala orbital', tag: 'Visualização', icon: 'fa-atom', color: '#06b6d4, #0e7490' },
-      { id: 'html_creator', name: 'Criador de HTML', desc: 'Crie ferramentas web completas e baixe-as usando IA', tag: 'IA Creator', icon: 'fa-code', color: '#0ea5e9, #0284c7' },
-      { id: 'promptcreator', name: 'Criador de Prompt', desc: 'Descreva sua ideia e gere um prompt profissional otimizado para qualquer IA', tag: 'IA', icon: 'fa-wand-magic-sparkles', color: '#a855f7, #7c3aed' },
       { id: 'estatistica', name: 'Estatística Avançada', desc: 'Análise estatística completa: quartis, dispersão, correlação, anomalias e mais', tag: 'Análise', icon: 'fa-square-root-variable', color: '#6366f1, #4f46e5' },
       { id: 'grafo', name: 'Grafo do NEP', desc: 'Visualização interativa do ecossistema completo: módulos, conexões e fluxos de dados', tag: 'Visualização', icon: 'fa-diagram-project', color: '#00E0FF, #0891b2' }
     ];
@@ -143,8 +137,6 @@ const NexusTools = {
       cartacontrole: typeof CartaControlePro !== 'undefined' ? CartaControlePro.render() : this.renderCartaControle(),
       geradorgraficos: this.renderGeradorGraficos(),
       nexus: this.renderNexus(),
-      html_creator: this.renderHTMLCreator(),
-      promptcreator: this.renderPromptCreator(),
       grafo: typeof NepGrafo !== 'undefined' ? NepGrafo.render() : '<p>Módulo Grafo não carregado.</p>'
     };
 
@@ -429,201 +421,6 @@ const NexusTools = {
     `;
   },
 
-  // ============ CRIADOR DE PROMPT PROFISSIONAL ============
-  renderPromptCreator() {
-    return `
-    <div class="tool-container">
-      <div class="tool-title-row">
-        <div class="tool-icon-sm" style="background:linear-gradient(135deg,#a855f7,#7c3aed)">
-          <i class="fa-solid fa-wand-magic-sparkles"></i>
-        </div>
-        <div>
-          <h2>Criador de Prompt Profissional</h2>
-          <p>Descreva sua ideia em linguagem simples e receba um prompt otimizado para qualquer IA</p>
-        </div>
-      </div>
-
-      <div style="max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:20px;">
-
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;">
-          <div style="display:flex;flex-direction:column;gap:6px;">
-            <label class="pc-lbl">🎯 Para qual IA?</label>
-            <select id="pc-target-ai" class="pc-sel">
-              <option value="chatgpt">ChatGPT / GPT-4</option>
-              <option value="gemini" selected>Google Gemini</option>
-              <option value="claude">Anthropic Claude</option>
-              <option value="copilot">Microsoft Copilot</option>
-              <option value="geral">Qualquer IA</option>
-            </select>
-          </div>
-          <div style="display:flex;flex-direction:column;gap:6px;">
-            <label class="pc-lbl">📋 Tipo de tarefa</label>
-            <select id="pc-task-type" class="pc-sel">
-              <option value="analise">📊 Análise de dados</option>
-              <option value="redacao">✍️ Redação / Texto</option>
-              <option value="codigo">💻 Código</option>
-              <option value="apresentacao">🎤 Apresentação</option>
-              <option value="email">📧 E-mail</option>
-              <option value="gestao">📋 Gestão</option>
-              <option value="criativo">🎨 Criativo</option>
-              <option value="outro">🔧 Outro</option>
-            </select>
-          </div>
-          <div style="display:flex;flex-direction:column;gap:6px;">
-            <label class="pc-lbl">🗣️ Tom desejado</label>
-            <select id="pc-tone" class="pc-sel">
-              <option value="profissional">🏢 Profissional</option>
-              <option value="direto">⚡ Direto</option>
-              <option value="didatico">📚 Didático</option>
-              <option value="criativo">🎨 Criativo</option>
-              <option value="formal">🎩 Formal</option>
-            </select>
-          </div>
-        </div>
-
-        <div style="display:flex;flex-direction:column;gap:8px;">
-          <label class="pc-lbl">💡 Descreva sua ideia ou necessidade</label>
-          <textarea id="pc-idea" class="pc-ta" rows="6"
-            placeholder="Ex: Preciso analisar um relatório de vendas e identificar os meses com maior queda, possíveis causas e criar um plano de ação...&#10;&#10;Quanto mais detalhe você der, melhor será o prompt!"></textarea>
-          <div style="font-size:11px;color:var(--text-tertiary);text-align:right;"><span id="pc-char-count">0</span> caracteres</div>
-        </div>
-
-        <div style="display:flex;flex-direction:column;gap:8px;">
-          <label class="pc-lbl">🏢 Contexto adicional <span style="font-weight:400;font-size:11px;color:var(--text-tertiary)">(opcional)</span></label>
-          <input type="text" id="pc-context" class="pc-inp"
-            placeholder="Ex: Sou analista de qualidade em uma empresa de telecom com 200 agentes...">
-        </div>
-
-        <button id="pc-generate-btn" class="pc-btn-gen">
-          <i class="fa-solid fa-wand-magic-sparkles"></i>
-          <span>Gerar Prompt Profissional</span>
-        </button>
-
-        <div id="pc-loading" style="display:none;justify-content:center;padding:40px 20px;">
-          <div style="display:flex;flex-direction:column;align-items:center;gap:16px;color:var(--text-secondary);font-size:14px;">
-            <div class="pc-spin"></div>
-            <span>Criando seu prompt profissional...</span>
-          </div>
-        </div>
-
-        <div id="pc-output-section" style="display:none;background:var(--surface-card,#131B29);border:1px solid var(--surface-border,#2D3A4F);border-radius:16px;overflow:hidden;">
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 20px;border-bottom:1px solid var(--surface-border,#2D3A4F);background:rgba(168,85,247,0.05);">
-            <div style="display:flex;align-items:center;gap:8px;font-weight:600;font-size:14px;color:var(--text-primary);">
-              <i class="fa-solid fa-sparkles" style="color:#a855f7"></i> Prompt Gerado
-            </div>
-            <div style="display:flex;gap:8px;">
-              <button id="pc-copy-btn" class="pc-btn-sm"><i class="fa-solid fa-copy"></i> Copiar</button>
-              <button id="pc-regen-btn" class="pc-btn-sm pc-btn-ol"><i class="fa-solid fa-rotate"></i> Regerar</button>
-            </div>
-          </div>
-          <div id="pc-result" style="padding:20px;font-size:14px;line-height:1.7;color:var(--text-primary);white-space:pre-wrap;font-family:inherit;min-height:80px;"></div>
-          <div id="pc-tips" style="display:none;padding:14px 20px;border-top:1px solid var(--surface-border,#2D3A4F);font-size:12px;color:var(--text-tertiary);background:rgba(0,0,0,0.08);"></div>
-        </div>
-      </div>
-    </div>
-
-    <style>
-      .pc-lbl { font-size:13px;font-weight:600;color:var(--text-secondary); }
-      .pc-sel,.pc-inp {
-        padding:10px 14px;background:var(--surface-elevated,#1C2438);
-        border:1px solid var(--surface-border,#2D3A4F);border-radius:10px;
-        color:var(--text-primary);font-size:14px;font-family:inherit;transition:border-color 0.2s;
-      }
-      .pc-sel:focus,.pc-inp:focus { outline:none;border-color:#a855f7; }
-      .pc-ta {
-        width:100%;padding:14px;background:var(--surface-elevated,#1C2438);
-        border:1px solid var(--surface-border,#2D3A4F);border-radius:12px;
-        color:var(--text-primary);font-size:14px;font-family:inherit;line-height:1.6;resize:vertical;transition:border-color 0.2s;
-      }
-      .pc-ta:focus { outline:none;border-color:#a855f7;box-shadow:0 0 0 3px rgba(168,85,247,0.12); }
-      .pc-ta::placeholder { color:var(--text-tertiary); }
-      .pc-btn-gen {
-        padding:14px 28px;background:linear-gradient(135deg,#a855f7,#7c3aed);color:white;border:none;
-        border-radius:12px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;
-        display:flex;align-items:center;justify-content:center;gap:10px;transition:all 0.3s;
-        box-shadow:0 4px 16px rgba(168,85,247,0.3);
-      }
-      .pc-btn-gen:hover:not(:disabled) { transform:translateY(-2px);box-shadow:0 8px 24px rgba(168,85,247,0.4); }
-      .pc-btn-gen:disabled { opacity:0.6;cursor:not-allowed; }
-      .pc-btn-sm {
-        padding:6px 14px;background:linear-gradient(135deg,#a855f7,#7c3aed);color:white;border:none;
-        border-radius:8px;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;
-        display:flex;align-items:center;gap:6px;transition:all 0.2s;
-      }
-      .pc-btn-sm:hover { transform:translateY(-1px); }
-      .pc-btn-ol { background:transparent!important;border:1px solid rgba(168,85,247,0.4)!important;color:#a855f7!important; }
-      .pc-btn-ol:hover { background:rgba(168,85,247,0.1)!important; }
-      .pc-spin {
-        width:40px;height:40px;border:3px solid rgba(168,85,247,0.2);
-        border-top-color:#a855f7;border-radius:50%;animation:pc-spin 0.9s linear infinite;
-      }
-      @keyframes pc-spin { to { transform:rotate(360deg); } }
-      [data-theme="light"] .pc-sel,[data-theme="light"] .pc-inp,[data-theme="light"] .pc-ta {
-        background:#f8fafc!important;border-color:#cbd5e1!important;color:#0f172a!important;
-      }
-      [data-theme="light"] #pc-output-section { background:#ffffff!important;border-color:#e2e8f0!important; }
-      [data-theme="light"] #pc-result { color:#0f172a!important; }
-    </style>
-    `;
-  },
-
-  async generatePrompt() {
-    const idea = document.getElementById('pc-idea')?.value.trim();
-    const context = document.getElementById('pc-context')?.value.trim();
-    const targetAI = document.getElementById('pc-target-ai')?.value;
-    const taskType = document.getElementById('pc-task-type')?.value;
-    const tone = document.getElementById('pc-tone')?.value;
-
-    if (!idea) { NexusApp?.showToast?.('Descreva sua ideia antes de gerar o prompt!', 'warning'); return; }
-
-    const aiL = { chatgpt: 'ChatGPT/GPT-4', gemini: 'Google Gemini', claude: 'Claude', copilot: 'Copilot', geral: 'qualquer IA' };
-    const taskL = { analise: 'Análise de Dados', redacao: 'Redação/Texto', codigo: 'Código', apresentacao: 'Apresentação', email: 'E-mail', gestao: 'Gestão', criativo: 'Criativo', outro: 'Outro' };
-    const toneL = { profissional: 'profissional', direto: 'direto e objetivo', didatico: 'didático e claro', criativo: 'criativo', formal: 'formal' };
-
-    const btn = document.getElementById('pc-generate-btn');
-    const output = document.getElementById('pc-output-section');
-    const loading = document.getElementById('pc-loading');
-    const resultEl = document.getElementById('pc-result');
-    const tipsEl = document.getElementById('pc-tips');
-
-    btn.disabled = true;
-    output.style.display = 'none';
-    loading.style.display = 'flex';
-
-    const metaPrompt = `Você é especialista em prompt engineering.\nCrie um prompt profissional para ${aiL[targetAI]}.\n\nSOLICITAÇÃO: "${idea}"\n${context ? `CONTEXTO: "${context}"\n` : ''}TIPO: ${taskL[taskType]} | TOM: ${toneL[tone]}\n\nO prompt deve: definir papel/persona da IA, formato de saída esperado, restrições, ser específico e sem ambiguidades, otimizado para ${aiL[targetAI]}.\n\nRetorne APENAS o prompt final pronto para copiar e colar. Depois "---" e 2-3 dicas prefixadas com "💡".`;
-
-    try {
-      const GEMINI_KEY = window.getGeminiApiKey ? window.getGeminiApiKey() : '';
-      const resp = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contents: [{ parts: [{ text: metaPrompt }] }], generationConfig: { temperature: 0.7, maxOutputTokens: 2000 } })
-        }
-      );
-      const data = await resp.json();
-      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-      if (!text) throw new Error('Resposta vazia');
-
-      const parts = text.split('---');
-      resultEl.textContent = parts[0]?.trim() || text;
-      if (parts[1]?.trim()) {
-        tipsEl.innerHTML = `<strong>💡 Dicas:</strong><br>${parts[1].trim().replace(/\n/g, '<br>')}`;
-        tipsEl.style.display = 'block';
-      } else { tipsEl.style.display = 'none'; }
-
-      loading.style.display = 'none';
-      output.style.display = 'block';
-      output.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-
-    } catch (err) {
-      loading.style.display = 'none';
-      NexusApp?.showToast?.('Erro ao gerar prompt: ' + err.message, 'error');
-    }
-    btn.disabled = false;
-  },
-
   // ============ EVENT BINDINGS ============
   bindEvents() {
 
@@ -649,35 +446,6 @@ const NexusTools = {
         if (tool === 'estatistica') {
           window.open('NEP_ESTATISTICA_AVANCADA.html', '_blank');
           return;
-        }
-
-        // API Tools Routing
-        if (['news_br', 'news_world', 'dict', 'brasil'].includes(tool)) {
-          if (typeof nexusAPITools !== 'undefined') {
-            this.currentTool = tool;
-            document.getElementById('page-content').innerHTML = `
-                <div class="tools-page">
-                  <header class="tools-header">
-                    <button class="tools-back" id="btn-back-api"><i class="fa-solid fa-arrow-left"></i> Voltar</button>
-                  </header>
-                  <div id="api-tool-wrapper"></div>
-                </div>
-             `;
-
-            // Setup container and render
-            nexusAPITools.container = document.getElementById('api-tool-wrapper');
-            if (tool === 'news_br') nexusAPITools.renderNews('br');
-            else if (tool === 'news_world') nexusAPITools.renderNews('world');
-            else if (tool === 'dict') nexusAPITools.renderDictionary();
-            else if (tool === 'brasil') nexusAPITools.renderBrasilData();
-
-            // Back button logic
-            document.getElementById('btn-back-api').addEventListener('click', () => {
-              this.currentTool = 'menu';
-              this.render(document.getElementById('page-content'));
-            });
-            return;
-          }
         }
 
         this.currentTool = tool;
@@ -752,18 +520,6 @@ const NexusTools = {
     $('btn-export-dmaic')?.addEventListener('click', () => this.exportDMAIC());
     $('btn-clear-dmaic')?.addEventListener('click', () => this.clearDMAIC());
 
-    // ===== CRIADOR DE PROMPT =====
-    $('pc-generate-btn')?.addEventListener('click', () => this.generatePrompt());
-    $('pc-regen-btn')?.addEventListener('click', () => this.generatePrompt());
-    $('pc-copy-btn')?.addEventListener('click', () => {
-      const text = $('pc-result')?.textContent;
-      if (text) navigator.clipboard.writeText(text).then(() => NexusApp?.showToast?.('✅ Prompt copiado!', 'success'));
-    });
-    $('pc-idea')?.addEventListener('input', () => {
-      const len = $('pc-idea')?.value.length || 0;
-      const counter = $('pc-char-count');
-      if (counter) counter.textContent = len;
-    });
 
     // ===== COMPRESSOR =====
     const videoUploadArea = $('video-upload-area');
@@ -3966,13 +3722,6 @@ const NexusTools = {
       this.nexusState.simulatorIdx = (this.nexusState.simulatorIdx + 1) % this.nexusData.scenarios.length;
       if (content) content.innerHTML = this.renderNexusSimulator();
     }, 1500);
-  },
-
-  // ============ HTML CREATOR ============
-  renderHTMLCreator() {
-    // Delegate to the specialized module
-    setTimeout(() => NexusHTMLCreator.postRender(), 100);
-    return NexusHTMLCreator.render();
   }
 };
 

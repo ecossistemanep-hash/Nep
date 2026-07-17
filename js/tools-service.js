@@ -24,10 +24,6 @@ const ToolsService = {
     senha: { name: 'Gerador de Senha', icon: 'fa-key', category: 'Segurança', color: '#f59e0b' },
     compressor: { name: 'Compressor de Vídeo', icon: 'fa-video', category: 'Multimídia', color: '#ec4899' },
     cronometro: { name: 'Cronômetro/Pomodoro', icon: 'fa-stopwatch', category: 'Produtividade', color: '#f43f5e' },
-    news_br: { name: 'NEP News Brasil', icon: 'fa-newspaper', category: 'API', color: '#ef4444' },
-    news_world: { name: 'NEP Mundo Updates', icon: 'fa-globe', category: 'API', color: '#8b5cf6' },
-    dict: { name: 'NEP Dicionário', icon: 'fa-book-bookmark', category: 'API', color: '#10b981' },
-    brasil: { name: 'NEP Brasil Data', icon: 'fa-flag', category: 'API', color: '#f59e0b' },
     fluxograma: { name: 'Criador de Fluxograma', icon: 'fa-diagram-project', category: 'Visualização', color: '#06b6d4' },
     geradorgraficos: { name: 'Gerador de Gráficos', icon: 'fa-chart-pie', category: 'Visualização', color: '#f97316' },
     nexus: { name: 'NEP Nexus', icon: 'fa-atom', category: 'Visualização', color: '#06b6d4' }

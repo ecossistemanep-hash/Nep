@@ -66,18 +66,12 @@ const NepGrafo = {
             { id: 'tool_carta', label: 'Carta Controle', category: 'ferramentas', icon: '📉', size: 18, desc: 'Controle estatístico (CEP)', ring: 4 },
             { id: 'tool_fluxo', label: 'Fluxograma', category: 'ferramentas', icon: '🔀', size: 18, desc: 'Editor visual de fluxogramas', ring: 4 },
             { id: 'tool_graficos', label: 'Gráficos', category: 'ferramentas', icon: '🎨', size: 18, desc: 'Gerador de gráficos customizados', ring: 4 },
-            { id: 'tool_prompt', label: 'Prompt Creator', category: 'ia', icon: '✨', size: 20, desc: 'Gerador de prompts para IA', ring: 4 },
-            { id: 'tool_html', label: 'HTML Creator', category: 'ia', icon: '💻', size: 20, desc: 'Criador de ferramentas web via IA', ring: 4 },
             { id: 'tool_senha', label: 'Gerador Senha', category: 'ferramentas', icon: '🔑', size: 16, desc: 'Senhas seguras personalizadas', ring: 4 },
             { id: 'tool_crono', label: 'Pomodoro', category: 'ferramentas', icon: '⏱️', size: 16, desc: 'Timer de produtividade', ring: 4 },
             { id: 'tool_compress', label: 'Compressor', category: 'ferramentas', icon: '🗜️', size: 16, desc: 'Compressor de vídeo', ring: 4 },
             { id: 'tool_estat', label: 'Estatística', category: 'ferramentas', icon: '📐', size: 18, desc: 'Análise estatística avançada', ring: 4 },
 
             // APIs (ring 4)
-            { id: 'api_clima', label: 'NEP Clima', category: 'api', icon: '🌦️', size: 18, desc: 'Previsão meteorológica em tempo real', ring: 4 },
-            { id: 'api_news', label: 'NEP News', category: 'api', icon: '📰', size: 18, desc: 'Notícias do Brasil e do mundo', ring: 4 },
-            { id: 'api_dict', label: 'Dicionário', category: 'api', icon: '📖', size: 16, desc: 'Consulta lexicográfica', ring: 4 },
-            { id: 'api_brasil', label: 'Brasil Data', category: 'api', icon: '🇧🇷', size: 18, desc: 'CEP, CNPJ, FIPE, Feriados', ring: 4 },
         ];
     },
 
@@ -104,8 +98,7 @@ const NepGrafo = {
             // IA Ecosystem
             { from: 'estagiario', to: 'gemini' }, { from: 'estagiario', to: 'ppt_engine' },
             { from: 'estagiario', to: 'kanban' }, { from: 'estagiario', to: 'calendar' },
-            { from: 'nep_help', to: 'gemini' }, { from: 'tool_prompt', to: 'gemini' },
-            { from: 'tool_html', to: 'gemini' }, { from: 'calendar', to: 'gemini' },
+            { from: 'nep_help', to: 'gemini' }, { from: 'calendar', to: 'gemini' },
             { from: 'ppt_engine', to: 'gemini' },
 
             // Tools hub
@@ -114,12 +107,9 @@ const NepGrafo = {
             { from: 'tools', to: 'tool_gut' }, { from: 'tools', to: 'tool_5pq' },
             { from: 'tools', to: 'tool_corr' }, { from: 'tools', to: 'tool_fact' },
             { from: 'tools', to: 'tool_carta' }, { from: 'tools', to: 'tool_fluxo' },
-            { from: 'tools', to: 'tool_graficos' }, { from: 'tools', to: 'tool_prompt' },
-            { from: 'tools', to: 'tool_html' }, { from: 'tools', to: 'tool_senha' },
+            { from: 'tools', to: 'tool_graficos' }, { from: 'tools', to: 'tool_senha' },
             { from: 'tools', to: 'tool_crono' }, { from: 'tools', to: 'tool_compress' },
             { from: 'tools', to: 'tool_estat' },
-            { from: 'tools', to: 'api_clima' }, { from: 'tools', to: 'api_news' },
-            { from: 'tools', to: 'api_dict' }, { from: 'tools', to: 'api_brasil' },
 
             // Firebase backbone
             { from: 'firebase', to: 'auth' },
