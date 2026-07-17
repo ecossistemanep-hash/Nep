@@ -4,33 +4,6 @@
  */
 
 /**
- * Chave da API Perplexity (usada em calendar.js, tools.js, tools-ishikawa-pro.js).
- * NUNCA cravar a chave no código-fonte — ela fica só no localStorage deste navegador.
- * Para configurar: abra o Console do navegador (F12) e rode:
- *   window.setPplxApiKey('sua-chave-aqui')
- */
-window.getPplxApiKey = function () {
-  return localStorage.getItem('nep_pplx_api_key') || '';
-};
-window.setPplxApiKey = function (key) {
-  if (key) localStorage.setItem('nep_pplx_api_key', key);
-  else localStorage.removeItem('nep_pplx_api_key');
-};
-
-/**
- * Chave da API Google Gemini (usada pelo Criador de Fluxograma e NEP Help).
- * Mesmo padrão: fica apenas no localStorage deste navegador.
- *   window.setGeminiApiKey('sua-chave-aqui')
- */
-window.getGeminiApiKey = function () {
-  return localStorage.getItem('nep_gemini_api_key') || '';
-};
-window.setGeminiApiKey = function (key) {
-  if (key) localStorage.setItem('nep_gemini_api_key', key);
-  else localStorage.removeItem('nep_gemini_api_key');
-};
-
-/**
  * SEGURANÇA — Escape de HTML para prevenir XSS armazenado.
  * Use SEMPRE que interpolar conteúdo vindo de usuários (títulos de tarefas,
  * mensagens, nomes, tópicos de fórum) dentro de innerHTML/template strings.

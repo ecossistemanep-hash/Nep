@@ -1058,9 +1058,6 @@ const NexusTools = {
     isPanning: false
   },
 
-  // Chave configurada pelo admin (ver window.getPplxApiKey em js/app.js). Nunca hardcode aqui.
-  get PPLX_API_KEY() { return window.getPplxApiKey ? window.getPplxApiKey() : ''; },
-
   fluxSetZoom(z) {
     this.fluxState.zoom = Math.max(0.3, Math.min(2, z));
     const container = document.getElementById('flux-canvas-container');
@@ -1185,9 +1182,6 @@ const NexusTools = {
           </div>
 
           <div class="flux-actions-section">
-            <button class="tools-btn-ai" id="btn-flux-ai">
-              <i class="fa-solid fa-wand-magic-sparkles"></i> Gerar com IA
-            </button>
             <div style="display:flex;gap:6px;align-items:center;margin:8px 0">
               <button class="tools-btn-secondary" id="btn-flux-zoom-out" style="padding:6px 10px;font-size:16px">−</button>
               <span id="flux-zoom-label" style="font-size:12px;min-width:40px;text-align:center">100%</span>
@@ -1216,27 +1210,6 @@ const NexusTools = {
           </main>
         </div>
 
-        <!-- AI Modal -->
-        <div id="flux-ai-modal" class="flux-modal-overlay" style="display: none;">
-          <div class="flux-modal">
-            <div class="flux-modal-header">
-              <h3>Gerar Fluxograma com IA</h3>
-              <button id="btn-flux-close-modal" class="flux-close-btn">&times;</button>
-            </div>
-            <div class="flux-modal-body">
-              <p>Descreva o processo que você deseja montar. Ex: "Processo de reembolso onde o funcionário solicita, o gestor aprova e o financeiro paga."</p>
-              <textarea id="flux-ai-prompt" placeholder="Descreva seu fluxo aqui..."></textarea>
-              <div id="flux-ai-loading" style="display: none; color: var(--primary-400); margin-top: 10px;">
-                <i class="fa-solid fa-spinner fa-spin"></i> Gerando fluxo... por favor aguarde...
-              </div>
-            </div>
-            <div class="flux-modal-footer">
-              <button id="btn-flux-generate-ai" class="tools-btn-ai" style="width: 100%;">
-                <i class="fa-solid fa-wand-magic-sparkles"></i> Gerar Fluxograma
-              </button>
-            </div>
-          </div>
-        </div>
       </div>
     `;
   },
@@ -1304,20 +1277,12 @@ const NexusTools = {
     document.getElementById('btn-flux-delete')?.addEventListener('click', () => this.fluxDeleteSelected());
     document.getElementById('btn-flux-clear')?.addEventListener('click', () => this.fluxClearAll());
     document.getElementById('btn-flux-export')?.addEventListener('click', () => this.fluxExportPNG());
-    document.getElementById('btn-flux-ai')?.addEventListener('click', () => this.fluxOpenAIModal());
-    document.getElementById('btn-flux-close-modal')?.addEventListener('click', () => this.fluxCloseAIModal());
-    document.getElementById('btn-flux-generate-ai')?.addEventListener('click', () => this.fluxGenerateFromAI());
     document.getElementById('btn-flux-rotate')?.addEventListener('click', () => this.fluxRotateSelected());
 
     // Zoom controls
     document.getElementById('btn-flux-zoom-in')?.addEventListener('click', () => this.fluxSetZoom(this.fluxState.zoom * 1.2));
     document.getElementById('btn-flux-zoom-out')?.addEventListener('click', () => this.fluxSetZoom(this.fluxState.zoom / 1.2));
     document.getElementById('btn-flux-zoom-fit')?.addEventListener('click', () => this.fluxFitView());
-
-    // Close modal on outside click
-    document.getElementById('flux-ai-modal')?.addEventListener('click', (e) => {
-      if (e.target.id === 'flux-ai-modal') this.fluxCloseAIModal();
-    });
 
     // Zoom with mouse wheel
     workspace.addEventListener('wheel', (e) => {
@@ -1750,16 +1715,6 @@ const NexusTools = {
     });
   },
 
-  fluxOpenAIModal() {
-    document.getElementById('flux-ai-modal').style.display = 'flex';
-    document.getElementById('flux-ai-prompt').value = '';
-    document.getElementById('flux-ai-prompt').focus();
-  },
-
-  fluxCloseAIModal() {
-    document.getElementById('flux-ai-modal').style.display = 'none';
-  },
-
   // ============ PERSISTENCE (CLOUD) ============
   async fluxSaveToCloud() {
     const user = window.NepAuth?.getUser();
@@ -1831,196 +1786,6 @@ const NexusTools = {
     this.fluxState.connections = [];
     this.fluxSetPan(0, 0); // Reset pan on clear
     this.fluxSetZoom(1); // Reset zoom on clear
-  },
-
-  async fluxGenerateFromAI() {
-    const prompt = document.getElementById('flux-ai-prompt').value.trim();
-    if (!prompt) {
-      NexusApp?.showToast?.('Por favor, descreva o processo.', 'error');
-      return;
-    }
-
-    const loading = document.getElementById('flux-ai-loading');
-    const btn = document.getElementById('btn-flux-generate-ai');
-    loading.style.display = 'block';
-    btn.disabled = true;
-
-    try {
-      // Clear canvas
-      document.getElementById('flux-nodes-layer').innerHTML = '';
-      document.getElementById('flux-connections-layer').innerHTML = '';
-      this.fluxEnsureMarker();
-      this.fluxState.connections = [];
-      this.fluxState.nodeIdCounter = 0;
-
-      const systemPrompt = `
-        You are a flowchart assistant. Convert the user's description into a JSON structure.
-        IMPORTANT: Write ALL labels in Portuguese (PT-BR).
-        
-        Supported Node Types: "start", "end", "process", "decision", "io", "document", "database", "email", "whatsapp", "user", "server", "phone", "alert", "gear", "folder", "chat", "money", "timer", "check".
-        
-        Rules:
-        1. "start" and "end" are type "start". Use "Início" and "Fim" as labels.
-        2. "decision" nodes must have "?" at the end of the label.
-        3. CRITICAL: Place nodes in a VERTICAL column (x=0 for main flow). Only use x>0 for branches (e.g. "Não" paths).
-        4. Space nodes incrementally: y=0, y=1, y=2, etc.
-        5. For decisions: the "Sim" path continues DOWN (same x), the "Não" path goes RIGHT (x+1, same y or y+1).
-        6. MANDATORY: Connections from decision nodes MUST have a "label" field: "Sim" or "Não".
-        7. Use short, clear labels (max 4 words per node).
-        8. Return ONLY the JSON object. No markdown.
-        
-        Output Format:
-        {
-            "nodes": [
-                { "id": "1", "type": "start", "label": "Início", "x": 0, "y": 0 },
-                { "id": "2", "type": "process", "label": "Etapa 1", "x": 0, "y": 1 },
-                { "id": "3", "type": "decision", "label": "Aprovado?", "x": 0, "y": 2 },
-                { "id": "4", "type": "process", "label": "Executar", "x": 0, "y": 3 },
-                { "id": "5", "type": "process", "label": "Corrigir", "x": 1, "y": 2 }
-            ],
-            "connections": [
-                { "source": "1", "target": "2", "label": "" },
-                { "source": "2", "target": "3", "label": "" },
-                { "source": "3", "target": "4", "label": "Sim" },
-                { "source": "3", "target": "5", "label": "Não" },
-                { "source": "5", "target": "2", "label": "" }
-            ]
-        }
-      `;
-
-      const GEMINI_KEY = window.getGeminiApiKey ? window.getGeminiApiKey() : '';
-      const fullPrompt = systemPrompt + '\n\nCreate a flowchart for: ' + prompt;
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: fullPrompt }] }],
-            generationConfig: { temperature: 0.2, maxOutputTokens: 4000 }
-          })
-        }
-      );
-
-      if (!response.ok) throw new Error(`API Error: ${response.status}`);
-
-      const data = await response.json();
-      let content = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-      content = content.replace(/```json/g, '').replace(/```/g, '').trim();
-
-      const flowData = JSON.parse(content);
-      this.fluxRenderAIData(flowData);
-
-      this.fluxCloseAIModal();
-      NexusApp?.showToast?.('Fluxograma gerado com sucesso!', 'success');
-    } catch (error) {
-      console.error(error);
-      NexusApp?.showToast?.('Erro ao gerar fluxograma: ' + error.message, 'error');
-    } finally {
-      loading.style.display = 'none';
-      btn.disabled = false;
-    }
-  },
-
-  fluxRenderAIData(data) {
-    const MARGIN_TOP = 60;
-    const X_STEP = 280;
-    const Y_STEP = 150;
-    const idMap = {};
-
-    const workspace = document.getElementById('flux-workspace');
-    const wsWidth = workspace ? workspace.clientWidth : 800;
-
-    const iconMap = {
-      'email': 'fa-envelope', 'whatsapp': 'fa-whatsapp', 'user': 'fa-user',
-      'server': 'fa-server', 'phone': 'fa-phone', 'alert': 'fa-triangle-exclamation',
-      'gear': 'fa-gear', 'folder': 'fa-folder', 'chat': 'fa-comments',
-      'money': 'fa-dollar-sign', 'timer': 'fa-clock', 'check': 'fa-check-circle'
-    };
-
-    // Passo 1: Criar todos os nós em posições provisórias
-    const nodeDataMap = {};
-    data.nodes.forEach(node => {
-      const gx = node.x || 0, gy = node.y || 0;
-      const tempX = 100 + gx * X_STEP;
-      const tempY = MARGIN_TOP + gy * Y_STEP;
-      const iconClass = iconMap[node.type] || '';
-
-      const createdNode = this.fluxCreateNode(node.type, tempX, tempY, iconClass, false);
-      const contentDiv = createdNode.querySelector('.content');
-      if (contentDiv) contentDiv.innerText = node.label || node.text || '';
-      idMap[node.id] = createdNode.id;
-      nodeDataMap[node.id] = { el: createdNode, gx, gy };
-    });
-
-    // Passo 2: Medir larguras reais e centralizar por coluna
-    // Agrupar nós por coluna X
-    const columns = {};
-    Object.values(nodeDataMap).forEach(nd => {
-      if (!columns[nd.gx]) columns[nd.gx] = [];
-      columns[nd.gx].push(nd);
-    });
-
-    // Para cada coluna, encontrar o centro X ideal e centralizar todos os nós
-    Object.keys(columns).forEach(gxStr => {
-      const gx = parseInt(gxStr);
-      const colNodes = columns[gx];
-      // Centro da coluna no workspace
-      const colCenterX = (wsWidth / 2) - ((Object.keys(columns).length - 1) * X_STEP / 2) + gx * X_STEP;
-
-      colNodes.forEach(nd => {
-        const w = nd.el.offsetWidth || 150;
-        const centeredX = colCenterX - w / 2;
-        nd.el.style.left = `${Math.max(20, centeredX)}px`;
-      });
-    });
-
-    // Passo 3: Criar conexões com detecção de handle
-    data.connections.forEach(conn => {
-      const sourceId = idMap[conn.source || conn.from];
-      const targetId = idMap[conn.target || conn.to];
-      if (!sourceId || !targetId) return;
-
-      const srcNd = nodeDataMap[conn.source || conn.from];
-      const tgtNd = nodeDataMap[conn.target || conn.to];
-      let srcHandle = 'bottom', tgtHandle = 'top';
-
-      if (srcNd && tgtNd) {
-        const dx = tgtNd.gx - srcNd.gx;
-        const dy = tgtNd.gy - srcNd.gy;
-        if (dx > 0) { srcHandle = 'right'; tgtHandle = 'left'; }
-        else if (dx < 0) { srcHandle = 'left'; tgtHandle = 'right'; }
-        else if (dy < 0) { srcHandle = 'top'; tgtHandle = 'bottom'; }
-      }
-
-      const connObj = {
-        id: `flux-conn-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-        sourceId, targetId, sourceHandle: srcHandle, targetHandle: tgtHandle,
-        label: conn.label || ''
-      };
-      this.fluxState.connections.push(connObj);
-      this.fluxRenderConnection(connObj);
-
-      // Passo 4: Criar label arrastável (Sim/Não) como nó
-      if (conn.label && conn.label.trim()) {
-        const srcEl = document.getElementById(sourceId);
-        const tgtEl = document.getElementById(targetId);
-        if (srcEl && tgtEl) {
-          const sx = parseFloat(srcEl.style.left) + (srcEl.offsetWidth || 100) / 2;
-          const sy = parseFloat(srcEl.style.top) + (srcEl.offsetHeight || 60) / 2;
-          const tx = parseFloat(tgtEl.style.left) + (tgtEl.offsetWidth || 100) / 2;
-          const ty = parseFloat(tgtEl.style.top) + (tgtEl.offsetHeight || 60) / 2;
-          const lx = (sx + tx) / 2 - 15;
-          const ly = (sy + ty) / 2 - 10;
-          const labelNode = this.fluxCreateNode('fluxlabel', lx, ly, '', false);
-          const labelContent = labelNode.querySelector('.content');
-          if (labelContent) labelContent.innerText = conn.label;
-        }
-      }
-    });
-
-    this.fluxSaveToCloud();
-    this.fluxFitView();
   },
 
   fluxSetPan(x, y) {

@@ -56,9 +56,6 @@ const CincoPorquesPro = {
             </div>
           </div>
           <div class="tool-pro-actions">
-            <button class="quality-btn quality-btn-ai" id="5porques-ai">
-              <i class="fa-solid fa-wand-magic-sparkles"></i> Sugerir com IA
-            </button>
             <button class="quality-btn quality-btn-secondary" id="5porques-export">
               <i class="fa-solid fa-download"></i> Exportar
             </button>
@@ -211,8 +208,6 @@ const CincoPorquesPro = {
 
     document.getElementById('5porques-export')?.addEventListener('click', () => this.showExportOptions());
 
-    document.getElementById('5porques-ai')?.addEventListener('click', () => this.aiSuggest());
-
     document.getElementById('5porques-ishikawa')?.addEventListener('click', () => {
       // Transferir a causa raiz para o Ishikawa
       if (this.data.levels[4]) {
@@ -251,69 +246,6 @@ const CincoPorquesPro = {
     const container = document.getElementById('page-content');
     if (container && NexusTools.currentTool === 'cincoporques') {
       NexusTools.render(container);
-    }
-  },
-
-  async aiSuggest() {
-    const problem = this.data.problem || document.getElementById('5porques-problem')?.value;
-    if (!problem) {
-      NexusApp?.showToast?.('Defina o problema primeiro', 'error');
-      return;
-    }
-
-    this.saveAll();
-    NexusApp?.showToast?.('🤖 Analisando com IA...', 'info');
-
-    try {
-      const PPLX_API_KEY = NexusTools.PPLX_API_KEY;
-      if (!PPLX_API_KEY) throw new Error('API key não configurada');
-
-      const response = await fetch('https://api.perplexity.ai/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${PPLX_API_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          model: 'llama-3.1-sonar-small-128k-online',
-          messages: [{
-            role: 'user',
-            content: `Aplique a técnica dos 5 Porquês para este problema: "${problem}"
-Responda APENAS em JSON: {"levels": ["porque 1", "porque 2", "porque 3", "porque 4", "porque 5"]}`
-          }],
-          max_tokens: 500
-        })
-      });
-
-      if (!response.ok) throw new Error('API retornou erro');
-
-      const data = await response.json();
-      const content = data.choices?.[0]?.message?.content;
-      const jsonMatch = content?.match(/\{[\s\S]*\}/);
-
-      if (jsonMatch) {
-        const suggestions = JSON.parse(jsonMatch[0]);
-        if (Array.isArray(suggestions.levels)) {
-          this.data.levels = suggestions.levels.slice(0, 5);
-          while (this.data.levels.length < 5) this.data.levels.push('');
-          this.save();
-          this.refresh();
-          NexusApp?.showToast?.('✨ Sugestões aplicadas!', 'success');
-        }
-      } else {
-        throw new Error('Resposta inválida');
-      }
-    } catch (error) {
-      console.warn('[5 Porquês Pro] API Error:', error.message);
-      // Fallback offline
-      if (typeof AIFallback !== 'undefined') {
-        this.data.levels = AIFallback.cincoporques;
-        this.save();
-        this.refresh();
-        NexusApp?.showToast?.('📝 Sugestões offline aplicadas', 'info');
-      } else {
-        NexusApp?.showToast?.('IA indisponível', 'warning');
-      }
     }
   },
 

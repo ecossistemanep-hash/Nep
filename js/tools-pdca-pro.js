@@ -108,9 +108,6 @@ const PDCAPro = {
             </div>
           </div>
           <div class="tool-pro-actions">
-            <button class="quality-btn quality-btn-ai" id="pdca-pro-ai-suggest">
-              <i class="fa-solid fa-wand-magic-sparkles"></i> Sugerir com IA
-            </button>
             <button class="quality-btn quality-btn-secondary" id="pdca-pro-export">
               <i class="fa-solid fa-download"></i> Exportar
             </button>
@@ -376,8 +373,6 @@ const PDCAPro = {
     });
 
     document.getElementById('pdca-pro-export')?.addEventListener('click', () => this.showExportOptions());
-
-    document.getElementById('pdca-pro-ai-suggest')?.addEventListener('click', () => this.aiSuggest());
   },
 
   addItem(phase) {
@@ -539,89 +534,6 @@ const PDCAPro = {
     a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
-  },
-
-  async aiSuggest() {
-    const problem = this.data.description || this.data.title;
-    if (!problem) {
-      NexusApp?.showToast?.('Preencha o título ou descrição do problema primeiro', 'error');
-      return;
-    }
-
-    NexusApp?.showToast?.('🤖 Consultando IA...', 'info');
-
-    try {
-      const PPLX_API_KEY = NexusTools.PPLX_API_KEY;
-      if (!PPLX_API_KEY) throw new Error('API key não configurada');
-
-      const response = await fetch('https://api.perplexity.ai/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${PPLX_API_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          model: 'llama-3.1-sonar-small-128k-online',
-          messages: [{
-            role: 'user',
-            content: `Para o seguinte problema empresarial: "${problem}"
-
-Sugira um ciclo PDCA completo e estruturado em formato JSON com a seguinte estrutura:
-{
-  "plan": ["ação 1", "ação 2", "ação 3"],
-  "do": ["ação 1", "ação 2"],
-  "check": ["verificação 1", "verificação 2"],
-  "act": ["padronização 1", "melhoria 1"]
-}
-
-Responda APENAS com o JSON, sem explicações.`
-          }],
-          max_tokens: 1000
-        })
-      });
-
-      if (!response.ok) throw new Error('API retornou erro');
-
-      const data = await response.json();
-      const content = data.choices?.[0]?.message?.content;
-
-      const jsonMatch = content?.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        this.applySuggestions(JSON.parse(jsonMatch[0]));
-      } else {
-        throw new Error('Resposta inválida');
-      }
-    } catch (error) {
-      console.warn('[PDCA Pro] API Error:', error.message);
-      // Fallback para sugestões offline
-      if (typeof AIFallback !== 'undefined') {
-        this.applySuggestions(AIFallback.pdca);
-      } else {
-        NexusApp?.showToast?.('IA indisponível. Tente novamente mais tarde.', 'warning');
-      }
-    }
-  },
-
-  applySuggestions(suggestions) {
-    ['plan', 'do', 'check', 'act'].forEach(phase => {
-      if (Array.isArray(suggestions[phase])) {
-        suggestions[phase].forEach(text => {
-          if (!this.data[phase]) this.data[phase] = [];
-          this.data[phase].push({
-            id: Date.now() + Math.random(),
-            text: text,
-            status: 'pending',
-            owner: '',
-            deadline: '',
-            createdAt: new Date().toISOString(),
-            aiGenerated: true
-          });
-        });
-      }
-    });
-    this.save();
-    this.refresh();
-    NexusApp?.showToast?.('✨ Sugestões adicionadas!', 'success');
   }
 };
 

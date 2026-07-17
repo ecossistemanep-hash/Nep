@@ -81,9 +81,6 @@ const IshikawaPro = {
             </div>
           </div>
           <div class="tool-pro-actions">
-            <button class="quality-btn quality-btn-ai" id="ishi-pro-ai">
-              <i class="fa-solid fa-wand-magic-sparkles"></i> Analisar com IA
-            </button>
             <button class="quality-btn quality-btn-secondary" id="ishi-pro-export-png">
               <i class="fa-solid fa-image"></i> Exportar PNG
             </button>
@@ -271,7 +268,6 @@ const IshikawaPro = {
 
     document.getElementById('ishi-pro-export')?.addEventListener('click', () => this.showExportOptions());
     document.getElementById('ishi-pro-export-png')?.addEventListener('click', () => this.exportPNG());
-    document.getElementById('ishi-pro-ai')?.addEventListener('click', () => this.aiAnalyze());
   },
 
   addCause(cat) {
@@ -405,114 +401,6 @@ const IshikawaPro = {
     } catch (e) {
       console.error('[Ishikawa Pro] Export PNG error:', e);
       NexusApp?.showToast?.('Erro ao exportar PNG', 'error');
-    }
-  },
-
-  async aiAnalyze() {
-    if (!this.data.problem) {
-      NexusApp?.showToast?.('Defina o problema primeiro', 'error');
-      return;
-    }
-
-    NexusApp?.showToast?.('🤖 Analisando com IA...', 'info');
-
-    try {
-      const PPLX_API_KEY = NexusTools.PPLX_API_KEY || (window.getPplxApiKey ? window.getPplxApiKey() : '');
-
-      const currentCauses = Object.entries(this.data.causes)
-        .map(([cat, causes]) => `${this.categories[cat].label}: ${causes.map(c => c.text).join(', ') || 'nenhuma'}`)
-        .join('\n');
-
-      const response = await fetch('https://api.perplexity.ai/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${PPLX_API_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          model: 'llama-3.1-sonar-small-128k-online',
-          messages: [{
-            role: 'user',
-            content: `Analise este problema empresarial usando o diagrama Ishikawa (6M):
-
-PROBLEMA: ${this.data.problem}
-
-Causas já identificadas:
-${currentCauses}
-
-Sugira causas adicionais para cada categoria que ainda não foram mencionadas. 
-Responda em JSON assim:
-{
-  "metodo": ["causa 1", "causa 2"],
-  "maquina": ["causa 1"],
-  "maoDeObra": ["causa 1", "causa 2"],
-  "material": ["causa 1"],
-  "medicao": ["causa 1"],
-  "meioAmbiente": ["causa 1"]
-}
-
-Responda APENAS com o JSON, sem explicações.`
-          }],
-          max_tokens: 1000
-        })
-      });
-
-      const data = await response.json();
-      const content = data.choices?.[0]?.message?.content;
-
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        const suggestions = JSON.parse(jsonMatch[0]);
-        let added = 0;
-
-        Object.keys(this.categories).forEach(cat => {
-          if (Array.isArray(suggestions[cat])) {
-            suggestions[cat].forEach(text => {
-              // Evitar duplicatas
-              const exists = this.data.causes[cat]?.some(c => c.text.toLowerCase() === text.toLowerCase());
-              if (!exists) {
-                if (!this.data.causes[cat]) this.data.causes[cat] = [];
-                this.data.causes[cat].push({
-                  id: Date.now() + Math.random(),
-                  text,
-                  rating: 0,
-                  createdAt: new Date().toISOString(),
-                  aiGenerated: true
-                });
-                added++;
-              }
-            });
-          }
-        });
-
-        this.save();
-        this.refresh();
-        NexusApp?.showToast?.(`✨ ${added} causas sugeridas pela IA!`, 'success');
-      }
-    } catch (error) {
-      console.warn('[Ishikawa Pro] API Error:', error.message);
-      // Fallback to offline suggestions
-      if (typeof AIFallback !== 'undefined') {
-        const suggestions = AIFallback.ishikawa;
-        let added = 0;
-        Object.keys(suggestions).forEach(cat => {
-          if (Array.isArray(suggestions[cat])) {
-            suggestions[cat].forEach(text => {
-              const exists = this.data.causes[cat]?.some(c => c.text.toLowerCase() === text.toLowerCase());
-              if (!exists) {
-                if (!this.data.causes[cat]) this.data.causes[cat] = [];
-                this.data.causes[cat].push({ id: Date.now() + Math.random(), text, rating: 0, aiGenerated: true });
-                added++;
-              }
-            });
-          }
-        });
-        this.save();
-        this.refresh();
-        NexusApp?.showToast?.(`📝 ${added} sugestões offline adicionadas`, 'info');
-      } else {
-        NexusApp?.showToast?.('IA indisponível', 'warning');
-      }
     }
   },
 
