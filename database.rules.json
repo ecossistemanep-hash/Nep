@@ -3,8 +3,8 @@
     ".read": false,
     ".write": false,
     "presence": {
+      ".read": "auth != null",
       "$uid": {
-        ".read": "auth != null",
         ".write": "auth != null && auth.uid == $uid",
         ".validate": "newData.hasChildren(['nome', 'lastSeen']) && newData.child('nome').isString() && newData.child('nome').val().length <= 100"
       }
