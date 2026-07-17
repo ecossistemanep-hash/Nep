@@ -19,7 +19,7 @@ const NepGrafo = {
             { id: 'kanban', label: 'Kanban', category: 'modulo', icon: '📋', size: 34, desc: 'Gestão de tarefas: Backlog → Execução → Revisão → Concluído', ring: 1 },
             { id: 'ranking', label: 'Ranking', category: 'modulo', icon: '🏆', size: 28, desc: 'Pontuação, níveis e conquistas dos colaboradores', ring: 1 },
             { id: 'forum', label: 'Fórum', category: 'modulo', icon: '💬', size: 26, desc: 'Comunidade: dúvidas, sugestões, conhecimento', ring: 1 },
-            { id: 'calendar', label: 'Agendas', category: 'modulo', icon: '📅', size: 28, desc: 'Reuniões executivas com atas geradas por IA', ring: 1 },
+            { id: 'calendar', label: 'Feriados', category: 'modulo', icon: '📅', size: 28, desc: 'Calendário de feriados nacionais, estaduais, municipais e da empresa', ring: 1 },
             { id: 'admin', label: 'Admin', category: 'admin', icon: '🛡️', size: 30, desc: 'Painel administrativo: usuários, permissões, backlog', ring: 1 },
             { id: 'tools', label: 'Ferramentas', category: 'ferramentas', icon: '🧰', size: 32, desc: 'Hub com 22+ ferramentas de qualidade e produtividade', ring: 1 },
 

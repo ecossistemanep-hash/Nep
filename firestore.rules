@@ -190,6 +190,12 @@ service cloud.firestore {
     match /vacations/{vacationId} { allow read, write: if isActive(); }
     match /vacation_requests/{requestId} { allow read, write: if isActive(); }
 
+    // Calendário de feriados: todo ativo vê, só Coordenador+ cadastra/edita/remove
+    match /holidays/{holidayId} {
+      allow read: if isActive();
+      allow create, update, delete: if isManager();
+    }
+
     match /daily_routines/{docId} { allow read, write: if isActive(); }
     match /rotina_checklist/{docId} { allow read, write: if isActive(); }
     match /rotinas_adm/{docId} { allow read, write: if isActive(); }

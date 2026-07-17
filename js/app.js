@@ -156,7 +156,7 @@ const NepApp = {
       forum: 'Fórum Colaborativo',
       admin: 'Painel Admin',
       checklist: 'Rotina ADM',
-      'teams-calendar': 'Calendário Teams',
+      feriados: 'Calendário de Feriados',
       reports: 'Relatórios',
       profile: 'Meu Perfil',
       results: 'Resultados Operacionais',
@@ -250,8 +250,8 @@ const NepApp = {
           if (typeof RotinaADM !== 'undefined') RotinaADM.render(content);
           else this.renderChecklist(content);
           break;
-        case 'teams-calendar':
-          if (typeof NexusTeamsCalendar !== 'undefined') NexusTeamsCalendar.render(content);
+        case 'feriados':
+          if (typeof NexusHolidays !== 'undefined') NexusHolidays.render(content);
           break;
         case 'reports':
           if (typeof NexusReports !== 'undefined') NexusReports.render(content);

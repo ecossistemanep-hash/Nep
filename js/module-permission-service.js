@@ -26,7 +26,7 @@ const ModulePermissionService = {
         { id: 'ranking', name: 'Ranking', icon: '🏆', category: 'performance' },
 
         { id: 'paineis', name: 'Painéis Corporativos', icon: '🛰️', category: 'gestao' },
-        { id: 'teams-calendar', name: 'Calendário Teams', icon: '📅', category: 'gestao' },
+        { id: 'feriados', name: 'Calendário de Feriados', icon: '📅', category: 'gestao' },
         { id: 'vacation', name: 'Controle de Férias', icon: '🏖️', category: 'gestao' },
         { id: 'admin', name: 'Admin', icon: '⚙️', category: 'gestao' },
 
