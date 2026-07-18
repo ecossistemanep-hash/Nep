@@ -2410,6 +2410,62 @@ const NexusTools = {
     return num / Math.sqrt(denX * denY) || 0;
   },
 
+  // Significância estatística da correlação de Pearson.
+  // t = r·√(n−2)/√(1−r²), df = n−2, p = 2·P(T > |t|) via t de Student.
+  correlationSignificance(r, n) {
+    const r2 = r * r;
+    if (n < 3 || r2 >= 1) return { n, r2, t: null, p: r2 >= 1 ? 0 : null, df: Math.max(0, n - 2) };
+    const df = n - 2;
+    const t = Math.abs(r) * Math.sqrt(df / (1 - r2));
+    // p bicaudal = I_{df/(df+t²)}(df/2, 1/2)
+    const x = df / (df + t * t);
+    const p = this._betai(df / 2, 0.5, x);
+    return { n, r2, t, p, df };
+  },
+
+  // Função beta incompleta regularizada I_x(a,b) — Numerical Recipes (betai/betacf)
+  _betai(a, b, x) {
+    if (x <= 0) return 0;
+    if (x >= 1) return 1;
+    const lnBeta = this._gammaln(a + b) - this._gammaln(a) - this._gammaln(b);
+    const bt = Math.exp(lnBeta + a * Math.log(x) + b * Math.log(1 - x));
+    if (x < (a + 1) / (a + b + 2)) return bt * this._betacf(a, b, x) / a;
+    return 1 - bt * this._betacf(b, a, 1 - x) / b;
+  },
+
+  _betacf(a, b, x) {
+    const MAXIT = 200, EPS = 3e-12, FPMIN = 1e-300;
+    const qab = a + b, qap = a + 1, qam = a - 1;
+    let c = 1, d = 1 - qab * x / qap;
+    if (Math.abs(d) < FPMIN) d = FPMIN;
+    d = 1 / d;
+    let h = d;
+    for (let m = 1; m <= MAXIT; m++) {
+      const m2 = 2 * m;
+      let aa = m * (b - m) * x / ((qam + m2) * (a + m2));
+      d = 1 + aa * d; if (Math.abs(d) < FPMIN) d = FPMIN;
+      c = 1 + aa / c; if (Math.abs(c) < FPMIN) c = FPMIN;
+      d = 1 / d; h *= d * c;
+      aa = -(a + m) * (qab + m) * x / ((a + m2) * (qap + m2));
+      d = 1 + aa * d; if (Math.abs(d) < FPMIN) d = FPMIN;
+      c = 1 + aa / c; if (Math.abs(c) < FPMIN) c = FPMIN;
+      d = 1 / d;
+      const del = d * c; h *= del;
+      if (Math.abs(del - 1) < EPS) break;
+    }
+    return h;
+  },
+
+  _gammaln(x) {
+    const cof = [76.18009172947146, -86.50532032941677, 24.01409824083091,
+      -1.231739572450155, 0.1208650973866179e-2, -0.5395239384953e-5];
+    let y = x, tmp = x + 5.5;
+    tmp -= (x + 0.5) * Math.log(tmp);
+    let ser = 1.000000000190015;
+    for (let j = 0; j < 6; j++) { y++; ser += cof[j] / y; }
+    return -tmp + Math.log(2.5066282746310005 * ser / x);
+  },
+
   renderCorrelationMatrix(headers, matrix) {
     let html = '<table class="corr-table"><tr><th></th>';
     headers.forEach(h => html += `<th>${h}</th>`);
@@ -2488,15 +2544,30 @@ const NexusTools = {
 
     Plotly.newPlot('corr-plot', [scatter, trend], layout, { responsive: true });
 
-    // Insights
+    // Insights + significância estatística
     const absCorr = Math.abs(corr);
     let forca = absCorr >= 0.7 ? 'forte' : absCorr >= 0.3 ? 'moderada' : 'fraca';
     let direcao = corr > 0 ? 'direta' : 'inversa';
 
+    const sig = this.correlationSignificance(corr, n);
+    const r2pct = (sig.r2 * 100).toFixed(1);
+    const pText = sig.p == null ? '—' : (sig.p < 0.001 ? '< 0,001' : sig.p.toFixed(3));
+    const significant = sig.p != null && sig.p < 0.05;
+
     document.getElementById('corr-insights').innerHTML = `
       <h4>Análise da Relação</h4>
-      <p>A correlação entre <strong>${yName}</strong> e <strong>${xName}</strong> é <strong>${forca}</strong> e <strong>${direcao}</strong> (r = ${corr.toFixed(2)}).</p>
-      ${absCorr >= 0.5 ? '<p>⚠️ <strong>Ação recomendada:</strong> Investigue a relação de causa-efeito.</p>' : ''}
+      <p>A correlação entre <strong>${yName}</strong> e <strong>${xName}</strong> é <strong>${forca}</strong> e <strong>${direcao}</strong> (r = ${corr.toFixed(3)}).</p>
+      <div style="display:flex;gap:20px;flex-wrap:wrap;margin:10px 0;font-size:13px;">
+        <span><strong>n</strong> = ${sig.n} pares</span>
+        <span><strong>R²</strong> = ${r2pct}% da variação explicada</span>
+        <span><strong>p</strong> = ${pText}</span>
+      </div>
+      <p style="padding:10px 14px;border-radius:10px;background:${significant ? 'rgba(34,197,94,0.10)' : 'rgba(245,158,11,0.10)'};border:1px solid ${significant ? 'rgba(34,197,94,0.25)' : 'rgba(245,158,11,0.25)'};">
+        ${significant
+        ? `✅ <strong>Estatisticamente significativa</strong> (p < 0,05): é improvável que essa relação seja fruto do acaso.`
+        : `⚠️ <strong>Não significativa</strong> (p ≥ 0,05): com ${sig.n} pares, essa correlação pode ser apenas acaso. Colete mais dados antes de concluir.`}
+      </p>
+      ${significant && absCorr >= 0.5 ? '<p>🔎 <strong>Próximo passo:</strong> correlação não é causa — investigue se há relação de causa-efeito real.</p>' : ''}
     `;
 
     container.scrollIntoView({ behavior: 'smooth' });
