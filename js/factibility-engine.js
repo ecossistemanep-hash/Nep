@@ -137,19 +137,40 @@ const FactibilityEngine = {
 
         // Calcular distância da meta em relação à média e desvio padrão
         const stats = this.calcDescriptiveStats(data);
-        const zScore = (meta - stats.mean) / stats.stdDev;
+        const zScore = stats.stdDev > 0 ? (meta - stats.mean) / stats.stdDev : 0;
+
+        // Probabilidade MODELADA (distribuição normal): assumindo o processo
+        // estável com média e desvio históricos, P(X ≥ meta) = 1 − Φ(z).
+        // Complementa a probabilidade empírica (que só usa os pontos observados
+        // e tem granularidade limitada), e permite estimar mesmo além do
+        // intervalo já visto. Se as duas divergirem muito, os dados não são normais.
+        const probAboveMetaNormal = stats.stdDev > 0
+            ? (1 - this.normalCDF(zScore)) * 100
+            : (meta <= stats.mean ? 100 : 0);
 
         // Cenários de previsão
         const scenarios = this.generateScenarios(data);
 
         return {
             probAboveMeta: parseFloat(probAboveMeta.toFixed(2)),
+            probAboveMetaNormal: parseFloat(probAboveMetaNormal.toFixed(2)),
             probBelowMeta: parseFloat(probBelowMeta.toFixed(2)),
             timesAboveMeta,
             timesBelowMeta: data.length - timesAboveMeta,
             zScore: parseFloat(zScore.toFixed(2)),
             scenarios
         };
+    },
+
+    // Função de distribuição acumulada da normal padrão Φ(z),
+    // via aproximação de erf (Abramowitz & Stegun 7.1.26), erro < 1,5e-7.
+    normalCDF(z) {
+        const sign = z < 0 ? -1 : 1;
+        const x = Math.abs(z) / Math.SQRT2;
+        const t = 1 / (1 + 0.3275911 * x);
+        const y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x);
+        const erf = sign * y;
+        return 0.5 * (1 + erf);
     },
 
     /**

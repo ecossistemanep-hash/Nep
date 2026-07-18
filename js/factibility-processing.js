@@ -135,8 +135,12 @@ Object.assign(NexusTools, {
         <div style="font-size: 28px; font-weight: 700;">${stats.cv}%</div>
       </div>
       <div class="kpi-card" style="background: linear-gradient(135deg, ${classification.color}, ${classification.color}dd); color: white; padding: 16px; border-radius: 12px; text-align: center;">
-        <div style="font-size: 12px; opacity: 0.9; margin-bottom: 4px;">Prob. Meta</div>
+        <div style="font-size: 12px; opacity: 0.9; margin-bottom: 4px;">Prob. Meta (histórica)</div>
         <div style="font-size: 28px; font-weight: 700;">${probability.probAboveMeta}%</div>
+      </div>
+      <div class="kpi-card" style="background: linear-gradient(135deg, #6366f1, #4f46e5); color: white; padding: 16px; border-radius: 12px; text-align: center;">
+        <div style="font-size: 12px; opacity: 0.9; margin-bottom: 4px;">Prob. Meta (modelo normal)</div>
+        <div style="font-size: 28px; font-weight: 700;">${probability.probAboveMetaNormal != null ? probability.probAboveMetaNormal + '%' : '—'}</div>
       </div>
     `;
 
