@@ -436,6 +436,11 @@ const NexusTools = {
     if (typeof CartaControlePro !== 'undefined' && this.currentTool === 'cartacontrole') CartaControlePro.bindEvents();
     if (typeof NepGrafo !== 'undefined' && this.currentTool === 'grafo') NepGrafo.init();
 
+    // Guia de primeiro uso + botão "Como usar" (para qualquer ferramenta aberta)
+    if (this.currentTool !== 'menu' && typeof ToolsOnboarding !== 'undefined') {
+      ToolsOnboarding.maybeShow(this.currentTool);
+    }
+
     // Menu navigation
 
     document.querySelectorAll('.tool-card').forEach(card => {

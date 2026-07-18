@@ -59,32 +59,67 @@ const CartaControlePro = {
         return { min, max, range: max - min };
     },
 
-    // Limites de controle (3 sigma)
+    // Amplitude móvel (moving range) — |xᵢ − xᵢ₋₁|
+    getMovingRanges() {
+        const mr = [];
+        for (let i = 1; i < this.data.length; i++) {
+            mr.push(Math.abs(this.data[i] - this.data[i - 1]));
+        }
+        return mr;
+    },
+
+    getMRBar() {
+        const mr = this.getMovingRanges();
+        if (mr.length === 0) return 0;
+        return mr.reduce((a, b) => a + b, 0) / mr.length;
+    },
+
+    // Sigma estimado a partir da amplitude móvel: σ̂ = MR̄ / d2 (d2 = 1.128 para n=2).
+    // Este é o σ correto para carta de valores individuais (I-MR): mede a
+    // variação DENTRO do processo (curto prazo), sem contaminar os limites
+    // com variação de causa especial — ao contrário do desvio-padrão global.
+    getSigmaHat() {
+        const D2 = 1.128;
+        const sigma = this.getMRBar() / D2;
+        // Fallback: se não há amplitude móvel útil, usa o desvio global.
+        return sigma > 0 ? sigma : this.getStdDev();
+    },
+
+    // Limites de controle da carta de individuais (3σ̂, via amplitude móvel)
     getControlLimits() {
         const mean = this.getMean();
-        const std = this.getStdDev();
+        const sigma = this.getSigmaHat();
         return {
-            ucl: mean + 3 * std,  // Upper Control Limit
-            cl: mean,              // Center Line
-            lcl: mean - 3 * std,   // Lower Control Limit
-            uwl: mean + 2 * std,   // Upper Warning Limit
-            lwl: mean - 2 * std    // Lower Warning Limit
+            ucl: mean + 3 * sigma,  // Upper Control Limit
+            cl: mean,               // Center Line
+            lcl: mean - 3 * sigma,  // Lower Control Limit
+            uwl: mean + 2 * sigma,  // Upper Warning Limit
+            lwl: mean - 2 * sigma,  // Lower Warning Limit
+            sigma
         };
     },
 
-    // Índices de capacidade
+    // Índices de capacidade.
+    // Cp/Cpk usam o σ de curto prazo (σ̂ = MR̄/d2) → capacidade POTENCIAL.
+    // Pp/Ppk usam o desvio-padrão global → desempenho REAL de longo prazo.
     getCpk() {
-        if (!this.specs.lsl || !this.specs.usl) return null;
+        if (this.specs.lsl == null || this.specs.usl == null) return null;
         const mean = this.getMean();
-        const std = this.getStdDev();
-        if (std === 0) return null;
+        const sigmaShort = this.getSigmaHat();   // curto prazo
+        const sigmaLong = this.getStdDev();      // longo prazo
+        if (sigmaShort === 0 || sigmaLong === 0) return null;
 
-        const cpu = (this.specs.usl - mean) / (3 * std);
-        const cpl = (mean - this.specs.lsl) / (3 * std);
+        const cpu = (this.specs.usl - mean) / (3 * sigmaShort);
+        const cpl = (mean - this.specs.lsl) / (3 * sigmaShort);
         const cpk = Math.min(cpu, cpl);
-        const cp = (this.specs.usl - this.specs.lsl) / (6 * std);
+        const cp = (this.specs.usl - this.specs.lsl) / (6 * sigmaShort);
 
-        return { cp, cpk, cpu, cpl };
+        const ppu = (this.specs.usl - mean) / (3 * sigmaLong);
+        const ppl = (mean - this.specs.lsl) / (3 * sigmaLong);
+        const ppk = Math.min(ppu, ppl);
+        const pp = (this.specs.usl - this.specs.lsl) / (6 * sigmaLong);
+
+        return { cp, cpk, cpu, cpl, pp, ppk };
     },
 
     // Detecção de pontos fora de controle
@@ -260,12 +295,16 @@ const CartaControlePro = {
               <div class="cep-pro-stat-value">${mean.toFixed(3)}</div>
             </div>
             <div class="cep-pro-stat-card">
-              <div class="cep-pro-stat-label">Desvio Padrão (σ)</div>
+              <div class="cep-pro-stat-label">σ global (longo prazo)</div>
               <div class="cep-pro-stat-value">${std.toFixed(3)}</div>
             </div>
             <div class="cep-pro-stat-card">
-              <div class="cep-pro-stat-label">Amplitude</div>
-              <div class="cep-pro-stat-value">${range.range.toFixed(3)}</div>
+              <div class="cep-pro-stat-label">σ̂ = MR̄/d2 (curto prazo)</div>
+              <div class="cep-pro-stat-value">${limits.sigma.toFixed(3)}</div>
+            </div>
+            <div class="cep-pro-stat-card">
+              <div class="cep-pro-stat-label">Amplitude móvel média (MR̄)</div>
+              <div class="cep-pro-stat-value">${this.getMRBar().toFixed(3)}</div>
             </div>
             <div class="cep-pro-stat-card">
               <div class="cep-pro-stat-label">N (amostras)</div>
@@ -288,14 +327,17 @@ const CartaControlePro = {
                 </div>
               </div>
               <div class="cep-pro-stat-card">
-                <div class="cep-pro-stat-label">Cpu</div>
-                <div class="cep-pro-stat-value">${cpkData.cpu.toFixed(2)}</div>
+                <div class="cep-pro-stat-label">Pp (longo prazo)</div>
+                <div class="cep-pro-stat-value ${cpkData.pp >= 1.33 ? 'good' : cpkData.pp >= 1 ? 'warning' : 'bad'}">${cpkData.pp.toFixed(2)}</div>
               </div>
               <div class="cep-pro-stat-card">
-                <div class="cep-pro-stat-label">Cpl</div>
-                <div class="cep-pro-stat-value">${cpkData.cpl.toFixed(2)}</div>
+                <div class="cep-pro-stat-label">Ppk (longo prazo)</div>
+                <div class="cep-pro-stat-value ${cpkData.ppk >= 1.33 ? 'good' : cpkData.ppk >= 1 ? 'warning' : 'bad'}">${cpkData.ppk.toFixed(2)}</div>
               </div>
             </div>
+            <p style="font-size:12px;color:var(--text-tertiary);margin-top:8px;">
+              Cp/Cpk usam σ de curto prazo (σ̂ = MR̄/d2) → capacidade potencial. Pp/Ppk usam o desvio-padrão global → desempenho real. Meta usual: ≥ 1,33.
+            </p>
             
             <div class="gut-pro-input-card" style="margin-top: 16px; background: linear-gradient(135deg, 
                         ${cpkData.cpk >= 1.33 ? 'rgba(34, 197, 94, 0.1), rgba(22, 163, 74, 0.05)' :
