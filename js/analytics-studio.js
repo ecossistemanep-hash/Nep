@@ -24,7 +24,10 @@ const NepAnalyticsStudio = {
             <h1 class="page-title">🔬 NEP Analytics Studio</h1>
             <p class="page-description">Laboratório de dados, estatística e simulação — direto no navegador.</p>
           </div>
-          <span class="as-badge" id="as-dataset-badge">Nenhuma base carregada</span>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            <button class="btn btn-secondary btn-sm" id="as-tutorial-btn"><i class="fa-solid fa-graduation-cap"></i> Tutorial desta aba</button>
+            <span class="as-badge" id="as-dataset-badge">Nenhuma base carregada</span>
+          </div>
         </div>
 
         <div class="as-tabs" id="as-tabs">
@@ -42,6 +45,7 @@ const NepAnalyticsStudio = {
     `;
     this.injectStyles();
     this.attachTabs();
+    document.getElementById('as-tutorial-btn')?.addEventListener('click', () => this.showTutorial(this.activeTab, true));
     this.renderTab();
   },
 
@@ -78,6 +82,84 @@ const NepAnalyticsStudio = {
       case 'previsao': el.innerHTML = this.viewPrevisao(); this.bindPrevisao(); break;
       case 'anomalias': el.innerHTML = this.viewAnomalias(); this.bindAnomalias(); break;
     }
+    // Tutorial automático na primeira vez de cada aba
+    if (!localStorage.getItem('nep_as_tut_' + this.activeTab)) {
+      this.showTutorial(this.activeTab, false);
+      localStorage.setItem('nep_as_tut_' + this.activeTab, '1');
+    }
+  },
+
+  // ============ TUTORIAIS (o que é + como apresentar) ============
+  tutorials: {
+    importar: {
+      titulo: 'Importar dados',
+      oque: 'Ponto de partida: você traz sua base (Excel/CSV) ou usa o exemplo. O estúdio detecta sozinho o tipo de cada coluna (número, data, texto). Tudo roda no seu navegador — nada é enviado a servidor.',
+      apresentar: '"Antes de qualquer análise, precisamos dos dados na mesa. Vou importar a base bruta — o sistema já identifica automaticamente o que é número, o que é data e o que é texto, sem eu configurar nada. É daqui que todo o resto parte."',
+      dicas: ['Uma coluna por indicador, uma linha por registro.', 'A 1ª linha deve ser o cabeçalho (nomes das colunas).', 'Se não tiver base agora, use "Carregar dados de exemplo".']
+    },
+    perfil: {
+      titulo: 'Perfil da Base',
+      oque: 'Um raio-X da qualidade dos dados antes de confiar neles: quantas linhas/colunas, quantos valores faltando, quantos distintos, faixa de cada coluna, linhas duplicadas e um índice de qualidade de 0 a 100. Também sinaliza possíveis dados pessoais (LGPD).',
+      apresentar: '"Antes de tirar conclusão, precisamos saber se a base é confiável. Este painel mostra a saúde dos dados: completude, duplicidade e uma nota de qualidade. Repare no índice — acima de 90 é excelente; abaixo de 60 exige cuidado. E aqui o sistema já aponta colunas com possíveis dados pessoais, o que é importante para a LGPD."',
+      dicas: ['Muitos nulos numa coluna? Ela pode enviesar a análise.', 'Coluna com 1 só valor distinto é constante — não ajuda.', 'Linhas duplicadas inflam contagens; verifique a origem.']
+    },
+    estatistica: {
+      titulo: 'Estatística descritiva',
+      oque: 'Resume uma variável numérica em números-chave: média, mediana, desvio-padrão, quartis, assimetria e curtose, com histograma e o intervalo de confiança de 95% da média.',
+      apresentar: '"Vamos entender o comportamento típico deste indicador. A média mostra o centro; o desvio-padrão, o quanto ele varia. Se média e mediana forem muito diferentes, há valores extremos puxando o resultado. O intervalo de confiança diz onde a média real provavelmente está — não é um número exato, é uma faixa."',
+      dicas: ['CV acima de 30% indica muita variação relativa — processo instável.', 'Assimetria positiva = cauda de valores altos (ex: alguns TMAs enormes).', 'Prefira a mediana à média quando houver outliers.']
+    },
+    correlacao: {
+      titulo: 'Correlações',
+      oque: 'Mede se dois indicadores andam juntos. A matriz mostra o coeficiente de Pearson (−1 a +1) entre cada par. Ao clicar, você vê a dispersão, o R² (quanto um explica do outro) e o p-valor (se é significativo ou pode ser acaso).',
+      apresentar: '"Aqui investigamos relações: quando um indicador sobe, o outro acompanha? Verde forte é relação positiva, vermelho é inversa. Mas atenção a duas coisas: primeiro, o p-valor — sem significância, pode ser coincidência. Segundo, e mais importante: correlação NÃO é causa. Isso é uma pista para investigar, nunca uma prova."',
+      dicas: ['|r| ≥ 0,7 é forte; entre 0,3 e 0,7 moderado; abaixo, fraco.', 'p ≥ 0,05 com poucos dados: desconfie, colete mais.', 'Nunca conclua causa só pela correlação.']
+    },
+    montecarlo: {
+      titulo: 'Simulação de Monte Carlo',
+      oque: 'Projeta milhares de cenários possíveis a partir do histórico (ou de uma normal ajustada) e mostra a faixa de resultados prováveis: percentis P5/P50/P95, valor em risco e a probabilidade de bater uma meta.',
+      apresentar: '"Em vez de chutar um número único para o mês, simulo dez mil futuros possíveis com base no nosso próprio histórico. O resultado não é uma previsão exata — é uma faixa de risco. O P5 é o cenário pessimista, o P50 o mais provável, o P95 o otimista. E consigo responder objetivamente: qual a probabilidade de batermos a meta? Isso é decidir com risco quantificado, não com achismo."',
+      dicas: ['Bootstrap usa seu histórico real; Normal assume formato de sino.', 'Mais iterações = resultado mais estável (10 mil já é bom).', 'A probabilidade de meta é a % dos cenários que a atingiram.']
+    },
+    previsao: {
+      titulo: 'Previsão de série temporal',
+      oque: 'Testa 3 modelos (Média Móvel, Holt e Regressão) num backtest com os dados recentes, escolhe o de menor erro (RMSE) e projeta os próximos períodos com uma faixa de confiança.',
+      apresentar: '"Para projetar o futuro, não confio num modelo só. O sistema testa três abordagens contra o passado recente — isso se chama backtest — e mantém a que errou menos. A linha tracejada é a projeção; a área sombreada é a incerteza. Quanto mais longe no tempo, mais larga a faixa. Previsão é probabilidade, nunca certeza."',
+      dicas: ['MAPE é o erro médio em %: quanto menor, melhor.', 'Séries com tendência clara favorecem Holt e Regressão.', 'Poucos pontos (menos de 10) tornam a previsão frágil.']
+    },
+    anomalias: {
+      titulo: 'Detecção de anomalias',
+      oque: 'Encontra valores fora do padrão por três métodos: Z-score (3σ), Z robusto (MAD, resistente a extremos) e IQR (1,5×). Útil para achar picos, quedas, erros de digitação ou possíveis fraudes.',
+      apresentar: '"Este módulo caça o que foge do normal. Ele marca os pontos que destoam do comportamento típico — um volume absurdamente alto, um tempo impossível. Uso três métodos porque cada um tem força diferente: o Z robusto, por exemplo, não se deixa enganar por poucos extremos. Cada anomalia deve ser investigada: pode ser erro de dado, evento real ou algo que merece atenção."',
+      dicas: ['Z robusto (MAD) é o mais confiável quando há muitos outliers.', 'IQR é bom para dados assimétricos.', 'Anomalia não é sempre erro — às vezes é o achado mais importante.']
+    }
+  },
+
+  showTutorial(tab, manual) {
+    const t = this.tutorials[tab];
+    if (!t) return;
+    document.getElementById('as-tut-modal')?.remove();
+    const m = document.createElement('div');
+    m.id = 'as-tut-modal';
+    m.className = 'as-tut-backdrop';
+    m.innerHTML = `
+      <div class="as-tut-card">
+        <button class="as-tut-close" aria-label="Fechar"><i class="fa-solid fa-times"></i></button>
+        <div class="as-tut-badge"><i class="fa-solid fa-graduation-cap"></i> Tutorial${manual ? '' : ' · primeira vez'}</div>
+        <h2 class="as-tut-title">${t.titulo}</h2>
+        <div class="as-tut-section"><div class="as-tut-h">O que é</div><p>${t.oque}</p></div>
+        <div class="as-tut-section as-tut-present"><div class="as-tut-h"><i class="fa-solid fa-microphone"></i> Como apresentar (fala pronta)</div><p>${t.apresentar}</p></div>
+        <div class="as-tut-section"><div class="as-tut-h">Dicas rápidas</div><ul>${t.dicas.map(d => `<li>${d}</li>`).join('')}</ul></div>
+        <div class="as-tut-actions">
+          <button class="as-tut-start">Entendi, começar</button>
+        </div>
+      </div>`;
+    document.body.appendChild(m);
+    requestAnimationFrame(() => m.classList.add('open'));
+    const close = () => { m.classList.remove('open'); setTimeout(() => m.remove(), 200); };
+    m.querySelector('.as-tut-close').addEventListener('click', close);
+    m.querySelector('.as-tut-start').addEventListener('click', close);
+    m.addEventListener('click', e => { if (e.target === m) close(); });
   },
 
   // ============ IMPORTAR ============
@@ -296,7 +378,7 @@ const NepAnalyticsStudio = {
         IC 95% da média ≈ <strong>${this._fmt(mean)} ± ${this._fmt(ciHalf)}</strong> [${this._fmt(mean - ciHalf)}, ${this._fmt(mean + ciHalf)}].
         Distribuição ${interp}. CV de ${this._fmt(mean !== 0 ? (sd / mean) * 100 : 0)}% indica ${(sd / mean) > 0.3 ? 'alta' : 'baixa'} dispersão relativa.
       </div>
-      <div class="as-card" style="margin-top:16px;"><canvas id="as-hist" height="90"></canvas></div>
+      <div class="as-card" style="margin-top:16px;"><div class="as-chart-wrap"><canvas id="as-hist"></canvas></div></div>
     `;
     this._histogram('as-hist', v, this.dataset.headers[c]);
   },
@@ -319,6 +401,29 @@ const NepAnalyticsStudio = {
       html += '</tr>';
     });
     html += '</tbody></table></div><p class="as-note" style="margin-top:12px;">Clique numa célula para ver dispersão, R² e significância. <strong>Correlação não comprova causalidade.</strong></p></div>';
+
+    // Ranking das relações mais fortes (pares i<j)
+    const pairs = [];
+    for (let a = 0; a < cols.length; a++) for (let b = a + 1; b < cols.length; b++) {
+      const { x, y } = this.pairedValues(cols[a], cols[b]);
+      const r = this._pearson(x, y);
+      const sig = this._corrSignificance(r, x.length);
+      pairs.push({ a: cols[a], b: cols[b], r, n: x.length, p: sig.p, sig: sig.significant });
+    }
+    pairs.sort((p1, p2) => Math.abs(p2.r) - Math.abs(p1.r));
+    const forca = r => { const a = Math.abs(r); return a >= 0.7 ? 'forte' : a >= 0.3 ? 'moderada' : 'fraca'; };
+    html += `<div class="as-card" style="margin-top:16px;"><h3 style="margin-top:0;">🏆 Ranking das relações mais fortes</h3>
+      <div style="overflow-x:auto;"><table class="as-table"><thead><tr><th>#</th><th>Par de indicadores</th><th>r</th><th>Força</th><th>Sentido</th><th>Significância</th></tr></thead><tbody>
+      ${pairs.slice(0, 10).map((p, idx) => `<tr>
+        <td>${idx + 1}</td>
+        <td>${window.escapeHtml(this.dataset.headers[p.a])} × ${window.escapeHtml(this.dataset.headers[p.b])}</td>
+        <td style="font-weight:600;color:${p.r > 0 ? '#6ea8ff' : '#ff8a8a'}">${p.r.toFixed(2)}</td>
+        <td>${forca(p.r)}</td>
+        <td>${p.r > 0 ? '↑ direta' : '↓ inversa'}</td>
+        <td>${p.sig ? '<span style="color:#22c55e">✓ sim (p<0,05)</span>' : '<span style="color:#f59e0b">— não</span>'}</td>
+      </tr>`).join('')}
+      </tbody></table></div></div>`;
+
     html += '<div class="as-card" id="as-corr-detail" style="display:none;margin-top:16px;"></div>';
     return html;
   },
@@ -345,7 +450,7 @@ const NepAnalyticsStudio = {
       <div class="as-note" style="background:${sig.significant ? 'rgba(34,197,94,.1)' : 'rgba(245,158,11,.1)'};border-color:${sig.significant ? 'rgba(34,197,94,.3)' : 'rgba(245,158,11,.3)'}">
         ${sig.significant ? '✅ Estatisticamente significativa (p < 0,05): improvável ser acaso.' : `⚠️ Não significativa (p ≥ 0,05) com n=${n}: pode ser acaso.`}
       </div>
-      <canvas id="as-scatter" height="100" style="margin-top:14px;"></canvas>
+      <div class="as-chart-wrap" style="margin-top:14px;"><canvas id="as-scatter"></canvas></div>
     `;
     this._scatter('as-scatter', x, y, this.dataset.headers[j], this.dataset.headers[i]);
     box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -407,20 +512,25 @@ const NepAnalyticsStudio = {
     if (meta != null) probMeta = (sims.reduce((a, v) => a + (v >= meta ? 1 : 0), 0) / iter) * 100;
 
     const rows = [['P1', pct(1)], ['P5', pct(5)], ['P10', pct(10)], ['P25', pct(25)], ['P50 (mediana)', pct(50)], ['P75', pct(75)], ['P90', pct(90)], ['P95', pct(95)], ['P99', pct(99)]];
+    const varLoss = simMean - pct(5); // valor em risco: perda até o P5 vs média
     document.getElementById('mc-out').innerHTML = `
       <div class="as-kpi-row">
         <div class="as-kpi"><div class="as-kpi-v">${this._fmt(simMean)}</div><div class="as-kpi-l">Média simulada</div></div>
         <div class="as-kpi"><div class="as-kpi-v">${this._fmt(simSd)}</div><div class="as-kpi-l">Desvio</div></div>
-        <div class="as-kpi"><div class="as-kpi-v">${this._fmt(pct(5))}</div><div class="as-kpi-l">P5 (pior)</div></div>
-        <div class="as-kpi"><div class="as-kpi-v">${this._fmt(pct(50))}</div><div class="as-kpi-l">P50 (central)</div></div>
-        <div class="as-kpi"><div class="as-kpi-v">${this._fmt(pct(95))}</div><div class="as-kpi-l">P95 (melhor)</div></div>
-        ${probMeta != null ? `<div class="as-kpi" style="border-color:var(--primary-500)"><div class="as-kpi-v" style="color:var(--primary-400)">${probMeta.toFixed(1)}%</div><div class="as-kpi-l">P(≥ meta)</div></div>` : ''}
+        <div class="as-kpi"><div class="as-kpi-v">${this._fmt(varLoss)}</div><div class="as-kpi-l">VaR 95% (perda até P5)</div></div>
+        ${probMeta != null ? `<div class="as-kpi" style="border-color:var(--primary-500)"><div class="as-kpi-v" style="color:var(--primary-400)">${probMeta.toFixed(1)}%</div><div class="as-kpi-l">P(≥ meta)</div></div>
+        <div class="as-kpi"><div class="as-kpi-v">${(100 - probMeta).toFixed(1)}%</div><div class="as-kpi-l">P(< meta)</div></div>` : ''}
       </div>
-      <div class="as-card" style="margin-top:16px;"><canvas id="mc-hist" height="90"></canvas></div>
+      <div class="as-scenarios">
+        <div class="as-scn as-scn-bad"><div class="as-scn-l">😟 Pessimista (P5)</div><div class="as-scn-v">${this._fmt(pct(5))}</div></div>
+        <div class="as-scn as-scn-mid"><div class="as-scn-l">😐 Central (P50)</div><div class="as-scn-v">${this._fmt(pct(50))}</div></div>
+        <div class="as-scn as-scn-good"><div class="as-scn-l">😀 Otimista (P95)</div><div class="as-scn-v">${this._fmt(pct(95))}</div></div>
+      </div>
+      <div class="as-card" style="margin-top:16px;"><div class="as-chart-wrap"><canvas id="mc-hist"></canvas></div></div>
       <div style="overflow-x:auto;margin-top:12px;"><table class="as-table"><thead><tr><th>Percentil</th><th>Valor</th></tr></thead><tbody>
         ${rows.map(([l, val]) => `<tr><td>${l}</td><td>${this._fmt(val)}</td></tr>`).join('')}
       </tbody></table></div>
-      <p class="as-note" style="margin-top:12px;">${iter.toLocaleString('pt-BR')} iterações · ${method === 'normal' ? 'Normal(μ,σ) ajustada' : 'Bootstrap do histórico'}. Previsão é probabilística, não certeza.</p>
+      <p class="as-note" style="margin-top:12px;">${iter.toLocaleString('pt-BR')} iterações · ${method === 'normal' ? 'Normal(μ,σ) ajustada' : 'Bootstrap do histórico'}. VaR 95% = quanto o resultado pode cair abaixo da média em 5% dos piores casos. Previsão é probabilística, não certeza.</p>
     `;
     this._histogram('mc-hist', sorted, 'Distribuição simulada', meta);
   },
@@ -493,7 +603,7 @@ const NepAnalyticsStudio = {
         <div class="as-kpi"><div class="as-kpi-v">${this._fmt(best.mape)}%</div><div class="as-kpi-l">MAPE (teste)</div></div>
         <div class="as-kpi"><div class="as-kpi-v">${this._fmt(finalFit.forecast[0])}</div><div class="as-kpi-l">Próximo período</div></div>
       </div>
-      <div class="as-card" style="margin-top:16px;"><canvas id="fc-chart" height="90"></canvas></div>
+      <div class="as-card" style="margin-top:16px;"><div class="as-chart-wrap" style="height:320px;"><canvas id="fc-chart"></canvas></div></div>
       <div style="overflow-x:auto;margin-top:12px;"><table class="as-table"><thead><tr><th>Modelo</th><th>RMSE</th><th>MAPE</th></tr></thead><tbody>${cmp}</tbody></table></div>
       <p class="as-note" style="margin-top:12px;">Backtest nos últimos ${test.length} pontos. Faixa da previsão ≈ ±1,96·${this._fmt(resid)} (IC 95% aproximado). Previsão não é certeza.</p>
     `;
@@ -563,7 +673,7 @@ const NepAnalyticsStudio = {
         <div class="as-kpi"><div class="as-kpi-v">${((found.length / clean.length) * 100).toFixed(1)}%</div><div class="as-kpi-l">do total</div></div>
       </div>
       <p class="as-note">Critério: ${desc}</p>
-      <div class="as-card" style="margin-top:12px;"><canvas id="an-chart" height="80"></canvas></div>
+      <div class="as-card" style="margin-top:12px;"><div class="as-chart-wrap" style="height:260px;"><canvas id="an-chart"></canvas></div></div>
       ${list}
     `;
     this._anomalyChart('an-chart', vals, found.map(f => f.idx - 1), this.dataset.headers[c]);
@@ -712,8 +822,36 @@ const NepAnalyticsStudio = {
       .as-stat-card { background:var(--surface-elevated); border:1px solid var(--surface-border); border-radius:10px; padding:12px; }
       .as-stat-l { font-size:11px; color:var(--text-tertiary); }
       .as-stat-v { font-size:16px; font-weight:700; color:var(--text-primary); margin-top:3px; }
+      .as-scenarios { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin-top:16px; }
+      .as-scn { border-radius:12px; padding:16px; text-align:center; border:1px solid; }
+      .as-scn-bad { background:rgba(239,68,68,.08); border-color:rgba(239,68,68,.3); }
+      .as-scn-mid { background:rgba(148,163,184,.08); border-color:rgba(148,163,184,.3); }
+      .as-scn-good { background:rgba(34,197,94,.08); border-color:rgba(34,197,94,.3); }
+      .as-scn-l { font-size:12px; color:var(--text-secondary); margin-bottom:6px; }
+      .as-scn-v { font-size:24px; font-weight:700; color:var(--text-primary); }
+      .as-chart-wrap { position:relative; height:300px; width:100%; }
+      .as-chart-wrap canvas { max-height:100%; }
       .as-note { font-size:12.5px; color:var(--text-secondary); line-height:1.5; padding:10px 14px; border-radius:10px; background:var(--surface-elevated); border:1px solid var(--surface-border); }
       .as-best td { background:rgba(34,197,94,0.08); font-weight:600; }
+      .as-tut-backdrop { position:fixed; inset:0; z-index:2000; display:flex; align-items:center; justify-content:center; padding:20px; background:rgba(3,6,16,.55); backdrop-filter:blur(4px); opacity:0; transition:opacity .2s; }
+      .as-tut-backdrop.open { opacity:1; }
+      .as-tut-card { position:relative; width:100%; max-width:540px; max-height:90vh; overflow-y:auto; background:var(--surface-card); border:1px solid var(--surface-border); border-radius:18px; padding:28px; box-shadow:0 24px 60px rgba(0,0,0,.4); transform:translateY(12px) scale(.98); transition:transform .2s; }
+      .as-tut-backdrop.open .as-tut-card { transform:translateY(0) scale(1); }
+      .as-tut-close { position:absolute; top:16px; right:16px; background:none; border:none; color:var(--text-tertiary); font-size:18px; cursor:pointer; }
+      .as-tut-close:hover { color:var(--text-primary); }
+      .as-tut-badge { display:inline-flex; align-items:center; gap:6px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--primary-400); background:rgba(117,85,232,.12); padding:5px 10px; border-radius:20px; margin-bottom:14px; }
+      .as-tut-title { font-size:22px; font-weight:700; color:var(--text-primary); margin:0 0 16px; }
+      .as-tut-section { margin-bottom:16px; }
+      .as-tut-h { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--text-tertiary); margin-bottom:6px; display:flex; align-items:center; gap:6px; }
+      .as-tut-section p { font-size:13.5px; color:var(--text-primary); line-height:1.6; margin:0; }
+      .as-tut-section ul { margin:0; padding-left:20px; display:flex; flex-direction:column; gap:6px; }
+      .as-tut-section li { font-size:13px; color:var(--text-secondary); line-height:1.5; }
+      .as-tut-present { background:rgba(18,188,212,.08); border:1px solid rgba(18,188,212,.22); border-radius:12px; padding:14px 16px; }
+      .as-tut-present p { color:var(--text-secondary); font-style:italic; }
+      .as-tut-present .as-tut-h { color:var(--accent-500); }
+      .as-tut-actions { display:flex; justify-content:flex-end; margin-top:8px; }
+      .as-tut-start { height:42px; padding:0 22px; border-radius:11px; font-size:13px; font-weight:700; cursor:pointer; border:none; background:linear-gradient(135deg,var(--primary-500),var(--accent-500)); color:#fff; }
+      .as-tut-start:hover { filter:brightness(1.08); }
     `;
     document.head.appendChild(s);
   }
