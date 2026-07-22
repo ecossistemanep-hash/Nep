@@ -24,6 +24,7 @@ const ModulePermissionService = {
 
         { id: 'results', name: 'Resultados', icon: '📈', category: 'performance' },
         { id: 'ranking', name: 'Ranking', icon: '🏆', category: 'performance' },
+        { id: 'analytics', name: 'Analytics Studio', icon: '🔬', category: 'performance' },
 
         { id: 'paineis', name: 'Painéis Corporativos', icon: '🛰️', category: 'gestao' },
         { id: 'feriados', name: 'Calendário de Feriados', icon: '📅', category: 'gestao' },

@@ -157,6 +157,7 @@ const NepApp = {
       admin: 'Painel Admin',
       checklist: 'Rotina ADM',
       feriados: 'Calendário de Feriados',
+      analytics: 'NEP Analytics Studio',
       reports: 'Relatórios',
       profile: 'Meu Perfil',
       results: 'Resultados Operacionais',
@@ -252,6 +253,9 @@ const NepApp = {
           break;
         case 'feriados':
           if (typeof NexusHolidays !== 'undefined') NexusHolidays.render(content);
+          break;
+        case 'analytics':
+          if (typeof NepAnalyticsStudio !== 'undefined') NepAnalyticsStudio.render(content);
           break;
         case 'reports':
           if (typeof NexusReports !== 'undefined') NexusReports.render(content);
