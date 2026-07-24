@@ -825,6 +825,16 @@ const NexusAdmin = {
     }
 
     container.innerHTML = `
+      <div class="admin-section" style="margin-bottom:20px;">
+        <div class="admin-section-header">
+          <div>
+            <h3><i class="fa-solid fa-shield-halved"></i> Auditoria de Pontos (detector de fraude)</h3>
+            <p class="text-muted" style="margin-top:4px;font-size:13px;">Compara o saldo de cada usuário com a soma das transações. Divergência = possível manipulação direta do placar.</p>
+          </div>
+          <button class="btn btn-sm btn-primary" onclick="NexusAdmin.runPointsAudit()"><i class="fa-solid fa-magnifying-glass-chart"></i> Rodar auditoria</button>
+        </div>
+        <div id="points-audit-out"><p class="text-muted" style="font-size:13px;">Clique em "Rodar auditoria" para verificar o placar.</p></div>
+      </div>
       <div class="admin-section">
         <div class="admin-section-header">
           <h3><i class="fa-solid fa-clipboard-list"></i> Logs de Auditoria</h3>
@@ -851,6 +861,75 @@ const NexusAdmin = {
           </table>
         </div>
       </div>`
+  },
+
+  // Detector de fraude: saldo (user_points.total_points) vs soma das transações
+  async runPointsAudit() {
+    const out = document.getElementById('points-audit-out');
+    if (out) out.innerHTML = '<p class="text-muted"><i class="fa-solid fa-circle-notch fa-spin"></i> Auditando placar...</p>';
+    try {
+      const db = window.db;
+      const [pointsSnap, txSnap, usersSnap] = await Promise.all([
+        db.collection('user_points').get(),
+        db.collection('points_transactions').get(),
+        db.collection('users').get()
+      ]);
+
+      const nameByUid = {};
+      usersSnap.forEach(d => { nameByUid[d.id] = d.data().nome || d.data().email || d.id; });
+
+      // Soma das transações por usuário (usa amount; cai para points se ausente)
+      const sumByUid = {};
+      txSnap.forEach(d => {
+        const t = d.data();
+        const uid = t.uid;
+        if (!uid) return;
+        const val = typeof t.amount === 'number' ? t.amount : (typeof t.points === 'number' ? t.points : 0);
+        sumByUid[uid] = (sumByUid[uid] || 0) + val;
+      });
+
+      const rows = [];
+      pointsSnap.forEach(d => {
+        const uid = d.id;
+        const total = d.data().total_points || 0;
+        const somaTx = sumByUid[uid] || 0;
+        const diff = total - somaTx;
+        rows.push({ uid, nome: nameByUid[uid] || uid, total, somaTx, diff });
+      });
+      // usuários com transações mas sem doc de saldo (raro)
+      Object.keys(sumByUid).forEach(uid => {
+        if (!rows.find(r => r.uid === uid)) rows.push({ uid, nome: nameByUid[uid] || uid, total: 0, somaTx: sumByUid[uid], diff: -sumByUid[uid] });
+      });
+
+      const TOL = 1; // tolerância de arredondamento
+      const suspeitos = rows.filter(r => Math.abs(r.diff) > TOL).sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff));
+
+      if (!out) return;
+      if (suspeitos.length === 0) {
+        out.innerHTML = `<div style="padding:16px;border-radius:12px;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);color:#22c55e;">
+          ✅ Nenhuma divergência encontrada. Todos os ${rows.length} saldos batem com a soma das transações.</div>`;
+        return;
+      }
+      out.innerHTML = `
+        <div style="padding:12px 16px;border-radius:12px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:#ef4444;margin-bottom:12px;">
+          ⚠️ ${suspeitos.length} usuário(s) com saldo divergente da soma das transações — possível manipulação direta do placar.
+        </div>
+        <div class="admin-table-container"><table class="admin-table">
+          <thead><tr><th>Usuário</th><th>Saldo atual</th><th>Soma das transações</th><th>Diferença</th></tr></thead>
+          <tbody>${suspeitos.map(r => `
+            <tr>
+              <td><strong>${window.escapeHtml ? window.escapeHtml(r.nome) : r.nome}</strong></td>
+              <td>${r.total}</td>
+              <td>${r.somaTx}</td>
+              <td style="color:#ef4444;font-weight:700;">${r.diff > 0 ? '+' : ''}${r.diff}</td>
+            </tr>`).join('')}</tbody>
+        </table></div>
+        <p class="text-muted" style="font-size:12px;margin-top:10px;">Diferença positiva = saldo maior que as transações legítimas (pontos "injetados"). Investigue esses casos.</p>
+      `;
+    } catch (e) {
+      console.error('[Admin] Erro na auditoria de pontos:', e);
+      if (out) out.innerHTML = `<div class="alert alert-error">Erro ao auditar: ${e.message}</div>`;
+    }
   },
 
   exportUsersToExcel() {
