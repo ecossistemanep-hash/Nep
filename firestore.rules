@@ -177,11 +177,68 @@ service cloud.firestore {
     // OPERAÇÃO (exige perfil ATIVO)
     // ========================================================================
 
-    // Kanban: leitura/criação/edição para ativos; exclusão espelha o front-end
-    // (kanban.js canDeleteTask): apenas ADMIN ou o criador da demanda
+    // Kanban: regras granulares por campo — protege pontos, validação e prazo
+    // contra manipulação direta via console do navegador.
+    //
+    // Campos protegidos (só admin ou gestor direto do responsável):
+    //   validated, validatedBy, validatedAt, finalPoints, points,
+    //   deadline, deadlineChangePenalty, priority
+    //
+    // Campos operacionais (responsável da tarefa):
+    //   status, acknowledged, evidence, evidenceLink, deliveredAt,
+    //   history, hasAttachments
+    //
+    // Campos descritivos (criador da tarefa):
+    //   title, description, unit, owner, ownerUid, ownerRole, taskType,
+    //   viewers, viewersNames, requester, updatedAt, isRecurring,
+    //   recurringDay, recurringParentId, creatorName
+
+    function tasksOnlyChanges(allowed) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(allowed);
+    }
+
+    function tasksNoProtectedChanges() {
+      return !request.resource.data.diff(resource.data).affectedKeys()
+        .hasAny(['validated', 'validatedBy', 'validatedAt',
+                 'finalPoints', 'points', 'deadline',
+                 'deadlineChangePenalty', 'priority',
+                 'taskType', 'deadlineChanged']);
+    }
+
     match /tasks/{taskId} {
-      allow read, create, update: if isActive();
-      allow delete: if isAdmin() || (isActive() && resource.data.creatorUid == request.auth.uid);
+      allow read: if isActive();
+
+      // Criação: ativo, sempre backlog, não-validado, próprio UID como criador
+      allow create: if isActive()
+        && request.resource.data.status == 'backlog'
+        && request.resource.data.validated == false
+        && request.resource.data.creatorUid == request.auth.uid;
+
+      // Atualização: regras por papel
+      allow update: if isActive() && (
+        // Admin pode tudo
+        isAdmin()
+        // Gestor (Coordenador+): pode validar, alterar prazo e status
+        // mas não pode alterar creatorUid (impedir roubo de autoria)
+        || (isManager()
+            && !request.resource.data.diff(resource.data).affectedKeys()
+                .hasAny(['creatorUid']))
+        // Responsável: campos operacionais (status, entrega, reconhecimento)
+        // — NUNCA pontuação, validação ou prazo
+        || (resource.data.ownerUid == request.auth.uid
+            && tasksOnlyChanges(['status', 'acknowledged', 'evidence',
+                                 'evidenceLink', 'deliveredAt', 'history',
+                                 'hasAttachments', 'updatedAt']))
+        // Criador: campos descritivos — NUNCA pontuação, validação ou prazo
+        || (resource.data.creatorUid == request.auth.uid
+            && tasksNoProtectedChanges()
+            && !request.resource.data.diff(resource.data).affectedKeys()
+                .hasAny(['creatorUid']))
+      );
+
+      // Exclusão: admin ou criador
+      allow delete: if isAdmin()
+        || (isActive() && resource.data.creatorUid == request.auth.uid);
     }
     match /deliveries/{deliveryId} { allow read, write: if isActive(); }
     match /entregas/{entregaId} { allow read, write: if isActive(); }

@@ -46,12 +46,30 @@ const NexusKanban = {
     { maxDays: Infinity, points: 5 } // 11+ dias
   ],
 
-  // Multiplicador por tipo de tarefa
+  // Multiplicador por tipo (legado — mantido p/ tarefas antigas sem tipo no catálogo)
   TASK_TYPE_MULTIPLIER: {
     'Rotina': 1.0,
     'Análise': 1.3,
     'Projeto': 1.5,
     'Correção Urgente': 1.8
+  },
+
+  // CATÁLOGO DE TIPOS — pontos-base FIXOS por tipo (anti-fraude).
+  // O prazo é definido pelo usuário, então NÃO entra nos pontos-base
+  // (senão bastaria marcar "para hoje" pra inflar). O prazo só afeta
+  // penalidade de atraso / bônus de antecedência sobre o valor-base.
+  TASK_TYPES: {
+    'Rotina diária / Checklist': 5,
+    'Monitoria de qualidade': 6,
+    'Relatório diário': 8,
+    'Feedback / Calibração': 8,
+    'Tarefa avulsa / Outros': 8,
+    'Relatório semanal': 12,
+    'Dashboard / Painel': 15,
+    'Análise de causa raiz': 15,
+    'Plano de ação (PDCA/DMAIC)': 18,
+    'Apresentação executiva': 20,
+    'Projeto de melhoria': 25
   },
 
   // Bônus por entrega antecipada
@@ -300,22 +318,15 @@ const NexusKanban = {
     return Math.max(0, count - 1); // Exclui o próprio dia de criação
   },
 
-  // Calcula pontos base a partir do prazo (dias úteis) e tipo de tarefa
-  // ANTI-FRAUDE: não depende de escolha manual do usuário
-  calculatePoints(taskType, deadline, createdAt) {
-    const created = createdAt ? new Date(createdAt) : new Date();
-    const deadlineDate = deadline ? new Date(deadline + 'T23:59:59') : created;
-    const businessDays = this.calcBusinessDays(created, deadlineDate);
-
-    // Pontos base pelo prazo
-    let base = 5;
-    for (const tier of this.DEADLINE_POINTS) {
-      if (businessDays <= tier.maxDays) { base = tier.points; break; }
-    }
-
-    // Multiplicador pelo tipo de tarefa
-    const mult = this.TASK_TYPE_MULTIPLIER[taskType] || 1.0;
-    return Math.round(base * mult);
+  // Calcula pontos-base pelo TIPO de tarefa (catálogo fixo).
+  // ANTI-FRAUDE: o prazo é escolhido pelo usuário, então NÃO entra aqui —
+  // apenas o tipo define o valor-base. O prazo só afeta penalidade/bônus
+  // (em calculateFinalPoints), comparando entrega vs. prazo comprometido.
+  calculatePoints(taskType, _deadline, _createdAt) {
+    if (this.TASK_TYPES[taskType] != null) return this.TASK_TYPES[taskType];
+    // Compatibilidade com tarefas antigas (tipos do modelo anterior)
+    const legacyBase = { 'Rotina': 5, 'Análise': 10, 'Projeto': 15, 'Correção Urgente': 20 };
+    return legacyBase[taskType] || 5;
   },
 
   // Deriva a prioridade visual automaticamente a partir do prazo
@@ -330,35 +341,27 @@ const NexusKanban = {
     return 'Baixo';
   },
 
-  // Calcula pontuação final incluindo bônus, atrasos e penalidades de extensão
+  // Calcula pontuação final: base do TIPO, ajustada por prazo em PERCENTUAL.
+  //   • Atraso: −20% por dia (sobre o valor-base), com piso de 1 ponto.
+  //   • Antecedência: +10% (entregou antes do prazo comprometido).
+  //   • Alteração de prazo depois de criada: −15% (uma vez).
   calculateFinalPoints(task) {
-    let points = this.calculatePoints(task.taskType || 'Rotina', task.deadline, task.createdAt);
+    const base = this.calculatePoints(task.taskType || 'Rotina');
+    let factor = 1;
 
     if (task.deadline && task.deliveredAt) {
       const deadline = new Date(task.deadline + 'T23:59:59');
       const delivered = new Date(task.deliveredAt);
-      const diffMs = delivered - deadline;
-      const daysLate = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-      if (daysLate > 0) {
-        // Penalidade por atraso
-        for (const tier of this.DELAY_PENALTY) {
-          if (daysLate <= tier.maxDays) { points += tier.penalty; break; }
-        }
-      } else if (daysLate < 0) {
-        // Bônus por entrega antecipada
-        const daysEarly = Math.abs(daysLate);
-        if (daysEarly >= 2) points += this.EARLY_BONUS[2];
-        else if (daysEarly >= 1) points += this.EARLY_BONUS[1];
-      }
+      const daysLate = Math.floor((delivered - deadline) / (1000 * 60 * 60 * 24));
+      if (daysLate > 0) factor -= 0.20 * daysLate;      // −20% por dia
+      else if (daysLate < 0) factor += 0.10;            // +10% adiantado
     }
 
-    // Penalidade acumulada por extensões de prazo
-    if (task.deadlineChangePenalty) {
-      points += task.deadlineChangePenalty; // Valor já é negativo
-    }
+    // Penalidade única por alteração de prazo/tipo após criação
+    if (task.wasEdited || task.deadlineChanged) factor -= 0.15;
 
-    return Math.max(1, points);
+    const points = Math.round(base * factor);
+    return Math.max(1, points); // piso de 1 ponto — nunca zera nem fica negativo
   },
 
   // Calcula a penalidade por extensão de prazo
@@ -651,12 +654,9 @@ const NexusKanban = {
             </div>
             <div class="kb-form-row">
               <div class="kb-form-group"><label>Prazo</label><input type="date" id="kb-task-deadline" required></div>
-              <div class="kb-form-group"><label>Tipo de Tarefa</label>
+              <div class="kb-form-group"><label>Tipo de Tarefa (define os pontos)</label>
                 <select id="kb-task-type">
-                  <option value="Rotina">Rotina / Operacional (×1.0)</option>
-                  <option value="Análise">Análise / Relatório (×1.3)</option>
-                  <option value="Projeto">Projeto / Desenvolvimento (×1.5)</option>
-                  <option value="Correção Urgente">Correção Urgente / Incidente (×1.8)</option>
+                  ${Object.entries(this.TASK_TYPES).map(([nome, pts]) => `<option value="${this.esc(nome)}">${this.esc(nome)} — ${pts} pts</option>`).join('')}
                 </select>
               </div>
             </div>
@@ -1083,6 +1083,8 @@ const NexusKanban = {
     document.getElementById('kb-task-deadline').value = this.getDeadline(3);
     document.getElementById('kb-task-requester').value = this.myName;
     document.getElementById('kb-task-deadline').disabled = false;
+    const typeSelNew = document.getElementById('kb-task-type');
+    if (typeSelNew) typeSelNew.disabled = false;
     // Resetar novos campos
     const recurSel = document.getElementById('kb-task-recurring');
     if (recurSel) recurSel.value = '';
@@ -1120,7 +1122,10 @@ const NexusKanban = {
     document.getElementById('kb-task-deadline').value = task.deadline || '';
     document.getElementById('kb-task-type').value = task.taskType || 'Rotina';
     document.getElementById('kb-task-desc').value = task.description || '';
-    document.getElementById('kb-task-deadline').disabled = !this.canEditDeadline(task);
+    // Prazo e tipo definem os pontos → só gestor/admin altera após criação
+    const canEditScoring = this.canEditDeadline(task);
+    document.getElementById('kb-task-deadline').disabled = !canEditScoring;
+    document.getElementById('kb-task-type').disabled = !canEditScoring;
 
     // Recorrência
     const recurSel = document.getElementById('kb-task-recurring');
@@ -1173,12 +1178,12 @@ const NexusKanban = {
   },
 
   updatePointsPreview() {
-    const taskType = document.getElementById('kb-task-type')?.value || 'Rotina';
+    const taskType = document.getElementById('kb-task-type')?.value || '';
     const deadline = document.getElementById('kb-task-deadline')?.value || '';
-    const pts = this.calculatePoints(taskType, deadline, null);
+    const pts = this.calculatePoints(taskType);
     const el = document.getElementById('kb-task-points');
     if (el) el.value = pts;
-    // Atualizar prioridade derivada
+    // Prioridade continua derivada do prazo — é só um rótulo visual, não afeta pontos
     const prioDisplay = document.getElementById('kb-task-priority-display');
     if (prioDisplay) prioDisplay.value = this.derivePriority(deadline);
   },
@@ -1351,27 +1356,21 @@ const NexusKanban = {
         const oldTask = this.allTasks.find(t => t.id === this.editId);
         const changes = [];
         if (oldTask) {
-          // Penalidade por extensão de prazo
+          // Alteração de prazo — só o gestor/admin pode; aplica penalidade única de −15%
           if (oldTask.deadline !== data.deadline) {
-            const penalty = this.calcDeadlineChangePenalty(oldTask.deadline, data.deadline);
             const reason = document.getElementById('kb-deadline-reason')?.value.trim() || '';
-            if (penalty < 0) {
-              if (!reason && !this.isAdmin()) {
-                this.showToast('Justificativa obrigatória para alteração de prazo!', 'error');
-                saveBtn.disabled = false;
-                saveBtn.innerHTML = originalText;
-                return;
-              }
-              const currentPenalty = oldTask.deadlineChangePenalty || 0;
-              data.deadlineChangePenalty = currentPenalty + penalty;
-              changes.push(`Prazo: ${this.toBRDate(oldTask.deadline)} → ${this.toBRDate(data.deadline)} (${penalty} pts)`);
-              if (reason) changes.push(`Motivo: ${reason}`);
-            } else {
-              changes.push(`Prazo: ${this.toBRDate(oldTask.deadline)} → ${this.toBRDate(data.deadline)}`);
+            if (!reason && !this.isAdmin()) {
+              this.showToast('Justificativa obrigatória para alteração de prazo!', 'error');
+              saveBtn.disabled = false;
+              saveBtn.innerHTML = originalText;
+              return;
             }
+            data.deadlineChanged = true; // sinaliza penalidade de −15% no cálculo final
+            changes.push(`Prazo: ${this.toBRDate(oldTask.deadline)} → ${this.toBRDate(data.deadline)} (−15% pontos)`);
+            if (reason) changes.push(`Motivo: ${reason}`);
           }
           if (oldTask.owner !== data.owner) changes.push(`Responsável: ${oldTask.owner} → ${data.owner}`);
-          if (oldTask.taskType !== data.taskType) changes.push(`Tipo: ${oldTask.taskType || 'Rotina'} → ${data.taskType}`);
+          if (oldTask.taskType !== data.taskType) { data.deadlineChanged = true; changes.push(`Tipo: ${oldTask.taskType || 'Rotina'} → ${data.taskType} (−15% pontos)`); }
           if (oldTask.title !== data.title) changes.push(`Título alterado`);
           if (data.isRecurring !== (oldTask.isRecurring || false)) changes.push(`Recorrência: ${data.isRecurring ? 'Ativada (' + this.WEEKDAYS[data.recurringDay] + ')' : 'Desativada'}`);
         }
