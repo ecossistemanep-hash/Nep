@@ -12,8 +12,6 @@ const NexusKanban = {
   draggedItem: null,
   deliveryTaskId: null,
   reviewTaskId: null,
-  selectedPriority: 'Baixo',
-  selectedComplexity: 'Baixa',
   isEditing: false,
   editId: null,
   unsubscribe: null,
@@ -25,7 +23,6 @@ const NexusKanban = {
   currentTaskId: null,
 
   // ============ ROLE IDENTIFICATION ============
-  // Mantido apenas para identificação de cargos privilegiados
   PRIVILEGED_ROLES: ['admin', 'diretor', 'superintendente'],
 
   ROLE_LABEL: {
@@ -39,10 +36,50 @@ const NexusKanban = {
     monitor: 'MONITOR'
   },
 
-  // ============ GAMIFICATION ============
-  PRIORITY_POINTS: { 'Baixo': 5, 'Médio': 10, 'Alto': 15, 'Urgente': 25 },
-  COMPLEXITY_MULTIPLIER: { 'Baixa': 1, 'Média': 1.5, 'Alta': 2 },
-  DELAY_PENALTY: { 1: -5, 2: -10, 3: -15 },
+  // ============ PONTUAÇÃO AUTOMÁTICA ============
+  // Pontos base calculados pelo prazo (dias úteis até deadline)
+  DEADLINE_POINTS: [
+    { maxDays: 0,  points: 25 },  // Mesmo dia (urgente real)
+    { maxDays: 2,  points: 15 },  // 1-2 dias úteis
+    { maxDays: 5,  points: 10 },  // 3-5 dias úteis
+    { maxDays: 10, points: 7 },   // 6-10 dias úteis
+    { maxDays: Infinity, points: 5 } // 11+ dias
+  ],
+
+  // Multiplicador por tipo de tarefa
+  TASK_TYPE_MULTIPLIER: {
+    'Rotina': 1.0,
+    'Análise': 1.3,
+    'Projeto': 1.5,
+    'Correção Urgente': 1.8
+  },
+
+  // Bônus por entrega antecipada
+  EARLY_BONUS: { 1: 2, 2: 5 }, // 1 dia antes = +2, 2+ dias = +5
+
+  // Penalidade por atraso
+  DELAY_PENALTY: [
+    { maxDays: 1, penalty: -5 },
+    { maxDays: 2, penalty: -10 },
+    { maxDays: 5, penalty: -15 },
+    { maxDays: Infinity, penalty: -20 }
+  ],
+
+  // Penalidade por extensão de prazo
+  DEADLINE_CHANGE_PENALTY: [
+    { maxDays: 2, penalty: -3 },
+    { maxDays: 5, penalty: -5 },
+    { maxDays: Infinity, penalty: -8 }
+  ],
+
+  // Limite de WIP (tarefas em execução simultânea por responsável)
+  WIP_LIMIT: 5,
+
+  // Dias até arquivamento automático de tarefas concluídas
+  AUTO_ARCHIVE_DAYS: 3,
+
+  // Dias da semana para recorrência
+  WEEKDAYS: ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'],
 
   // ============ INIT ============
   async init() {
@@ -111,8 +148,10 @@ const NexusKanban = {
   },
 
   isAdmin() {
-    return this.PRIVILEGED_ROLES.includes(this.myRoleKey) ||
-      localStorage.getItem('nep_is_admin') === 'true';
+    // SEGURANÇA: NÃO usar localStorage para determinar admin.
+    // Qualquer pessoa pode setar localStorage no console do navegador.
+    // A verificação real de cargo vem do Firestore (carregada no login).
+    return this.PRIVILEGED_ROLES.includes(this.myRoleKey);
   },
 
   isCreatorMe(task) {
@@ -172,17 +211,62 @@ const NexusKanban = {
     return this.isCreatorMe(task);
   },
 
+  // SEGURANÇA: Somente gestor direto do responsável ou admin pode alterar prazo
+  // Exceção: Superintendente e Diretor podem alterar os próprios prazos
   canEditDeadline(task) {
     if (this.isAdmin()) return true;
-    return this.isCreatorMe(task);
+    if (this.isTopLevel() && this.isCreatorMe(task)) return true;
+    return this.isManagerOfOwner(task);
   },
 
+  // SEGURANÇA: Somente gestor direto do responsável ou admin pode validar
+  // Exceção: Superintendente e Diretor são auto-validados (não precisam de aprovação)
   canValidateTask(task) {
     if (!task || task.status !== 'done' || task.validated) return false;
     if (this.isAdmin()) return true;
-    if (this.isCreatorMe(task)) return true;
-    if (this.isViewerMe(task)) return true;
-    return false;
+    // Superintendente/Diretor: podem validar qualquer tarefa da sua estrutura
+    if (this.isTopLevel()) return true;
+    return this.isManagerOfOwner(task);
+  },
+
+  // Verifica se o usuário logado é Superintendente ou Diretor (topo de hierarquia)
+  isTopLevel() {
+    return ['superintendente', 'diretor'].includes(this.myRoleKey);
+  },
+
+  // Verifica se o responsável da tarefa é Superintendente ou Diretor
+  // Se for, a tarefa é auto-validada na entrega
+  isOwnerTopLevel(task) {
+    if (!task || !task.ownerUid) return false;
+    const ownerUser = this.activeUsers.find(u => u.uid === task.ownerUid);
+    if (!ownerUser) return false;
+    const ownerRole = (ownerUser.cargo || '').toLowerCase();
+    return ['superintendente', 'diretor', 'admin'].includes(ownerRole);
+  },
+
+  // Verifica se o usuário logado é o gestor direto do responsável da tarefa
+  isManagerOfOwner(task) {
+    if (!task || !task.ownerUid || !this.myUid) return false;
+    const ownerUser = this.activeUsers.find(u => u.uid === task.ownerUid);
+    if (!ownerUser) return false;
+    // Campo real do vínculo hierárquico é `gestor_uid` (ver user-management/admin).
+    return (ownerUser.gestor_uid || ownerUser.managerUid) === this.myUid;
+  },
+
+  // Retorna o UID do gestor direto do responsável da tarefa
+  getManagerUidOfOwner(task) {
+    if (!task || !task.ownerUid) return null;
+    const ownerUser = this.activeUsers.find(u => u.uid === task.ownerUid);
+    return ownerUser?.gestor_uid || ownerUser?.managerUid || null;
+  },
+
+  // Verifica se o responsável excedeu o limite de WIP
+  isWipExceeded(ownerUid) {
+    if (!ownerUid) return false;
+    const doingCount = this.allTasks.filter(t =>
+      t.ownerUid === ownerUid && t.status === 'doing' && t.status !== 'archived'
+    ).length;
+    return doingCount >= this.WIP_LIMIT;
   },
 
   toBRDate(dateStr) {
@@ -199,29 +283,96 @@ const NexusKanban = {
     return d.toISOString().split('T')[0];
   },
 
-  // ============ POINTS CALCULATION ============
-  calculatePoints(priority, complexity) {
-    const base = this.PRIORITY_POINTS[priority] || 5;
-    const mult = this.COMPLEXITY_MULTIPLIER[complexity] || 1;
+  // ============ PONTUAÇÃO AUTOMÁTICA ============
+
+  // Calcula dias úteis entre duas datas (exclui sáb/dom)
+  calcBusinessDays(startDate, endDate) {
+    let count = 0;
+    const cur = new Date(startDate);
+    const end = new Date(endDate);
+    cur.setHours(0,0,0,0);
+    end.setHours(0,0,0,0);
+    while (cur <= end) {
+      const day = cur.getDay();
+      if (day !== 0 && day !== 6) count++;
+      cur.setDate(cur.getDate() + 1);
+    }
+    return Math.max(0, count - 1); // Exclui o próprio dia de criação
+  },
+
+  // Calcula pontos base a partir do prazo (dias úteis) e tipo de tarefa
+  // ANTI-FRAUDE: não depende de escolha manual do usuário
+  calculatePoints(taskType, deadline, createdAt) {
+    const created = createdAt ? new Date(createdAt) : new Date();
+    const deadlineDate = deadline ? new Date(deadline + 'T23:59:59') : created;
+    const businessDays = this.calcBusinessDays(created, deadlineDate);
+
+    // Pontos base pelo prazo
+    let base = 5;
+    for (const tier of this.DEADLINE_POINTS) {
+      if (businessDays <= tier.maxDays) { base = tier.points; break; }
+    }
+
+    // Multiplicador pelo tipo de tarefa
+    const mult = this.TASK_TYPE_MULTIPLIER[taskType] || 1.0;
     return Math.round(base * mult);
   },
 
+  // Deriva a prioridade visual automaticamente a partir do prazo
+  derivePriority(deadline) {
+    if (!deadline) return 'Baixo';
+    const now = new Date();
+    const dl = new Date(deadline + 'T23:59:59');
+    const days = this.calcBusinessDays(now, dl);
+    if (days <= 0) return 'Urgente';
+    if (days <= 2) return 'Alto';
+    if (days <= 5) return 'Médio';
+    return 'Baixo';
+  },
+
+  // Calcula pontuação final incluindo bônus, atrasos e penalidades de extensão
   calculateFinalPoints(task) {
-    let points = this.calculatePoints(task.priority, task.complexity);
+    let points = this.calculatePoints(task.taskType || 'Rotina', task.deadline, task.createdAt);
 
     if (task.deadline && task.deliveredAt) {
       const deadline = new Date(task.deadline + 'T23:59:59');
       const delivered = new Date(task.deliveredAt);
-      const daysLate = Math.floor((delivered - deadline) / (1000 * 60 * 60 * 24));
+      const diffMs = delivered - deadline;
+      const daysLate = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
       if (daysLate > 0) {
-        if (daysLate === 1) points += this.DELAY_PENALTY[1];
-        else if (daysLate === 2) points += this.DELAY_PENALTY[2];
-        else points += this.DELAY_PENALTY[3];
-        points = Math.max(1, points);
+        // Penalidade por atraso
+        for (const tier of this.DELAY_PENALTY) {
+          if (daysLate <= tier.maxDays) { points += tier.penalty; break; }
+        }
+      } else if (daysLate < 0) {
+        // Bônus por entrega antecipada
+        const daysEarly = Math.abs(daysLate);
+        if (daysEarly >= 2) points += this.EARLY_BONUS[2];
+        else if (daysEarly >= 1) points += this.EARLY_BONUS[1];
       }
     }
-    return points;
+
+    // Penalidade acumulada por extensões de prazo
+    if (task.deadlineChangePenalty) {
+      points += task.deadlineChangePenalty; // Valor já é negativo
+    }
+
+    return Math.max(1, points);
+  },
+
+  // Calcula a penalidade por extensão de prazo
+  calcDeadlineChangePenalty(oldDeadline, newDeadline) {
+    if (!oldDeadline || !newDeadline) return 0;
+    const oldDate = new Date(oldDeadline + 'T23:59:59');
+    const newDate = new Date(newDeadline + 'T23:59:59');
+    const diffDays = Math.floor((newDate - oldDate) / (1000 * 60 * 60 * 24));
+    if (diffDays <= 0) return 0; // Redução de prazo não penaliza
+
+    for (const tier of this.DEADLINE_CHANGE_PENALTY) {
+      if (diffDays <= tier.maxDays) return tier.penalty;
+    }
+    return -8;
   },
 
   // ============ FIREBASE ============
@@ -500,15 +651,37 @@ const NexusKanban = {
             </div>
             <div class="kb-form-row">
               <div class="kb-form-group"><label>Prazo</label><input type="date" id="kb-task-deadline" required></div>
-              <div class="kb-form-group"><label>Prioridade</label>
-                <select id="kb-task-priority"><option value="Baixo">Baixo (5 pts)</option><option value="Médio">Médio (10 pts)</option><option value="Alto">Alto (15 pts)</option><option value="Urgente">Urgente (25 pts)</option></select>
+              <div class="kb-form-group"><label>Tipo de Tarefa</label>
+                <select id="kb-task-type">
+                  <option value="Rotina">Rotina / Operacional (×1.0)</option>
+                  <option value="Análise">Análise / Relatório (×1.3)</option>
+                  <option value="Projeto">Projeto / Desenvolvimento (×1.5)</option>
+                  <option value="Correção Urgente">Correção Urgente / Incidente (×1.8)</option>
+                </select>
               </div>
             </div>
             <div class="kb-form-row">
-              <div class="kb-form-group"><label>Complexidade</label>
-                <select id="kb-task-complexity"><option value="Baixa">Baixa (×1)</option><option value="Média">Média (×1.5)</option><option value="Alta">Alta (×2)</option></select>
+              <div class="kb-form-group"><label>🏆 Pontos (automático)</label><input type="number" id="kb-task-points" readonly value="5"></div>
+              <div class="kb-form-group"><label>📊 Prioridade (automática)</label><input type="text" id="kb-task-priority-display" readonly value="Baixo"></div>
+            </div>
+            <div class="kb-form-row">
+              <div class="kb-form-group">
+                <label>🔁 Atividade Recorrente</label>
+                <select id="kb-task-recurring">
+                  <option value="">Não (única vez)</option>
+                  <option value="0">Domingo</option>
+                  <option value="1">Segunda-feira</option>
+                  <option value="2">Terça-feira</option>
+                  <option value="3">Quarta-feira</option>
+                  <option value="4">Quinta-feira</option>
+                  <option value="5">Sexta-feira</option>
+                  <option value="6">Sábado</option>
+                </select>
               </div>
-              <div class="kb-form-group"><label>🏆 Pontos</label><input type="number" id="kb-task-points" readonly value="5"></div>
+              <div class="kb-form-group" id="kb-deadline-reason-group" style="display:none;">
+                <label>📝 Justificativa (alteração de prazo)</label>
+                <input type="text" id="kb-deadline-reason" placeholder="Motivo da alteração...">
+              </div>
             </div>
             <div class="kb-form-row">
               <div class="kb-form-group full"><label>Descrição</label><textarea id="kb-task-desc" rows="3"></textarea></div>
@@ -564,7 +737,11 @@ const NexusKanban = {
              <label>Arquivos Anexados</label>
              <div id="kb-review-attachments" class="kb-attachments-list"></div>
           </div>
-          <div class="kb-form-row">
+          <div class="kb-form-group full" style="padding: 0 20px 12px;">
+            <label>📝 Observação / Motivo (obrigatório para rejeição)</label>
+            <textarea id="kb-reject-reason" rows="3" placeholder="Descreva o que precisa ser ajustado..."></textarea>
+          </div>
+          <div class="kb-form-row" style="padding: 0 20px 20px;">
             <button class="kb-btn kb-btn-primary" id="kb-approve-review"><i class="fa-solid fa-check-double"></i> Aprovar</button>
             <button class="kb-btn kb-btn-danger" id="kb-reject-review"><i class="fa-solid fa-times"></i> Solicitar Ajustes</button>
           </div>
@@ -576,6 +753,9 @@ const NexusKanban = {
 
   renderBoard() {
     if (this.draggedItem) return;
+
+    // ============ AUTO-ARCHIVE: mover tarefas concluídas há mais de 3 dias ============
+    this.autoArchiveCompletedTasks();
 
     // Limpar todas as tracks
     ['backlog', 'doing', 'pending', 'done'].forEach(s => {
@@ -659,7 +839,7 @@ const NexusKanban = {
     card.className = 'kb-archived-card';
     card.dataset.id = task.id;
 
-    const points = this.calculatePoints(task.priority, task.complexity);
+    const points = this.calculatePoints(task.taskType || 'Rotina', task.deadline, task.createdAt);
 
     card.innerHTML = `
       <div class="kb-archived-card-header">
@@ -710,8 +890,9 @@ const NexusKanban = {
     if (isNew) card.classList.add('kb-new-task');
     if (task.status === 'done') card.classList.add(task.validated ? 'kb-validated' : 'kb-pending-validation');
 
-    const prioClass = { 'Urgente': 'kb-p-urgente', 'Alto': 'kb-p-alto', 'Médio': 'kb-p-medio', 'Baixo': 'kb-p-baixo' }[task.priority] || 'kb-p-baixo';
-    const points = this.calculatePoints(task.priority, task.complexity);
+    const derivedPriority = task.priority || this.derivePriority(task.deadline);
+    const prioClass = { 'Urgente': 'kb-p-urgente', 'Alto': 'kb-p-alto', 'Médio': 'kb-p-medio', 'Baixo': 'kb-p-baixo' }[derivedPriority] || 'kb-p-baixo';
+    const points = this.calculatePoints(task.taskType || 'Rotina', task.deadline, task.createdAt);
 
     let slaHtml = '';
     if (task.status !== 'done' && task.status !== 'archived' && task.deadline) {
@@ -730,7 +911,7 @@ const NexusKanban = {
     if (task.status === 'done') {
       if (task.validated) validationHtml = '<div class="kb-validation kb-val-ok">✅ Concluída</div>';
       else {
-        validationHtml = '<div class="kb-validation kb-val-pending">⏳ Aguardando validação</div>';
+        validationHtml = '<div class="kb-validation kb-val-pending">⏳ Aguardando validação do gestor</div>';
         if (this.canValidateTask(task)) validationHtml += `<button class="kb-btn-validate" data-id="${task.id}">🔍 REVISAR</button>`;
       }
     }
@@ -745,6 +926,9 @@ const NexusKanban = {
         </div>
       `;
     }
+
+    // Badge de recorrência
+    const recurBadge = task.isRecurring ? `<span class="kb-badge kb-recurring" title="Recorrente: ${this.WEEKDAYS[task.recurringDay] || 'Semanal'}">🔁 ${this.WEEKDAYS[task.recurringDay] || 'Semanal'}</span>` : '';
 
     card.innerHTML = `
       <div class="kb-card-header">
@@ -764,11 +948,12 @@ const NexusKanban = {
       <div class="kb-card-meta">
         <div class="kb-card-owner"><i class="fa-solid fa-user"></i> ${this.esc((task.owner || 'N/D').toUpperCase())}</div>
         <div class="kb-card-badges">
-          <span class="kb-badge ${prioClass}">${task.priority || 'Baixo'}</span>
+          <span class="kb-badge ${prioClass}">${derivedPriority}</span>
+          ${recurBadge}
           <span class="kb-badge kb-points">🏆 ${points}</span>
         </div>
       </div>
-      <div class="kb-card-date">${this.toBRDate(task.deadline)}</div>
+      <div class="kb-card-date">${this.toBRDate(task.deadline)}${task.taskType ? ' · ' + this.esc(task.taskType) : ''}</div>
     `;
 
     // Events
@@ -797,9 +982,9 @@ const NexusKanban = {
     // Form submit
     document.getElementById('kb-form-task')?.addEventListener('submit', e => { e.preventDefault(); this.saveTask(); });
 
-    // Atualizar pontos ao mudar prioridade/complexidade
-    document.getElementById('kb-task-priority')?.addEventListener('change', () => this.updatePointsPreview());
-    document.getElementById('kb-task-complexity')?.addEventListener('change', () => this.updatePointsPreview());
+    // Atualizar pontos ao mudar tipo de tarefa ou prazo
+    document.getElementById('kb-task-type')?.addEventListener('change', () => this.updatePointsPreview());
+    document.getElementById('kb-task-deadline')?.addEventListener('change', () => this.updatePointsPreview());
 
     // Preencher cargo automaticamente ao selecionar responsável
     document.getElementById('kb-task-owner')?.addEventListener('change', (e) => {
@@ -849,6 +1034,15 @@ const NexusKanban = {
         const oldStatus = this.draggedItem.dataset.status;
         const taskId = this.draggedItem.dataset.id;
 
+        if (newStatus === 'doing' && oldStatus !== 'doing') {
+          // Verificar WIP limit
+          const task = this.allTasks.find(t => t.id === taskId);
+          if (task && this.isWipExceeded(task.ownerUid)) {
+            this.showToast(`Limite de ${this.WIP_LIMIT} tarefas em execução atingido!`, 'warning');
+            return;
+          }
+        }
+
         if (newStatus === 'done' && oldStatus !== 'done') {
           this.deliveryTaskId = taskId;
           this.openDeliveryModal();
@@ -889,6 +1083,11 @@ const NexusKanban = {
     document.getElementById('kb-task-deadline').value = this.getDeadline(3);
     document.getElementById('kb-task-requester').value = this.myName;
     document.getElementById('kb-task-deadline').disabled = false;
+    // Resetar novos campos
+    const recurSel = document.getElementById('kb-task-recurring');
+    if (recurSel) recurSel.value = '';
+    const reasonGroup = document.getElementById('kb-deadline-reason-group');
+    if (reasonGroup) reasonGroup.style.display = 'none';
 
     // Clear viewers
     this.clearViewersPicker();
@@ -910,6 +1109,7 @@ const NexusKanban = {
     this.currentTaskId = task.id;
     this.taskFilesToUpload = [];
     this.currentTaskAttachments = [];
+    this._originalDeadline = task.deadline || '';
 
     document.getElementById('kb-modal-title').textContent = 'Editar Demanda';
     document.getElementById('kb-task-title').value = task.title || '';
@@ -918,10 +1118,17 @@ const NexusKanban = {
     document.getElementById('kb-task-owner').value = task.owner || '';
     document.getElementById('kb-task-owner-role').value = task.ownerRole || '';
     document.getElementById('kb-task-deadline').value = task.deadline || '';
-    document.getElementById('kb-task-priority').value = task.priority || 'Baixo';
-    document.getElementById('kb-task-complexity').value = task.complexity || 'Baixa';
+    document.getElementById('kb-task-type').value = task.taskType || 'Rotina';
     document.getElementById('kb-task-desc').value = task.description || '';
     document.getElementById('kb-task-deadline').disabled = !this.canEditDeadline(task);
+
+    // Recorrência
+    const recurSel = document.getElementById('kb-task-recurring');
+    if (recurSel) recurSel.value = task.isRecurring ? String(task.recurringDay) : '';
+
+    // Mostrar campo de justificativa de prazo apenas na edição
+    const reasonGroup = document.getElementById('kb-deadline-reason-group');
+    if (reasonGroup) reasonGroup.style.display = this.canEditDeadline(task) ? 'flex' : 'none';
 
     // Carregar visualizadores existentes no picker
     this.loadViewersPicker(task.viewers || []);
@@ -940,8 +1147,13 @@ const NexusKanban = {
     const fileInput = document.getElementById('kb-delivery-file');
     if (fileInput) fileInput.value = '';
 
+    // Verificar se o responsável é top-level (auto-validação)
+    const task = this.allTasks.find(t => t.id === this.deliveryTaskId);
+    const autoValidate = task && this.isOwnerTopLevel(task);
     const btn = document.getElementById('kb-confirm-delivery');
-    if (btn) btn.innerHTML = this.isAdmin() ? '<i class="fa-solid fa-check"></i> Concluir (Auto)' : '<i class="fa-solid fa-paper-plane"></i> Enviar para Aprovação';
+    if (btn) btn.innerHTML = autoValidate
+      ? '<i class="fa-solid fa-check"></i> Concluir (Auto-validação)'
+      : '<i class="fa-solid fa-paper-plane"></i> Enviar para Aprovação do Gestor';
     this.openModal('kb-modal-delivery');
   },
 
@@ -961,11 +1173,14 @@ const NexusKanban = {
   },
 
   updatePointsPreview() {
-    const p = document.getElementById('kb-task-priority')?.value || 'Baixo';
-    const c = document.getElementById('kb-task-complexity')?.value || 'Baixa';
-    const pts = this.calculatePoints(p, c);
+    const taskType = document.getElementById('kb-task-type')?.value || 'Rotina';
+    const deadline = document.getElementById('kb-task-deadline')?.value || '';
+    const pts = this.calculatePoints(taskType, deadline, null);
     const el = document.getElementById('kb-task-points');
     if (el) el.value = pts;
+    // Atualizar prioridade derivada
+    const prioDisplay = document.getElementById('kb-task-priority-display');
+    if (prioDisplay) prioDisplay.value = this.derivePriority(deadline);
   },
 
   // ============ ATTACHMENTS METHODS ============
@@ -1103,6 +1318,10 @@ const NexusKanban = {
     saveBtn.disabled = true;
     saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processando...';
 
+    const taskType = document.getElementById('kb-task-type')?.value || 'Rotina';
+    const deadline = document.getElementById('kb-task-deadline')?.value || '';
+    const recurringVal = document.getElementById('kb-task-recurring')?.value;
+
     const data = {
       title,
       requester: document.getElementById('kb-task-requester')?.value.trim() || '',
@@ -1110,10 +1329,12 @@ const NexusKanban = {
       owner: ownerSelect?.value?.trim() || '',
       ownerUid: ownerOption?.dataset?.uid || '',
       ownerRole: document.getElementById('kb-task-owner-role')?.value.trim() || '',
-      deadline: document.getElementById('kb-task-deadline')?.value || '',
-      priority: document.getElementById('kb-task-priority')?.value || 'Baixo',
-      complexity: document.getElementById('kb-task-complexity')?.value || 'Baixa',
-      description: document.getElementById('kb-task-desc')?.value.trim() || ''
+      deadline,
+      taskType,
+      priority: this.derivePriority(deadline),
+      description: document.getElementById('kb-task-desc')?.value.trim() || '',
+      isRecurring: recurringVal !== '' && recurringVal !== undefined,
+      recurringDay: recurringVal !== '' ? parseInt(recurringVal) : null
     };
 
     // Capturar visualizadores selecionados do picker
@@ -1130,11 +1351,29 @@ const NexusKanban = {
         const oldTask = this.allTasks.find(t => t.id === this.editId);
         const changes = [];
         if (oldTask) {
-          if (oldTask.deadline !== data.deadline) changes.push(`Prazo: ${this.toBRDate(oldTask.deadline)} → ${this.toBRDate(data.deadline)}`);
+          // Penalidade por extensão de prazo
+          if (oldTask.deadline !== data.deadline) {
+            const penalty = this.calcDeadlineChangePenalty(oldTask.deadline, data.deadline);
+            const reason = document.getElementById('kb-deadline-reason')?.value.trim() || '';
+            if (penalty < 0) {
+              if (!reason && !this.isAdmin()) {
+                this.showToast('Justificativa obrigatória para alteração de prazo!', 'error');
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = originalText;
+                return;
+              }
+              const currentPenalty = oldTask.deadlineChangePenalty || 0;
+              data.deadlineChangePenalty = currentPenalty + penalty;
+              changes.push(`Prazo: ${this.toBRDate(oldTask.deadline)} → ${this.toBRDate(data.deadline)} (${penalty} pts)`);
+              if (reason) changes.push(`Motivo: ${reason}`);
+            } else {
+              changes.push(`Prazo: ${this.toBRDate(oldTask.deadline)} → ${this.toBRDate(data.deadline)}`);
+            }
+          }
           if (oldTask.owner !== data.owner) changes.push(`Responsável: ${oldTask.owner} → ${data.owner}`);
-          if (oldTask.priority !== data.priority) changes.push(`Prioridade: ${oldTask.priority} → ${data.priority}`);
-          if (oldTask.complexity !== data.complexity) changes.push(`Complexidade: ${oldTask.complexity} → ${data.complexity}`);
+          if (oldTask.taskType !== data.taskType) changes.push(`Tipo: ${oldTask.taskType || 'Rotina'} → ${data.taskType}`);
           if (oldTask.title !== data.title) changes.push(`Título alterado`);
+          if (data.isRecurring !== (oldTask.isRecurring || false)) changes.push(`Recorrência: ${data.isRecurring ? 'Ativada (' + this.WEEKDAYS[data.recurringDay] + ')' : 'Desativada'}`);
         }
         if (changes.length > 0) {
           await this.addHistory(this.editId, 'Tarefa editada', changes.join(' | '));
@@ -1362,43 +1601,63 @@ const NexusKanban = {
         }
       }
 
+      // Verificar se é auto-validação para Superintendente / Diretor / Admin
+      const isAuto = task && this.isOwnerTopLevel(task);
+
       await this.addHistory(this.deliveryTaskId, 'Entrega registrada', evidence ? evidence.substring(0, 100) : 'Evidência anexada');
-      await this.updateTaskInFirebase(this.deliveryTaskId, {
+      
+      const updateData = {
         status: 'done',
         deliveredAt: new Date().toISOString(),
         evidence,
         evidenceLink: link,
-        validated: false
-      });
+        validated: isAuto
+      };
 
-      // Notificar gestor sobre entrega
-      const task = this.allTasks.find(t => t.id === this.deliveryTaskId);
-      if (task && task.creatorUid && window.NexusNotifications) {
-        window.NexusNotifications.add({
-          tipo: 'validacao',
-          titulo: '📦 Tarefa Entregue',
-          mensagem: `${this.myName} entregou a tarefa "${task.title}" e aguarda sua validação.`,
-          destinatario_uid: task.creatorUid || task.creatorName,
-          referencia_tipo: 'task',
-          referencia_id: this.deliveryTaskId
-        }).catch(console.error);
+      if (isAuto) {
+        updateData.validatedBy = this.myName;
+        updateData.validatedAt = new Date().toISOString();
       }
 
-      // Notification: Delivery → notify viewers
-      if (task && task.viewers && task.viewers.length > 0 && window.NexusNotifications) {
-        const viewersToNotify = task.viewers.filter(uid => uid !== this.myUid && uid !== task.creatorUid);
-        if (viewersToNotify.length > 0) {
-          window.NexusNotifications.notifyUsers(viewersToNotify, {
+      await this.updateTaskInFirebase(this.deliveryTaskId, updateData);
+
+      if (isAuto) {
+        this.showToast('Entrega registrada e auto-validada!', 'success');
+        // Se for recorrente, criar a próxima ocorrência semanal
+        if (task && task.isRecurring) {
+          await this.createRecurringInstance(task);
+        }
+      } else {
+        // Notificar gestor sobre entrega
+        const managerUid = this.getManagerUidOfOwner(task) || task.creatorUid;
+        if (managerUid && window.NexusNotifications) {
+          window.NexusNotifications.add({
             tipo: 'validacao',
             titulo: '📦 Tarefa Entregue',
-            mensagem: `A tarefa "${task.title}" (que você visualiza) foi entregue por ${this.myName}.`,
+            mensagem: `${this.myName} entregou a tarefa "${task.title}" e aguarda sua validação.`,
+            destinatario_uid: managerUid,
             referencia_tipo: 'task',
             referencia_id: this.deliveryTaskId
-          }).catch(err => console.error('[Kanban] Erro notif viewers entrega:', err));
+          }).catch(console.error);
         }
+
+        // Notification: Delivery → notify viewers
+        if (task && task.viewers && task.viewers.length > 0 && window.NexusNotifications) {
+          const viewersToNotify = task.viewers.filter(uid => uid !== this.myUid && uid !== managerUid);
+          if (viewersToNotify.length > 0) {
+            window.NexusNotifications.notifyUsers(viewersToNotify, {
+              tipo: 'validacao',
+              titulo: '📦 Tarefa Entregue',
+              mensagem: `A tarefa "${task.title}" (que você visualiza) foi entregue por ${this.myName}.`,
+              referencia_tipo: 'task',
+              referencia_id: this.deliveryTaskId
+            }).catch(err => console.error('[Kanban] Erro notif viewers entrega:', err));
+          }
+        }
+
+        this.showToast('Entrega registrada! Aguardando validação do gestor.', 'success');
       }
 
-      this.showToast('Entrega registrada! Aguardando validação.', 'success');
       this.closeModal('kb-modal-delivery');
       this.deliveryTaskId = null;
     } catch (err) {
@@ -1565,13 +1824,13 @@ const NexusKanban = {
         console.error('[Kanban] Erro nas notificações (não-crítico):', notifErr);
       }
 
-      // Animação XP
-      if (window.NexusAchievements) {
-        try { window.NexusAchievements.showXPAnimation(points); } catch (e) { }
-      }
-
       this.showGameToast('Demanda validada!', points, 'success');
       this.reviewTaskId = null;
+
+      // 🔁 RECORRÊNCIA SEMANAL: criar próxima ocorrência se configurada
+      if (task.isRecurring) {
+        await this.createRecurringInstance(task);
+      }
 
     } catch (err) {
       console.error('[Kanban] Erro ao aprovar tarefa:', err);
@@ -1592,8 +1851,15 @@ const NexusKanban = {
   async rejectTask() {
     if (!this.reviewTaskId) return;
     const task = this.allTasks.find(t => t.id === this.reviewTaskId);
+    const reason = document.getElementById('kb-reject-reason')?.value.trim();
+
+    if (!reason) {
+      this.showToast('Informe o motivo dos ajustes necessários!', 'warning');
+      return;
+    }
+
     try {
-      await this.addHistory(this.reviewTaskId, 'Ajustes solicitados', `Devolvido por ${this.myName}`);
+      await this.addHistory(this.reviewTaskId, 'Ajustes solicitados', `Devolvido por ${this.myName}. Motivo: ${reason}`);
       await this.updateTaskInFirebase(this.reviewTaskId, { status: 'pending' });
 
       // Notificar executor sobre rejeição
@@ -1601,7 +1867,7 @@ const NexusKanban = {
         window.NexusNotifications.add({
           tipo: 'validacao',
           titulo: '⚠️ Ajustes Necessários',
-          mensagem: `Sua tarefa "${task.title}" precisa de ajustes. ${this.myName} solicitou revisão.`,
+          mensagem: `Sua tarefa "${task.title}" precisa de ajustes. Motivo: ${reason}`,
           destinatario_uid: task.ownerUid,
           referencia_tipo: 'task',
           referencia_id: this.reviewTaskId
@@ -1623,9 +1889,102 @@ const NexusKanban = {
       }
 
       this.closeModal('kb-modal-review');
-      this.showToast('Ajustes solicitados', 'warning');
+      this.showToast('Ajustes solicitados ao executor', 'warning');
       this.reviewTaskId = null;
     } catch (err) { console.error(err); }
+  },
+
+  // ============ AUTO-ARCHIVE ============
+  async autoArchiveCompletedTasks() {
+    if (!this.allTasks || this.allTasks.length === 0) return;
+    const now = new Date();
+    const thresholdMs = this.AUTO_ARCHIVE_DAYS * 24 * 60 * 60 * 1000;
+
+    const toArchive = this.allTasks.filter(t => {
+      if (t.status !== 'done' || !t.validated || !t.validatedAt) return false;
+      const valDate = new Date(t.validatedAt);
+      return (now - valDate) >= thresholdMs;
+    });
+
+    for (const task of toArchive) {
+      try {
+        console.log(`[Kanban] Auto-arquivando tarefa ${task.id} (${task.title})`);
+        await this.addHistory(task.id, 'Arquivado automaticamente', `Arquivado após ${this.AUTO_ARCHIVE_DAYS} dias de conclusão`);
+        await this.updateTaskInFirebase(task.id, { status: 'archived' });
+      } catch (err) {
+        console.warn(`[Kanban] Erro no auto-arquivamento da tarefa ${task.id}:`, err);
+      }
+    }
+  },
+
+  // ============ RECORRÊNCIA SEMANAL ============
+  async createRecurringInstance(parentTask) {
+    try {
+      // Calcular próximo prazo baseado no dia da semana configurado
+      const today = new Date();
+      const targetDay = parentTask.recurringDay !== null && parentTask.recurringDay !== undefined
+        ? parentTask.recurringDay
+        : today.getDay(); // Padrão: mesmo dia da semana
+
+      let nextDate = new Date(today);
+      nextDate.setDate(today.getDate() + 7); // Próxima semana
+
+      // Ajustar para o dia exato da semana se necessário
+      const dayDiff = targetDay - nextDate.getDay();
+      nextDate.setDate(nextDate.getDate() + dayDiff);
+      if (nextDate <= today) nextDate.setDate(nextDate.getDate() + 7);
+
+      const nextDeadlineStr = nextDate.toISOString().split('T')[0];
+
+      const newTaskData = {
+        title: parentTask.title,
+        description: parentTask.description || '',
+        unit: parentTask.unit || '',
+        requester: parentTask.requester || 'Sistema (Recorrente)',
+        owner: parentTask.owner || '',
+        ownerUid: parentTask.ownerUid || '',
+        ownerRole: parentTask.ownerRole || '',
+        deadline: nextDeadlineStr,
+        taskType: parentTask.taskType || 'Rotina',
+        priority: this.derivePriority(nextDeadlineStr),
+        status: 'backlog',
+        createdAt: new Date().toISOString(),
+        creatorName: 'Sistema (Recorrência)',
+        creatorUid: parentTask.creatorUid || this.myUid,
+        creatorRoleKey: parentTask.creatorRoleKey || 'sistema',
+        acknowledged: false,
+        validated: false,
+        isRecurring: true,
+        recurringDay: targetDay,
+        recurringParentId: parentTask.id,
+        viewers: parentTask.viewers || [],
+        viewersNames: parentTask.viewersNames || [],
+        history: [{
+          date: new Date().toISOString(),
+          action: 'Tarefa recorrente criada',
+          user: 'Sistema',
+          details: `Instância semanal gerada a partir da demanda #${parentTask.id} | Prazo: ${this.toBRDate(nextDeadlineStr)}`
+        }]
+      };
+
+      const newId = await this.saveTaskToFirebase(newTaskData);
+      console.log(`[Kanban] 🔁 Nova instância recorrente criada com sucesso: ${newId}`);
+      this.showToast(`🔁 Próxima ocorrência semanal criada! (Prazo: ${this.toBRDate(nextDeadlineStr)})`, 'success');
+
+      // Notificar responsável
+      if (newTaskData.ownerUid && window.NexusNotifications) {
+        window.NexusNotifications.add({
+          tipo: 'tarefa',
+          titulo: '🔁 Tarefa Recorrente Gerada',
+          mensagem: `Nova ocorrência semanal da tarefa "${parentTask.title}" foi gerada com prazo para ${this.toBRDate(nextDeadlineStr)}.`,
+          destinatario_uid: newTaskData.ownerUid,
+          referencia_tipo: 'task',
+          referencia_id: newId
+        }).catch(console.error);
+      }
+    } catch (err) {
+      console.error('[Kanban] Erro ao criar instância recorrente:', err);
+    }
   },
 
   async archiveTask(taskId) {
