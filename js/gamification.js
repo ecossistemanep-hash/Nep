@@ -201,10 +201,10 @@ const NexusGamification = {
                         <div class="ranking-item animate-slide-up" style="display: flex; align-items: center; padding: 1rem; border-bottom: 1px solid var(--border-dim);">
                             <div class="rank-number" style="width: 40px; font-weight: bold; color: var(--text-secondary); font-size: 1.2rem;">#${user.rank}</div>
                             <div class="rank-avatar" style="width: 40px; height: 40px; border-radius: 50%; background: var(--bg-primary); display: flex; align-items: center; justify-content: center; margin-right: 1rem; border: 2px solid var(--border-dim);">
-                                ${user.name ? user.name.charAt(0) : '?'}
+                                ${user.name ? window.escapeHtml(user.name.charAt(0)) : '?'}
                             </div>
                             <div class="rank-info" style="flex: 1;">
-                                <div class="rank-name" style="font-weight: 600; color: var(--text-primary);">${user.name}</div>
+                                <div class="rank-name" style="font-weight: 600; color: var(--text-primary);">${window.escapeHtml(user.name)}</div>
                                 <div class="rank-level" style="font-size: 0.8rem; color: var(--text-tertiary);">Nível ${user.level || 0}</div>
                             </div>
                             <div class="rank-points" style="font-family: 'Orbitron'; color: #fbbf24; font-size: 1.1rem;">
@@ -248,7 +248,7 @@ const NexusGamification = {
                                 font-weight: bold; font-size: 1.2rem; background-image: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(0,0,0,0.2));
                                 margin-bottom: 10px; position: relative;
                             ">
-                                ${user.name.charAt(0)}
+                                ${window.escapeHtml(user.name.charAt(0))}
                                 <div class="podium-badge" style="
                                     position: absolute; bottom: -10px; background: ${style.color}; color: #000;
                                     width: 24px; height: 24px; border-radius: 50%; font-size: 0.8rem;
@@ -256,7 +256,7 @@ const NexusGamification = {
                                     box-shadow: 0 2px 4px rgba(0,0,0,0.3);
                                 ">${style.place}</div>
                             </div>
-                            <div class="podium-name" style="font-size: 0.9rem; font-weight: 600; margin-bottom: 5px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;">${user.name.split(' ')[0]}</div>
+                            <div class="podium-name" style="font-size: 0.9rem; font-weight: 600; margin-bottom: 5px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;">${window.escapeHtml(user.name.split(' ')[0])}</div>
                             <div class="podium-block" style="
                                 width: 100%; height: ${style.height}; 
                                 background: linear-gradient(to bottom, ${style.color}cc, ${style.color}33);

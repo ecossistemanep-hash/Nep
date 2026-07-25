@@ -111,6 +111,20 @@ const NexusProfile = {
                   <h3 class="section-title">📊 Carregando estatísticas...</h3>
                 </div>
 
+                <div class="profile-section" id="profile-kanban-section">
+                  <h3 class="section-title">🗂️ Meu Desempenho no Kanban</h3>
+                  <div id="kanban-perf-body">
+                    <div class="loading-spinner"><i class="fa-solid fa-circle-notch fa-spin"></i></div>
+                  </div>
+                </div>
+
+                <div class="profile-section" id="profile-points-chart-section">
+                  <h3 class="section-title">📉 Evolução de Pontos (90 dias)</h3>
+                  <div id="points-chart-body">
+                    <div class="loading-spinner"><i class="fa-solid fa-circle-notch fa-spin"></i></div>
+                  </div>
+                </div>
+
                 <div class="profile-section" id="profile-history-section">
                   <h3 class="section-title">📈 Histórico de Pontos</h3>
                   <div id="points-history-list" class="history-list">
@@ -122,6 +136,13 @@ const NexusProfile = {
                   <h3 class="section-title">🏅 Conquistas</h3>
                   <div id="achievements-grid" class="achievements-grid"></div>
                 </div>
+
+                <div class="profile-section" id="profile-forum-section">
+                  <h3 class="section-title">💬 Minha Contribuição no Fórum</h3>
+                  <div id="forum-contrib-body">
+                    <div class="loading-spinner"><i class="fa-solid fa-circle-notch fa-spin"></i></div>
+                  </div>
+                </div>
               </div>
 
               <div class="profile-sidebar">
@@ -132,19 +153,37 @@ const NexusProfile = {
                   </div>
                 </div>
 
+                <div class="profile-section" id="profile-ranking-section">
+                  <h3 class="section-title">🏆 Minha Posição</h3>
+                  <div id="ranking-position-body">
+                    <div class="loading-spinner"><i class="fa-solid fa-circle-notch fa-spin"></i></div>
+                  </div>
+                </div>
+
                 <div class="profile-section">
-                  <h3 class="section-title">👥 Hierarquia</h3>
-                  <div class="hierarchy-list">
-                    ${this.getHierarchy().map(h => `
-                      <div class="hierarchy-item ${h.current ? 'current' : ''}">
-                        <div class="hierarchy-level">${h.levelNum}</div>
-                        <div class="hierarchy-info">
-                          <div class="hierarchy-role">${h.role}</div>
-                          ${h.name ? `<div class="hierarchy-name">${h.name}</div>` : ''}
-                        </div>
-                        ${h.current ? '<span class="you-badge">Você</span>' : ''}
-                      </div>
-                    `).join('')}
+                  <h3 class="section-title">👥 Minha Hierarquia</h3>
+                  <div class="hierarchy-list" id="profile-hierarchy">
+                    <div class="hierarchy-loading">Carregando hierarquia...</div>
+                  </div>
+                </div>
+
+                <!-- Só é exibida se o usuário tiver liderados diretos -->
+                <div class="profile-section" id="profile-team-section" style="display:none;">
+                  <h3 class="section-title">🧭 Minha Equipe</h3>
+                  <div class="hierarchy-list" id="profile-team"></div>
+                </div>
+
+                <div class="profile-section" id="profile-vacation-section">
+                  <h3 class="section-title">🏖️ Férias e Chamados</h3>
+                  <div id="vacation-tickets-body">
+                    <div class="loading-spinner"><i class="fa-solid fa-circle-notch fa-spin"></i></div>
+                  </div>
+                </div>
+
+                <div class="profile-section" id="profile-security-section">
+                  <h3 class="section-title">🔒 Segurança da Conta</h3>
+                  <div id="account-security-body">
+                    <div class="loading-spinner"><i class="fa-solid fa-circle-notch fa-spin"></i></div>
                   </div>
                 </div>
 
@@ -293,6 +332,17 @@ const NexusProfile = {
     this.renderStats();
     this.renderHistory();
     this.renderAchievements();
+    this.renderHierarchy();
+
+    // Seções de desempenho: independentes entre si, cada uma trata o próprio
+    // erro. Disparadas em paralelo para não serializar 6 idas ao Firestore.
+    this.renderMyTeam();
+    this.renderKanbanPerformance();
+    this.renderPointsChart();
+    this.renderRankingPosition();
+    this.renderVacationsAndTickets();
+    this.renderForumContribution();
+    this.renderAccountSecurity();
   },
 
   /**
@@ -697,17 +747,554 @@ const NexusProfile = {
     container.innerHTML = html;
   },
 
-  getHierarchy() {
-    const user = NepAuth.getUser();
+  /**
+   * Monta a hierarquia REAL do usuário: ele, seu gestor direto e a cadeia
+   * acima (gestor do gestor...), com nomes vindos do Firestore.
+   * Antes era uma lista fixa de cargos, sem nome de ninguém.
+   */
+  async renderHierarchy() {
+    const container = document.getElementById('profile-hierarchy');
+    if (!container) return;
 
-    return [
-      { levelNum: 5, role: 'Superintendente', name: '', level: 5, current: user.roleKey === 'superintendente' },
-      { levelNum: 4, role: 'Gerente', name: '', level: 4, current: user.roleKey === 'gerente' },
-      { levelNum: 3, role: 'Consultor', name: '', level: 3, current: user.roleKey === 'consultor' },
-      { levelNum: 2, role: 'Coordenador', name: '', level: 2, current: user.roleKey === 'coordenador' },
-      { levelNum: 1, role: 'Analista', name: '', level: 1, current: user.roleKey === 'analista' },
-      { levelNum: 0, role: 'Monitor', name: '', level: 0, current: user.roleKey === 'monitor' }
-    ];
+    const uid = localStorage.getItem('nep_user_uid');
+    const db = window.db;
+
+    if (!db || !uid) {
+      container.innerHTML = '<div class="hierarchy-empty">Hierarquia indisponível offline.</div>';
+      return;
+    }
+
+    try {
+      // Sobe a cadeia de gestores (guarda contra ciclo e profundidade)
+      const chain = [];
+      let currentUid = uid;
+      const visited = new Set();
+
+      while (currentUid && !visited.has(currentUid) && chain.length < 8) {
+        visited.add(currentUid);
+        const snap = await db.collection('users').doc(currentUid).get();
+        if (!snap.exists) break;
+        const d = snap.data();
+        chain.push({
+          uid: currentUid,
+          nome: d.nome || d.email || 'Sem nome',
+          cargo: (d.cargo || 'N/A').toUpperCase(),
+          photoURL: d.photoURL || null,
+          isMe: currentUid === uid
+        });
+        currentUid = d.gestor_uid || null;
+      }
+
+      if (chain.length === 0) {
+        container.innerHTML = '<div class="hierarchy-empty">Não foi possível carregar sua hierarquia.</div>';
+        return;
+      }
+
+      const me = chain[0];
+      const manager = chain[1] || null;
+
+      // Exibe do topo para baixo (mais sênior primeiro), como organograma
+      const ordered = [...chain].reverse();
+
+      const initials = n => n.split(' ').filter(Boolean).slice(0, 2).map(p => p[0]).join('').toUpperCase();
+
+      container.innerHTML = `
+        ${manager
+          ? `<div class="hierarchy-manager-card">
+               <div class="hmc-label">Seu gestor direto</div>
+               <div class="hmc-body">
+                 ${manager.photoURL
+                   ? `<img src="${window.escapeHtml(manager.photoURL)}" alt="" class="hmc-avatar">`
+                   : `<div class="hmc-avatar hmc-avatar-txt">${initials(manager.nome)}</div>`}
+                 <div>
+                   <div class="hmc-name">${window.escapeHtml(manager.nome)}</div>
+                   <div class="hmc-role">${window.escapeHtml(manager.cargo)}</div>
+                 </div>
+               </div>
+             </div>`
+          : `<div class="hierarchy-manager-card hmc-top">
+               <div class="hmc-label">Topo da hierarquia</div>
+               <div class="hmc-body"><div class="hmc-name">${window.escapeHtml(me.cargo)} — sem gestor acima</div></div>
+             </div>`}
+
+        <div class="hierarchy-chain-label">Cadeia completa</div>
+        ${ordered.map((p, i) => `
+          <div class="hierarchy-item ${p.isMe ? 'current' : ''}" style="margin-left:${i * 10}px;">
+            <div class="hierarchy-level">${ordered.length - i - 1}</div>
+            <div class="hierarchy-info">
+              <div class="hierarchy-role">${window.escapeHtml(p.cargo)}</div>
+              <div class="hierarchy-name">${window.escapeHtml(p.nome)}</div>
+            </div>
+            ${p.isMe ? '<span class="you-badge">Você</span>' : ''}
+          </div>
+        `).join('')}
+      `;
+    } catch (e) {
+      console.warn('[Profile] Erro ao montar hierarquia:', e);
+      container.innerHTML = '<div class="hierarchy-empty">Erro ao carregar hierarquia.</div>';
+    }
+  },
+
+  // ==========================================================================
+  // SEÇÕES DE DESEMPENHO PESSOAL
+  // Todas são somente-leitura e usam apenas coleções já liberadas pelas
+  // firestore.rules (isActive()). Nenhuma regra foi afrouxada para isso.
+  // ==========================================================================
+
+  /** Helper: iniciais para avatar textual. */
+  _initials(name) {
+    return String(name || '?').split(' ').filter(Boolean).slice(0, 2)
+      .map(p => p[0]).join('').toUpperCase();
+  },
+
+  /** Helper: escreve HTML em um container, se ele ainda existir na tela. */
+  _fill(id, html) {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = html;
+    return !!el;
+  },
+
+  /**
+   * Liderados diretos (inverso da hierarquia). A seção fica oculta para quem
+   * não é gestor de ninguém, em vez de mostrar um bloco vazio.
+   */
+  async renderMyTeam() {
+    const uid = localStorage.getItem('nep_user_uid');
+    const db = window.db;
+    if (!db || !uid || !document.getElementById('profile-team')) return;
+
+    try {
+      const snap = await db.collection('users')
+        .where('gestor_uid', '==', uid).limit(50).get();
+
+      const team = snap.docs
+        .map(d => ({ uid: d.id, ...d.data() }))
+        .filter(u => u.uid !== uid)
+        .sort((a, b) => String(a.nome || '').localeCompare(String(b.nome || '')));
+
+      if (team.length === 0) return; // segue oculta
+
+      const section = document.getElementById('profile-team-section');
+      if (section) section.style.display = '';
+
+      this._fill('profile-team', `
+        <div class="team-count">${team.length} ${team.length === 1 ? 'liderado direto' : 'liderados diretos'}</div>
+        ${team.map(m => `
+          <div class="team-item">
+            ${m.photoURL
+              ? `<img src="${window.escapeHtml(m.photoURL)}" alt="" class="team-avatar">`
+              : `<div class="team-avatar team-avatar-txt">${window.escapeHtml(this._initials(m.nome))}</div>`}
+            <div class="team-info">
+              <div class="team-name">${window.escapeHtml(m.nome || m.email || 'Sem nome')}</div>
+              <div class="team-role">${window.escapeHtml((m.cargo || 'N/A').toUpperCase())}${m.setor ? ' · ' + window.escapeHtml(m.setor) : ''}</div>
+            </div>
+          </div>
+        `).join('')}
+      `);
+    } catch (e) {
+      console.warn('[Profile] Erro ao carregar equipe:', e);
+    }
+  },
+
+  /**
+   * Desempenho no Kanban a partir da coleção `tasks`.
+   * Status possíveis: backlog | doing | pending | done | archived.
+   * Uma tarefa só conta como entregue de fato quando `validated === true`
+   * (aprovação do gestor direto), coerente com as regras de pontuação.
+   */
+  async renderKanbanPerformance() {
+    const uid = localStorage.getItem('nep_user_uid');
+    const db = window.db;
+    if (!db || !uid || !document.getElementById('kanban-perf-body')) return;
+
+    try {
+      const snap = await db.collection('tasks')
+        .where('ownerUid', '==', uid).limit(500).get();
+      const tasks = snap.docs.map(d => d.data());
+
+      if (tasks.length === 0) {
+        this._fill('kanban-perf-body',
+          '<div class="section-empty">Você ainda não tem tarefas no Kanban.</div>');
+        return;
+      }
+
+      const startOfToday = new Date();
+      startOfToday.setHours(0, 0, 0, 0);
+
+      const validated = tasks.filter(t => t.validated === true && t.validatedAt);
+      const awaiting = tasks.filter(t => t.status === 'done' && !t.validated).length;
+      const open = tasks.filter(t => t.status !== 'done' && t.status !== 'archived');
+      const overdue = open.filter(t => t.deadline && new Date(t.deadline) < startOfToday).length;
+
+      // Entregue no prazo = validada até o fim do dia do prazo
+      const withDeadline = validated.filter(t => t.deadline);
+      const onTime = withDeadline.filter(t => {
+        const due = new Date(t.deadline);
+        due.setHours(23, 59, 59, 999);
+        return new Date(t.validatedAt) <= due;
+      }).length;
+      const onTimeRate = withDeadline.length
+        ? Math.round((onTime / withDeadline.length) * 100) : null;
+
+      // Tempo médio de conclusão (criação -> validação), em dias
+      const durations = validated
+        .filter(t => t.createdAt)
+        .map(t => (new Date(t.validatedAt) - new Date(t.createdAt)) / 86400000)
+        .filter(d => isFinite(d) && d >= 0);
+      const avgDays = durations.length
+        ? (durations.reduce((a, b) => a + b, 0) / durations.length) : null;
+
+      const rateClass = onTimeRate === null ? ''
+        : onTimeRate >= 90 ? 'kp-good' : onTimeRate >= 70 ? 'kp-warn' : 'kp-bad';
+
+      this._fill('kanban-perf-body', `
+        <div class="kp-grid">
+          <div class="kp-card ${rateClass}">
+            <div class="kp-value">${onTimeRate === null ? '—' : onTimeRate + '%'}</div>
+            <div class="kp-label">Entrega no prazo</div>
+            <div class="kp-sub">${withDeadline.length ? `${onTime} de ${withDeadline.length} validadas` : 'sem tarefas com prazo'}</div>
+          </div>
+          <div class="kp-card ${overdue > 0 ? 'kp-bad' : 'kp-good'}">
+            <div class="kp-value">${overdue}</div>
+            <div class="kp-label">Atrasadas agora</div>
+            <div class="kp-sub">${open.length} em aberto</div>
+          </div>
+          <div class="kp-card">
+            <div class="kp-value">${avgDays === null ? '—' : avgDays.toFixed(1)}</div>
+            <div class="kp-label">Dias p/ concluir</div>
+            <div class="kp-sub">média das validadas</div>
+          </div>
+          <div class="kp-card ${awaiting > 0 ? 'kp-warn' : ''}">
+            <div class="kp-value">${awaiting}</div>
+            <div class="kp-label">Aguardando gestor</div>
+            <div class="kp-sub">${awaiting > 0 ? 'pendente de aprovação' : 'nada pendente'}</div>
+          </div>
+        </div>
+        <div class="kp-foot">${validated.length} tarefa(s) já validada(s) pelo seu gestor · ${tasks.length} no total</div>
+      `);
+    } catch (e) {
+      console.warn('[Profile] Erro no desempenho do Kanban:', e);
+      this._fill('kanban-perf-body',
+        '<div class="section-empty">Não foi possível carregar seu desempenho.</div>');
+    }
+  },
+
+  /**
+   * Curva acumulada de pontos nos últimos 90 dias.
+   * O canvas fica dentro de um wrapper de altura fixa — sem isso o Chart.js
+   * com maintainAspectRatio:false cresce infinitamente.
+   */
+  async renderPointsChart() {
+    const uid = localStorage.getItem('nep_user_uid');
+    const db = window.db;
+    if (!db || !uid || !document.getElementById('points-chart-body')) return;
+
+    try {
+      const since = new Date();
+      since.setDate(since.getDate() - 90);
+
+      const snap = await db.collection('points_transactions')
+        .where('uid', '==', uid).limit(1000).get();
+
+      const events = snap.docs.map(d => d.data())
+        .map(t => {
+          const raw = t.created_at || t.timestamp;
+          const date = raw?.toDate ? raw.toDate() : (raw ? new Date(raw) : null);
+          return { date, pts: Number(t.points ?? t.amount ?? 0) || 0 };
+        })
+        .filter(e => e.date && !isNaN(e.date) && e.date >= since)
+        .sort((a, b) => a.date - b.date);
+
+      if (events.length === 0) {
+        this._fill('points-chart-body',
+          '<div class="section-empty">Sem movimentação de pontos nos últimos 90 dias.</div>');
+        return;
+      }
+
+      // Agrupa por dia e acumula
+      const byDay = new Map();
+      events.forEach(e => {
+        const key = e.date.toISOString().slice(0, 10);
+        byDay.set(key, (byDay.get(key) || 0) + e.pts);
+      });
+      const days = [...byDay.keys()].sort();
+      let running = 0;
+      const cumulative = days.map(d => (running += byDay.get(d)));
+
+      const ganho = events.reduce((s, e) => s + Math.max(0, e.pts), 0);
+      const perdido = events.reduce((s, e) => s + Math.min(0, e.pts), 0);
+
+      this._fill('points-chart-body', `
+        <div class="pc-summary">
+          <span class="pc-pill pc-up">+${ganho} ganhos</span>
+          <span class="pc-pill pc-down">${perdido} perdidos</span>
+          <span class="pc-pill">${events.length} movimentações</span>
+        </div>
+        <div class="pc-chart-wrap"><canvas id="profile-points-chart"></canvas></div>
+      `);
+
+      const canvas = document.getElementById('profile-points-chart');
+      if (!canvas || typeof Chart === 'undefined') return;
+
+      if (this._pointsChart) { this._pointsChart.destroy(); this._pointsChart = null; }
+
+      const css = getComputedStyle(document.body);
+      const accent = css.getPropertyValue('--accent-primary')?.trim() || '#3b82f6';
+      const grid = css.getPropertyValue('--border-dim')?.trim() || 'rgba(128,128,128,.2)';
+      const text = css.getPropertyValue('--text-secondary')?.trim() || '#888';
+
+      this._pointsChart = new Chart(canvas, {
+        type: 'line',
+        data: {
+          labels: days.map(d => d.slice(8, 10) + '/' + d.slice(5, 7)),
+          datasets: [{
+            label: 'Pontos acumulados (90d)',
+            data: cumulative,
+            borderColor: accent,
+            backgroundColor: accent + '22',
+            fill: true,
+            tension: 0.3,
+            pointRadius: days.length > 30 ? 0 : 3
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { color: grid }, ticks: { color: text, maxTicksLimit: 8 } },
+            y: { grid: { color: grid }, ticks: { color: text } }
+          }
+        }
+      });
+    } catch (e) {
+      console.warn('[Profile] Erro no gráfico de pontos:', e);
+      this._fill('points-chart-body',
+        '<div class="section-empty">Não foi possível carregar o gráfico.</div>');
+    }
+  },
+
+  /**
+   * Posição no ranking geral e dentro da própria equipe (mesmo gestor).
+   * Reaproveita a mesma fonte do módulo de ranking: user_points.total_points.
+   */
+  async renderRankingPosition() {
+    const uid = localStorage.getItem('nep_user_uid');
+    const db = window.db;
+    if (!db || !uid || !document.getElementById('ranking-position-body')) return;
+
+    try {
+      const [ptsSnap, usersSnap] = await Promise.all([
+        db.collection('user_points').get(),
+        db.collection('users').get()
+      ]);
+
+      const pointsByUid = new Map();
+      ptsSnap.docs.forEach(d => pointsByUid.set(d.id, Number(d.data().total_points) || 0));
+
+      const users = usersSnap.docs
+        .map(d => ({ uid: d.id, ...d.data() }))
+        .filter(u => u.status !== 'INATIVO' && u.cargo !== 'PENDENTE');
+
+      const me = users.find(u => u.uid === uid);
+      if (!me) {
+        this._fill('ranking-position-body',
+          '<div class="section-empty">Ranking indisponível.</div>');
+        return;
+      }
+
+      const myPoints = pointsByUid.get(uid) || 0;
+      const ranked = users
+        .map(u => ({ uid: u.uid, pts: pointsByUid.get(u.uid) || 0, gestor: u.gestor_uid || null }))
+        .sort((a, b) => b.pts - a.pts);
+
+      const globalPos = ranked.findIndex(u => u.uid === uid) + 1;
+
+      // "Minha equipe" = quem responde ao mesmo gestor que eu
+      const peers = me.gestor_uid
+        ? ranked.filter(u => u.gestor === me.gestor_uid) : [];
+      const teamPos = peers.length > 1 ? peers.findIndex(u => u.uid === uid) + 1 : null;
+
+      const leader = ranked[0];
+      const gapToTop = leader && leader.uid !== uid ? leader.pts - myPoints : 0;
+      const ahead = ranked[globalPos - 2]; // quem está uma posição acima
+      const gapToNext = ahead ? ahead.pts - myPoints : 0;
+
+      const medal = globalPos === 1 ? '🥇' : globalPos === 2 ? '🥈' : globalPos === 3 ? '🥉' : '';
+
+      this._fill('ranking-position-body', `
+        <div class="rk-main">
+          <div class="rk-pos">${medal} #${globalPos}</div>
+          <div class="rk-of">de ${ranked.length} colaboradores</div>
+          <div class="rk-pts">${myPoints} pontos</div>
+        </div>
+        <div class="rk-rows">
+          ${teamPos ? `<div class="rk-row"><span>Na sua equipe</span><strong>#${teamPos} de ${peers.length}</strong></div>` : ''}
+          ${globalPos > 1 ? `<div class="rk-row"><span>Para subir 1 posição</span><strong>+${gapToNext + 1} pts</strong></div>` : ''}
+          ${gapToTop > 0 ? `<div class="rk-row"><span>Para o 1º lugar</span><strong>+${gapToTop + 1} pts</strong></div>` : '<div class="rk-row rk-top"><span>Você lidera o ranking! 🎉</span></div>'}
+        </div>
+      `);
+    } catch (e) {
+      console.warn('[Profile] Erro no ranking:', e);
+      this._fill('ranking-position-body',
+        '<div class="section-empty">Não foi possível carregar sua posição.</div>');
+    }
+  },
+
+  /**
+   * Férias e chamados.
+   * Atenção: a coleção `vacations` não guarda uid — só `employeeName`.
+   * O casamento é feito por nome (normalizado), então é aproximado.
+   */
+  async renderVacationsAndTickets() {
+    const uid = localStorage.getItem('nep_user_uid');
+    const db = window.db;
+    if (!db || !uid || !document.getElementById('vacation-tickets-body')) return;
+
+    const norm = s => String(s || '').trim().toLowerCase();
+
+    try {
+      const meSnap = await db.collection('users').doc(uid).get();
+      const myName = norm(meSnap.exists ? meSnap.data().nome : '');
+
+      const [vacSnap, ticketSnap] = await Promise.all([
+        db.collection('vacations').limit(500).get().catch(() => null),
+        db.collection('tickets').where('created_by', '==', uid).limit(200).get().catch(() => null)
+      ]);
+
+      // --- Férias ---
+      let vacHtml = '<div class="vt-empty">Nenhuma férias programada.</div>';
+      if (vacSnap && myName) {
+        const today = new Date(); today.setHours(0, 0, 0, 0);
+        const mine = vacSnap.docs.map(d => d.data())
+          .filter(v => norm(v.employeeName) === myName && v.startDate)
+          .sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+
+        const next = mine.find(v => new Date(v.endDate || v.startDate) >= today) || null;
+        if (next) {
+          const start = new Date(next.startDate);
+          const daysUntil = Math.ceil((start - today) / 86400000);
+          const fmt = d => new Date(d).toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+          vacHtml = `
+            <div class="vt-vac">
+              <div class="vt-vac-range">${window.escapeHtml(fmt(next.startDate))} → ${window.escapeHtml(fmt(next.endDate || next.startDate))}</div>
+              <div class="vt-vac-meta">
+                ${next.daysCount ? `${next.daysCount} dias` : ''}
+                ${next.status ? ` · ${window.escapeHtml(next.status)}` : ''}
+              </div>
+              <div class="vt-vac-count">${daysUntil > 0 ? `faltam ${daysUntil} dia(s)` : 'em andamento'}</div>
+            </div>`;
+        }
+      }
+
+      // --- Chamados ---
+      let ticketHtml = '<div class="vt-empty">Você não abriu chamados.</div>';
+      if (ticketSnap && ticketSnap.docs.length) {
+        const all = ticketSnap.docs.map(d => d.data());
+        const closed = all.filter(t => /fechad|resolvid|conclu|closed|resolved/i.test(String(t.status || ''))).length;
+        const openT = all.length - closed;
+        ticketHtml = `
+          <div class="vt-tickets">
+            <div class="vt-tk ${openT > 0 ? 'vt-open' : ''}"><strong>${openT}</strong><span>em aberto</span></div>
+            <div class="vt-tk"><strong>${closed}</strong><span>resolvidos</span></div>
+          </div>`;
+      }
+
+      this._fill('vacation-tickets-body', `
+        <div class="vt-block"><div class="vt-title">Próximas férias</div>${vacHtml}</div>
+        <div class="vt-block"><div class="vt-title">Meus chamados</div>${ticketHtml}</div>
+      `);
+    } catch (e) {
+      console.warn('[Profile] Erro em férias/chamados:', e);
+      this._fill('vacation-tickets-body',
+        '<div class="section-empty">Não foi possível carregar.</div>');
+    }
+  },
+
+  /** Contribuição no fórum: tópicos, respostas e soluções aceitas. */
+  async renderForumContribution() {
+    const uid = localStorage.getItem('nep_user_uid');
+    const db = window.db;
+    if (!db || !uid || !document.getElementById('forum-contrib-body')) return;
+
+    try {
+      const [topicsSnap, repliesSnap] = await Promise.all([
+        db.collection('forum_topics').where('author_uid', '==', uid).limit(500).get().catch(() => null),
+        db.collection('forum_replies').where('author_uid', '==', uid).limit(500).get().catch(() => null)
+      ]);
+
+      const topics = topicsSnap ? topicsSnap.docs.map(d => d.data()) : [];
+      const replies = repliesSnap ? repliesSnap.docs.map(d => d.data()) : [];
+      const solutions = replies.filter(r => r.is_solution === true).length;
+      const views = topics.reduce((s, t) => s + (Number(t.views) || 0), 0);
+      const likes = replies.reduce((s, r) => s + (Number(r.likes) || 0), 0);
+
+      if (!topics.length && !replies.length) {
+        this._fill('forum-contrib-body',
+          '<div class="section-empty">Você ainda não participou do fórum. Responder dúvidas rende pontos!</div>');
+        return;
+      }
+
+      this._fill('forum-contrib-body', `
+        <div class="fc-grid">
+          <div class="fc-card"><div class="fc-value">${topics.length}</div><div class="fc-label">Tópicos criados</div></div>
+          <div class="fc-card"><div class="fc-value">${replies.length}</div><div class="fc-label">Respostas</div></div>
+          <div class="fc-card fc-hl"><div class="fc-value">${solutions}</div><div class="fc-label">Soluções aceitas</div></div>
+          <div class="fc-card"><div class="fc-value">${views}</div><div class="fc-label">Visualizações</div></div>
+          <div class="fc-card"><div class="fc-value">${likes}</div><div class="fc-label">Curtidas recebidas</div></div>
+        </div>
+      `);
+    } catch (e) {
+      console.warn('[Profile] Erro na contribuição do fórum:', e);
+      this._fill('forum-contrib-body',
+        '<div class="section-empty">Não foi possível carregar.</div>');
+    }
+  },
+
+  /** Último acesso e atividade recente, a partir de user_analytics. */
+  async renderAccountSecurity() {
+    const uid = localStorage.getItem('nep_user_uid');
+    const db = window.db;
+    if (!db || !uid || !document.getElementById('account-security-body')) return;
+
+    try {
+      const since = new Date();
+      since.setDate(since.getDate() - 30);
+
+      const snap = await db.collection('user_analytics')
+        .where('uid', '==', uid).limit(500).get();
+
+      const events = snap.docs.map(d => d.data())
+        .map(e => {
+          const raw = e.timestamp;
+          return { ...e, when: raw?.toDate ? raw.toDate() : (raw ? new Date(raw) : null) };
+        })
+        .filter(e => e.when && !isNaN(e.when))
+        .sort((a, b) => b.when - a.when);
+
+      const last = events[0] || null;
+      const logins = events.filter(e => e.event_type === 'LOGIN' && e.when >= since).length;
+      const activeDays = new Set(
+        events.filter(e => e.when >= since).map(e => e.when.toISOString().slice(0, 10))
+      ).size;
+
+      const fmt = d => d.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+
+      this._fill('account-security-body', `
+        <div class="sec-rows">
+          <div class="sec-row"><span>Último acesso</span><strong>${last ? window.escapeHtml(fmt(last.when)) : '—'}</strong></div>
+          <div class="sec-row"><span>Logins (30 dias)</span><strong>${logins}</strong></div>
+          <div class="sec-row"><span>Dias ativos (30 dias)</span><strong>${activeDays}</strong></div>
+        </div>
+        <div class="sec-tip">
+          Não reconhece algum acesso? Troque sua senha em Preferências e avise um coordenador.
+        </div>
+      `);
+    } catch (e) {
+      console.warn('[Profile] Erro na segurança da conta:', e);
+      this._fill('account-security-body',
+        '<div class="section-empty">Não foi possível carregar.</div>');
+    }
   },
 
   openBannerPicker() {
@@ -1560,6 +2147,36 @@ profileStyles.textContent = `
   .achievement-desc { font-size: var(--text-xs); color: var(--text-tertiary); }
   
   .hierarchy-list { display: flex; flex-direction: column; gap: var(--space-2); }
+
+  .hierarchy-loading, .hierarchy-empty {
+    font-size: var(--text-sm); color: var(--text-tertiary); padding: var(--space-3) 0;
+  }
+  .hierarchy-manager-card {
+    background: linear-gradient(135deg, rgba(117,85,232,.12), rgba(18,188,212,.08));
+    border: 1px solid rgba(117,85,232,.3);
+    border-radius: 12px; padding: 14px; margin-bottom: var(--space-3);
+  }
+  .hierarchy-manager-card.hmc-top {
+    background: rgba(148,163,184,.08); border-color: var(--surface-border);
+  }
+  .hmc-label {
+    font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px;
+    color: var(--primary-400); margin-bottom: 8px;
+  }
+  .hmc-body { display: flex; align-items: center; gap: 12px; }
+  .hmc-avatar {
+    width: 42px; height: 42px; border-radius: 50%; object-fit: cover; flex-shrink: 0;
+  }
+  .hmc-avatar-txt {
+    display: flex; align-items: center; justify-content: center;
+    background: var(--gradient-primary); color: #fff; font-weight: 700; font-size: 14px;
+  }
+  .hmc-name { font-size: var(--text-base); font-weight: var(--font-semibold); color: var(--text-primary); }
+  .hmc-role { font-size: var(--text-xs); color: var(--text-secondary); }
+  .hierarchy-chain-label {
+    font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px;
+    color: var(--text-tertiary); margin: var(--space-3) 0 var(--space-2);
+  }
   
   .hierarchy-item {
     display: flex;
@@ -1598,6 +2215,134 @@ profileStyles.textContent = `
     font-weight: var(--font-medium);
   }
   
+  /* ===== Seções de desempenho pessoal ===== */
+  .section-empty {
+    font-size: var(--text-sm);
+    color: var(--text-tertiary);
+    padding: var(--space-3) 0;
+  }
+
+  /* Minha Equipe */
+  .team-count {
+    font-size: var(--text-xs);
+    color: var(--text-tertiary);
+    margin-bottom: var(--space-2);
+  }
+  .team-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) 0;
+    border-bottom: 1px solid var(--surface-border);
+  }
+  .team-item:last-child { border-bottom: none; }
+  .team-avatar {
+    width: 32px; height: 32px;
+    border-radius: var(--radius-full);
+    object-fit: cover;
+    flex-shrink: 0;
+  }
+  .team-avatar-txt {
+    display: flex; align-items: center; justify-content: center;
+    background: var(--primary-500); color: #fff;
+    font-size: var(--text-xs); font-weight: var(--font-semibold);
+  }
+  .team-name { font-size: var(--text-sm); font-weight: var(--font-medium); }
+  .team-role { font-size: var(--text-xs); color: var(--text-tertiary); }
+
+  /* Desempenho no Kanban */
+  .kp-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: var(--space-3);
+  }
+  .kp-card {
+    background: var(--surface-2, rgba(128,128,128,.06));
+    border: 1px solid var(--surface-border);
+    border-left: 3px solid var(--text-tertiary);
+    border-radius: var(--radius-md);
+    padding: var(--space-3);
+  }
+  .kp-card.kp-good { border-left-color: #22c55e; }
+  .kp-card.kp-warn { border-left-color: #f59e0b; }
+  .kp-card.kp-bad  { border-left-color: #ef4444; }
+  .kp-value { font-size: 1.6rem; font-weight: var(--font-bold); line-height: 1.1; }
+  .kp-label { font-size: var(--text-sm); font-weight: var(--font-medium); margin-top: 2px; }
+  .kp-sub   { font-size: var(--text-xs); color: var(--text-tertiary); margin-top: 2px; }
+  .kp-foot  { font-size: var(--text-xs); color: var(--text-tertiary); margin-top: var(--space-3); }
+
+  /* Gráfico de pontos */
+  .pc-summary { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-3); }
+  .pc-pill {
+    font-size: var(--text-xs);
+    padding: 3px 10px;
+    border-radius: var(--radius-full);
+    background: var(--surface-2, rgba(128,128,128,.1));
+    color: var(--text-secondary);
+  }
+  .pc-pill.pc-up   { background: rgba(34,197,94,.15); color: #16a34a; }
+  .pc-pill.pc-down { background: rgba(239,68,68,.15); color: #dc2626; }
+  /* Altura fixa: sem isso o Chart.js cresce indefinidamente */
+  .pc-chart-wrap { position: relative; height: 260px; width: 100%; }
+
+  /* Ranking pessoal */
+  .rk-main { text-align: center; padding-bottom: var(--space-3); }
+  .rk-pos { font-size: 2rem; font-weight: var(--font-bold); line-height: 1; }
+  .rk-of  { font-size: var(--text-xs); color: var(--text-tertiary); margin-top: 4px; }
+  .rk-pts { font-size: var(--text-sm); font-weight: var(--font-medium); margin-top: var(--space-2); }
+  .rk-rows { display: flex; flex-direction: column; gap: var(--space-1); }
+  .rk-row {
+    display: flex; justify-content: space-between; gap: var(--space-2);
+    font-size: var(--text-xs);
+    padding: var(--space-2) 0;
+    border-top: 1px solid var(--surface-border);
+    color: var(--text-secondary);
+  }
+  .rk-row.rk-top { justify-content: center; color: #16a34a; font-weight: var(--font-medium); }
+
+  /* Férias e chamados */
+  .vt-block + .vt-block { margin-top: var(--space-4); }
+  .vt-title { font-size: var(--text-xs); text-transform: uppercase; letter-spacing: .04em; color: var(--text-tertiary); margin-bottom: var(--space-2); }
+  .vt-empty { font-size: var(--text-sm); color: var(--text-tertiary); }
+  .vt-vac-range { font-size: var(--text-sm); font-weight: var(--font-semibold); }
+  .vt-vac-meta { font-size: var(--text-xs); color: var(--text-tertiary); margin-top: 2px; }
+  .vt-vac-count { font-size: var(--text-xs); color: var(--primary-500); margin-top: 4px; font-weight: var(--font-medium); }
+  .vt-tickets { display: flex; gap: var(--space-3); }
+  .vt-tk {
+    flex: 1; text-align: center;
+    background: var(--surface-2, rgba(128,128,128,.06));
+    border: 1px solid var(--surface-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-2);
+  }
+  .vt-tk strong { display: block; font-size: 1.25rem; }
+  .vt-tk span { font-size: var(--text-xs); color: var(--text-tertiary); }
+  .vt-tk.vt-open strong { color: #f59e0b; }
+
+  /* Fórum */
+  .fc-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: var(--space-3); }
+  .fc-card {
+    background: var(--surface-2, rgba(128,128,128,.06));
+    border: 1px solid var(--surface-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-3);
+    text-align: center;
+  }
+  .fc-card.fc-hl { border-color: #22c55e; }
+  .fc-value { font-size: 1.4rem; font-weight: var(--font-bold); }
+  .fc-label { font-size: var(--text-xs); color: var(--text-tertiary); margin-top: 2px; }
+
+  /* Segurança da conta */
+  .sec-rows { display: flex; flex-direction: column; }
+  .sec-row {
+    display: flex; justify-content: space-between; gap: var(--space-2);
+    font-size: var(--text-sm);
+    padding: var(--space-2) 0;
+    border-bottom: 1px solid var(--surface-border);
+  }
+  .sec-row:last-child { border-bottom: none; }
+  .sec-tip { font-size: var(--text-xs); color: var(--text-tertiary); margin-top: var(--space-3); line-height: 1.5; }
+
   .stats-list { display: flex; flex-direction: column; gap: var(--space-2); }
   
   .stat-row {
