@@ -209,6 +209,12 @@ const NexusProfile = {
         if (this._pointsUnsub) this._pointsUnsub();
         this._pointsUnsub = db.collection('user_points').doc(currentUid)
           .onSnapshot(snap => {
+            // Auto-desinscreve se o usuário saiu da página de perfil,
+            // evitando listener órfão consumindo leituras do Firestore.
+            if (!document.getElementById('profile-quick-cards')) {
+              if (this._pointsUnsub) { this._pointsUnsub(); this._pointsUnsub = null; }
+              return;
+            }
             if (snap.exists) {
               const newData = snap.data();
               const changed = (newData.total_points !== this.userData?.total_points) ||
@@ -720,6 +726,15 @@ const NexusProfile = {
     // Remove custom image if selecting gradient
     localStorage.removeItem('nep_profile_banner_image');
 
+    // Persiste a escolha no Firestore para acompanhar o usuário em
+    // qualquer dispositivo (antes ficava só no localStorage do navegador)
+    const uidSel = localStorage.getItem('nep_user_uid');
+    if (window.db && uidSel) {
+      window.db.collection('users').doc(uidSel)
+        .update({ bannerId, bannerURL: null })
+        .catch(e => console.warn('[Profile] Erro ao salvar banner:', e));
+    }
+
     const banner = this.BANNER_OPTIONS.find(b => b.id === bannerId);
     const cover = document.getElementById('profile-cover');
     if (cover && banner) {
@@ -782,7 +797,9 @@ const NexusProfile = {
           console.warn('[Profile] Compressão do banner falhou, usando original');
         }
 
-        const bannerUrl = await StorageService.uploadAvatar(fileToUpload);
+        // uploadBanner (não uploadAvatar!) — senão o banner sobrescreveria
+        // photoURL e apagaria o arquivo da foto de perfil do usuário.
+        const bannerUrl = await StorageService.uploadBanner(fileToUpload);
 
         // Aplica banner
         if (cover) {
@@ -791,19 +808,10 @@ const NexusProfile = {
           cover.style.backgroundPosition = 'center';
         }
 
-        // Salva URL
+        // Salva URL (o bannerURL no Firestore já é gravado por uploadBanner)
         localStorage.setItem('nep_profile_banner_image', bannerUrl);
         localStorage.removeItem('nep_profile_banner');
         this.selectedBanner = null;
-
-        // Salva no Firestore também
-        if (window.db && uid) {
-          try {
-            await window.db.collection('users').doc(uid).update({ bannerURL: bannerUrl });
-          } catch (e) {
-            console.warn('[Profile] Erro ao salvar banner no Firestore:', e);
-          }
-        }
 
         NepApp?.showToast?.('Banner personalizado salvo! ☁️', 'success');
         this.closeBannerPicker();
@@ -1047,16 +1055,30 @@ const NexusProfile = {
 
     const uid = localStorage.getItem('nep_user_uid');
     let bannerUrl = null;
+    let bannerId = null;
 
-    // 1. Tenta buscar URL do Firestore
+    // 1. Tenta buscar do Firestore (imagem personalizada ou gradiente escolhido)
     if (window.db && uid) {
       try {
         const userDoc = await window.db.collection('users').doc(uid).get();
         if (userDoc.exists) {
           bannerUrl = userDoc.data()?.bannerURL;
+          bannerId = userDoc.data()?.bannerId;
         }
       } catch (e) {
         console.warn('[Profile] Não foi possível buscar banner do Firestore:', e);
+      }
+    }
+
+    // 1b. Gradiente salvo (sem imagem personalizada) — aplica e encerra
+    if (!bannerUrl && bannerId) {
+      const banner = this.BANNER_OPTIONS.find(b => b.id === bannerId);
+      if (banner) {
+        this.selectedBanner = bannerId;
+        localStorage.setItem('nep_profile_banner', bannerId);
+        cover.style.background = banner.style;
+        cover.style.backgroundImage = 'none';
+        return;
       }
     }
 

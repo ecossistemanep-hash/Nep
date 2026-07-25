@@ -154,11 +154,12 @@ const StorageService = {
         const timestamp = Date.now();
         const path = `${uid}/avatar_${timestamp}.${ext}`;
 
-        // Remove avatar antigo se existir
+        // Remove APENAS avatares antigos (nunca o banner, que vive no mesmo bucket)
         try {
             const oldFiles = await this.list(SupabaseClient.buckets.avatars, uid);
-            if (oldFiles.length > 0) {
-                const oldPaths = oldFiles.map(f => `${uid}/${f.name}`);
+            const oldAvatars = oldFiles.filter(f => f.name.startsWith('avatar_'));
+            if (oldAvatars.length > 0) {
+                const oldPaths = oldAvatars.map(f => `${uid}/${f.name}`);
                 await this.delete(SupabaseClient.buckets.avatars, oldPaths);
             }
         } catch (e) {
@@ -181,6 +182,55 @@ const StorageService = {
                     photoUpdatedAt: new Date()
                 });
                 console.log('[Storage] 📝 URL do avatar atualizada no Firestore');
+            } catch (e) {
+                console.warn('[Storage] ⚠️ Não foi possível atualizar Firestore:', e);
+            }
+        }
+
+        return result.url;
+    },
+
+    /**
+     * Upload de banner (capa) do perfil.
+     * Separado de uploadAvatar de propósito: usa prefixo próprio (banner_),
+     * só apaga banners antigos e grava em bannerURL — assim nunca sobrescreve
+     * nem apaga a foto de perfil do usuário.
+     */
+    async uploadBanner(file, userId = null) {
+        const uid = userId || localStorage.getItem('nep_user_uid');
+        if (!uid) throw new Error('Usuário não identificado');
+
+        const ext = file.name.split('.').pop() || 'jpg';
+        const path = `${uid}/banner_${Date.now()}.${ext}`;
+
+        // Remove APENAS banners antigos (preserva o avatar)
+        try {
+            const oldFiles = await this.list(SupabaseClient.buckets.avatars, uid);
+            const oldBanners = oldFiles.filter(f => f.name.startsWith('banner_'));
+            if (oldBanners.length > 0) {
+                await this.delete(
+                    SupabaseClient.buckets.avatars,
+                    oldBanners.map(f => `${uid}/${f.name}`)
+                );
+            }
+        } catch (e) {
+            // Ignora se não houver banner antigo
+        }
+
+        const result = await this.upload(
+            SupabaseClient.buckets.avatars,
+            path,
+            file,
+            { upsert: true }
+        );
+
+        if (window.db && uid) {
+            try {
+                await window.db.collection('users').doc(uid).update({
+                    bannerURL: result.url,
+                    bannerUpdatedAt: new Date()
+                });
+                console.log('[Storage] 📝 URL do banner atualizada no Firestore');
             } catch (e) {
                 console.warn('[Storage] ⚠️ Não foi possível atualizar Firestore:', e);
             }
