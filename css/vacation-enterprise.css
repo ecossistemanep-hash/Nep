@@ -592,6 +592,15 @@
     box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
 }
 
+/* Cargo/Logo preenchidos automaticamente pelo cadastro do colaborador —
+   visualmente "travado", pra não parecer bug quando o campo não responde a clique. */
+.form-select:disabled {
+    background: var(--surface-hover, rgba(148, 163, 184, 0.08));
+    color: var(--text-secondary);
+    cursor: not-allowed;
+    opacity: 0.85;
+}
+
 .form-footer {
     padding: 1.25rem 1.5rem;
     background: var(--surface-bg);

@@ -29,7 +29,19 @@ const NexusVacation = {
         return this.systemUsers;
     },
 
-    /** Popula o <select> de colaborador e liga o modo "não cadastrado". */
+    /** Rótulo de cargo (ex.: 'COORDENADOR') tal como usado no <select> de Cargo. */
+    getUserRoleLabel(u) {
+        const cfg = window.NexusAuthService?.ROLE_CONFIG?.[u?.cargo];
+        return cfg?.label || (u?.cargo || '').toUpperCase();
+    },
+
+    /**
+     * Popula o <select> de colaborador e liga o modo "não cadastrado".
+     * Ao escolher um colaborador real, Cargo e Logo/Produto são preenchidos
+     * a partir do cadastro dele e travados — antes eram texto/seleção livre,
+     * então dava pra registrar a férias de alguém com o cargo ou produto
+     * errado (ex.: colocar outro logo por engano).
+     */
     async populateEmployeeSelect(currentUid, currentName) {
         const select = document.getElementById('v-employee');
         const manual = document.getElementById('v-name-manual');
@@ -43,13 +55,60 @@ const NexusVacation = {
             select.appendChild(opt);
         });
 
-        const toggleManual = () => {
-            if (!manual) return;
-            const isManual = select.value === '__manual__';
-            manual.style.display = isManual ? '' : 'none';
-            manual.required = isManual;
+        // `interactive` distingue troca feita pelo usuário (limpa resíduo de
+        // seleção anterior) da primeira montagem do modal em edição (não
+        // apaga um produto já salvo só porque o cadastro atual mudou).
+        const applyAutoFill = (interactive = false) => {
+            const roleSelect = document.getElementById('v-role');
+            const productSelect = document.getElementById('v-product');
+            const roleHint = document.getElementById('v-role-hint');
+            const productHint = document.getElementById('v-product-hint');
+            const isManual = select.value === '__manual__' || select.value === '';
+            const user = isManual ? null : users.find(u => u.uid === select.value);
+
+            if (manual) {
+                manual.style.display = isManual ? '' : 'none';
+                manual.required = isManual;
+            }
+
+            if (user) {
+                // Cargo: sempre vem do cadastro — não existe "cargo errado" possível
+                if (roleSelect) {
+                    roleSelect.value = this.getUserRoleLabel(user);
+                    roleSelect.disabled = true;
+                }
+                if (roleHint) roleHint.textContent = 'Preenchido pelo cadastro do colaborador';
+
+                // Produto/logo: só trava se o colaborador tiver logo(s) associada(s).
+                // Sem essa informação no cadastro, não tem o que auto-preencher.
+                const userLogos = window.LogoService ? window.LogoService._getUserLogos(user) : [];
+                if (productSelect) {
+                    if (userLogos.length > 0) {
+                        const options = [...productSelect.options].map(o => o.value);
+                        const match = userLogos.find(l => options.includes(l)) || userLogos[0];
+                        productSelect.value = match;
+                        productSelect.disabled = true;
+                        if (productHint) productHint.textContent = userLogos.length > 1
+                            ? `Colaborador atua em: ${userLogos.join(', ')}`
+                            : 'Preenchido pelo cadastro do colaborador';
+                    } else {
+                        // Troca interativa: limpa resíduo do colaborador anterior
+                        // (senão o campo destravado mostra um produto que não é dele)
+                        if (interactive) productSelect.value = '';
+                        productSelect.disabled = false;
+                        if (productHint) productHint.textContent = 'Colaborador sem logo cadastrada — selecione manualmente';
+                    }
+                }
+            } else {
+                // Manual ou nada selecionado: campos voltam a ser de livre escolha
+                if (roleSelect) { roleSelect.disabled = false; if (interactive) roleSelect.value = ''; }
+                if (productSelect) { productSelect.disabled = false; if (interactive) productSelect.value = ''; }
+                if (roleHint) roleHint.textContent = '';
+                if (productHint) productHint.textContent = '';
+            }
         };
-        select.addEventListener('change', toggleManual);
+        this._applyEmployeeAutoFill = applyAutoFill;
+        select.addEventListener('change', () => applyAutoFill(true));
 
         // Edição: pré-seleciona pelo uid; registros antigos só têm o nome
         if (currentUid && users.some(u => u.uid === currentUid)) {
@@ -59,7 +118,7 @@ const NexusVacation = {
                 String(u.nome || '').trim().toLowerCase() === String(currentName).trim().toLowerCase());
             select.value = byName ? byName.uid : '__manual__';
         }
-        toggleManual();
+        applyAutoFill();
     },
 
     init() {
@@ -571,6 +630,7 @@ const NexusVacation = {
                                     <select id="v-product" class="form-select" required>
                                         <option value="">Selecione...</option>
                                     </select>
+                                    <small id="v-product-hint" style="display:block; color: var(--text-tertiary); font-size: 0.75rem; margin-top: 4px;"></small>
                                 </div>
                             </div>
                             <div class="form-row">
@@ -582,6 +642,7 @@ const NexusVacation = {
                                             <option value="${r.value}" ${item?.role === r.value ? 'selected' : ''}>${r.label}</option>
                                         `).join('')}
                                     </select>
+                                    <small id="v-role-hint" style="display:block; color: var(--text-tertiary); font-size: 0.75rem; margin-top: 4px;"></small>
                                 </div>
                                 <div class="form-group">
                                     <label>Cidade / Unidade</label>
@@ -626,12 +687,12 @@ const NexusVacation = {
         `;
         document.body.insertAdjacentHTML('beforeend', modalHtml);
 
-        // Preencher colaboradores (vincula o registro ao uid, não só ao nome)
-        this.populateEmployeeSelect(item?.employeeUid || null, item?.employeeName || '');
-
-        // Preencher logos no select de form
-        if (window.LogoService) {
-            window.LogoService.listLogos().then(logos => {
+        // Logo/Produto precisa estar populado ANTES do colaborador, porque
+        // selecionar o colaborador tenta pré-marcar a logo dele: se as opções
+        // ainda não existirem, o valor não "gruda" em nenhuma <option>.
+        (async () => {
+            if (window.LogoService) {
+                const logos = await window.LogoService.listLogos();
                 const select = document.getElementById('v-product');
                 if (select) {
                     logos.forEach(logo => {
@@ -642,8 +703,11 @@ const NexusVacation = {
                         select.appendChild(opt);
                     });
                 }
-            });
-        }
+            }
+
+            // Colaborador (vincula o registro ao uid e trava cargo/logo pelo cadastro)
+            this.populateEmployeeSelect(item?.employeeUid || null, item?.employeeName || '');
+        })();
     },
 
     calcDays() {
