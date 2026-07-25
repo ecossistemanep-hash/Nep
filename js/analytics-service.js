@@ -35,8 +35,11 @@ const AnalyticsService = {
         LOGOUT: 'LOGOUT'
     },
 
-    // Cache de estatísticas
+    // Cache de estatísticas — chaveado por parâmetros, senão dois pedidos com
+    // filtros diferentes (ex.: "7 dias" e "90 dias") receberiam o mesmo
+    // snapshot cacheado do primeiro que pediu.
     statsCache: null,
+    statsCacheKey: null,
     statsCacheTime: 0,
     STATS_CACHE_DURATION: 30000, // 30 segundos
 
@@ -113,20 +116,42 @@ const AnalyticsService = {
     },
 
     /**
-     * Obter estatísticas gerais
+     * Obter estatísticas gerais.
+     *
+     * Sem argumentos: lê a coleção inteira (comportamento histórico, usado
+     * por getModuleRanking/getToolRanking/getUnusedModules — que precisam
+     * de todo o histórico, não só dos últimos dias, senão um módulo usado
+     * mês passado apareceria como "nunca usado").
+     *
+     * Com `days` e/ou `uid`: filtra no próprio Firestore. É o que o
+     * Dashboard usa para os cards "IA Help"/"Acessos por Módulo"/
+     * "Transações em Tempo Real" respeitarem os mesmos filtros de
+     * período/usuário dos outros gráficos — antes esses três sempre
+     * mostravam a base inteira, ignorando os seletores da tela.
      */
-    async getOverallStats(days = 7) {
+    async getOverallStats({ days = null, uid = null } = {}) {
         try {
-            // Verificar cache
-            if (this.statsCache && (Date.now() - this.statsCacheTime) < this.STATS_CACHE_DURATION) {
+            const cacheKey = `${days ?? 'all'}|${uid ?? 'all'}`;
+            if (this.statsCache && this.statsCacheKey === cacheKey
+                && (Date.now() - this.statsCacheTime) < this.STATS_CACHE_DURATION) {
                 return this.statsCache;
             }
 
-            const startDate = new Date();
-            startDate.setDate(startDate.getDate() - days);
-            const startDateStr = startDate.toISOString().split('T')[0];
+            let ref = collection(db, this.COLLECTION);
+            const clauses = [];
+            if (days !== null) {
+                const startDate = new Date();
+                startDate.setDate(startDate.getDate() - days);
+                clauses.push(where('timestamp', '>', startDate));
+            }
+            if (uid) {
+                clauses.push(where('uid', '==', uid));
+            }
+            if (clauses.length > 0) {
+                ref = query(ref, ...clauses);
+            }
 
-            const snapshot = await getDocs(collection(db, this.COLLECTION));
+            const snapshot = await getDocs(ref);
 
             const stats = {
                 totalEvents: 0,
@@ -202,6 +227,7 @@ const AnalyticsService = {
 
             // Atualizar cache
             this.statsCache = stats;
+            this.statsCacheKey = cacheKey;
             this.statsCacheTime = Date.now();
 
             return stats;

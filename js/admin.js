@@ -1170,14 +1170,17 @@ const NexusAdmin = {
         pointsSnap,
         auditSnap
       ] = await Promise.all([
-        (window.AnalyticsService?.getOverallStats() || Promise.resolve({})).catch(() => ({})),
+        (window.AnalyticsService?.getOverallStats({ days: periodDays, uid: this.dashboardUserFilter || null }) || Promise.resolve({})).catch(() => ({})),
         db.collection('tasks').get().catch(() => emptySnap),
         db.collection('vacations').get().catch(() => emptySnap),
         db.collection('users').where('status', '==', 'PENDENTE').get().catch(() => emptySnap),
         db.collection('users').get().catch(() => emptySnap),
         db.collection('tickets').get().catch(() => emptySnap),
         db.collection('user_analytics').where('timestamp', '>', periodStart).get().catch(() => emptySnap),
-        db.collection('points').orderBy('total_points', 'desc').limit(5).get().catch(() => emptySnap),
+        // Top 15 por saldo: filtramos por status ATIVO depois e cortamos pra
+        // 5, então o limit precisa de folga (senão um top-5 bruto podia
+        // incluir gente desativada e sobrar menos de 5 no "Elite da Semana").
+        db.collection('user_points').orderBy('total_points', 'desc').limit(15).get().catch(() => emptySnap),
         db.collection('audit_logs').where('timestamp', '>', last12h).get().catch(() => emptySnap)
       ]);
 
@@ -1187,31 +1190,59 @@ const NexusAdmin = {
       const allUsers = allUsersSnap.docs.map(d => ({ uid: d.id, ...d.data() }));
       const tickets = ticketsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
       const analytics = analyticsSnap.docs.map(d => d.data());
-      const ranking = pointsSnap.docs.map(d => d.data());
+      // user_points guarda o total pelo próprio uid do documento — sem isso
+      // não dá pra cruzar com o cadastro de usuários (nome atual, status).
+      const rankingRaw = pointsSnap.docs.map(d => ({ uid: d.id, ...d.data() }));
       const recentAudit = auditSnap.docs.map(d => d.data());
 
       // --- CÁLCULOS V2 ---
+
+      const uidToUser = new Map(allUsers.map(u => [u.uid, u]));
+
+      // Ranking "Elite da Semana": só usuários ATIVO entram na vitrine (um
+      // ex-colaborador desligado não deveria aparecer sendo celebrado), e o
+      // nome/cargo vêm sempre do cadastro atual — não do que foi gravado em
+      // user_points quando o saldo foi criado, que pode estar desatualizado.
+      const ranking = rankingRaw
+        .map(r => {
+          const u = uidToUser.get(r.uid);
+          return { ...r, nome: u?.nome || r.name || 'Usuário', status: u?.status };
+        })
+        .filter(r => r.status === 'ATIVO')
+        .slice(0, 5);
 
       // 1. Engajamento (Usuários Ativos)
       const uids24h = new Set(analytics.filter(a => a.timestamp?.toDate() > last24h).map(a => a.uid)).size;
       const uids7d = new Set(analytics.map(a => a.uid)).size;
 
       // 2. Operacional (Kanban & Tickets)
-      const activeTasks = tasks.filter(t => t.status !== 'Concluído' && t.status !== 'Arquivado').length;
-      const throughput7d = tasks.filter(t => t.status === 'Concluído' && t.updated_at?.toDate() > last7d).length;
-      const blindSpots = tasks.filter(t => t.status !== 'Concluído' && t.updated_at?.toDate() < new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000)).length;
+      // Valores reais de status no Kanban (kanban.js): backlog|doing|pending|
+      // done|archived — nunca 'Concluído'/'Arquivado'. Além disso, uma tarefa
+      // só é entrega de fato quando validated===true (aprovação do gestor
+      // direto); 'done' sem validação ainda está pendente de aprovação.
+      const inPipeline = tasks.filter(t => t.status !== 'archived');
+      const activeTasks = inPipeline.length;
+      const throughput7d = tasks.filter(t =>
+        t.status === 'done' && t.validated === true &&
+        t.validatedAt && new Date(t.validatedAt) > last7d
+      ).length;
+      const blindSpots = tasks.filter(t =>
+        t.status !== 'done' && t.status !== 'archived' &&
+        t.updatedAt && new Date(t.updatedAt) < new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000)
+      ).length;
+      const awaitingApproval = tasks.filter(t => t.status === 'done' && !t.validated).length;
       const openTickets = tickets.filter(t => t.status === 'new' || t.status === 'in_progress').length;
 
       // 3. RH (Time Off Hoje)
+      // O módulo de Férias grava status:'SCHEDULED' (js/vacation-control.js)
+      // — não existe fluxo de aprovação nem status 'aprovado' hoje. Todo
+      // registro criado já é, por definição, a programação vigente.
       const todayStr = now.toISOString().split('T')[0];
       const teamOffToday = vacations.filter(v =>
-        v.status === 'aprovado' &&
+        v.status === 'SCHEDULED' &&
         v.startDate <= todayStr &&
         v.endDate >= todayStr
       );
-
-      // 4. IA
-      const aiConsultas = stats.recentActivity?.filter(a => a.event_type === 'IA_CONSULTA').length || 0;
 
       const moduleRanking = Object.entries(stats.moduleViews || {})
         .map(([module, count]) => ({ module, count }))
@@ -1235,7 +1266,7 @@ const NexusAdmin = {
         ? analytics.filter(a => a.uid === this.dashboardUserFilter)
         : analytics;
       const filteredUserName = this.dashboardUserFilter
-        ? (allUsers.find(u => u.uid === this.dashboardUserFilter)?.nome || 'usuário selecionado')
+        ? window.escapeHtml(allUsers.find(u => u.uid === this.dashboardUserFilter)?.nome || 'usuário selecionado')
         : null;
       const uidToSetor = new Map(allUsers.map(u => [u.uid, (Array.isArray(u.logos) && u.logos[0]) || u.setor || 'Sem Setor']));
       const dailyLabels = [];
@@ -1298,7 +1329,7 @@ const NexusAdmin = {
                 ${allUsers
         .slice()
         .sort((a, b) => (a.nome || '').localeCompare(b.nome || ''))
-        .map(u => `<option value="${u.uid}" ${this.dashboardUserFilter === u.uid ? 'selected' : ''}>${u.nome || u.email || u.uid}</option>`)
+        .map(u => `<option value="${u.uid}" ${this.dashboardUserFilter === u.uid ? 'selected' : ''}>${window.escapeHtml(u.nome || u.email || u.uid)}</option>`)
         .join('')}
               </select>
               <button class="btn btn-ghost" onclick="NexusAdmin.loadTabContent();">
@@ -1342,10 +1373,10 @@ const NexusAdmin = {
               <div class="analytics-kpi-label">Em Férias Hoje</div>
               <div style="font-size: 10px; opacity: 0.8;">Indisponíveis</div>
             </div>
-            <div class="analytics-kpi" style="border-color: #8b5cf6;">
-              <div class="analytics-kpi-value">${aiConsultas}</div>
-              <div class="analytics-kpi-label">IA Help</div>
-              <div style="font-size: 10px; color: #a78bfa;">Insights Gerados</div>
+            <div class="analytics-kpi ${awaitingApproval > 0 ? 'warning' : ''}" style="border-color: #8b5cf6;">
+              <div class="analytics-kpi-value">${awaitingApproval}</div>
+              <div class="analytics-kpi-label">Aguardando Aprovação</div>
+              <div style="font-size: 10px; color: #a78bfa;">Entregue, falta validar</div>
             </div>
           </div>
 
@@ -1399,7 +1430,7 @@ const NexusAdmin = {
                   <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-top: 10px;">
                     ${pendingUsers.slice(0, 4).map(u => `
                       <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: var(--surface-card); border-radius: 8px; font-size: 12px;">
-                        <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100px;">${u.nome}</span>
+                        <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100px;">${window.escapeHtml(u.nome || u.email || 'Sem nome')}</span>
                         <button class="btn btn-xs btn-primary" onclick="NexusAdmin.handleUserAction('edit', '${u.id}')">Ver</button>
                       </div>
                     `).join('')}
@@ -1415,9 +1446,9 @@ const NexusAdmin = {
                     <div style="min-width: 140px; text-align: center; padding: 15px; background: rgba(255,255,255,0.03); border-radius: 12px; position: relative;">
                       <div style="font-size: 20px; position: absolute; top: -5px; right: -5px;">${idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : '✨'}</div>
                       <div style="width: 40px; height: 40px; background: var(--primary-500); border-radius: 50%; margin: 0 auto 10px; display: flex; align-items: center; justify-content: center; font-weight: bold;">
-                        ${(user.nome || 'U')[0]}
+                        ${window.escapeHtml((user.nome || 'U')[0])}
                       </div>
-                      <div style="font-weight: 600; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${user.nome || 'Usuário'}</div>
+                      <div style="font-weight: 600; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${window.escapeHtml(user.nome || 'Usuário')}</div>
                       <div style="font-size: 11px; color: var(--primary-400);">${user.total_points || 0} XP</div>
                     </div>
                   `).join('') || '<p class="text-muted">Aguardando dados de gamificação...</p>'}
@@ -1428,11 +1459,15 @@ const NexusAdmin = {
               <div class="analytics-card" style="margin-top: 20px;">
                 <h4><i class="fa-solid fa-calendar-day"></i> Próximos Deliverables</h4>
                 <div class="analytics-activity">
-                  ${tasks.filter(t => t.status !== 'Concluído' && t.deadline).sort((a, b) => new Date(a.deadline) - new Date(b.deadline)).slice(0, 5).map(t => `
+                  ${tasks
+                    .filter(t => t.status !== 'done' && t.status !== 'archived' && t.deadline && !isNaN(new Date(t.deadline)))
+                    .sort((a, b) => new Date(a.deadline) - new Date(b.deadline))
+                    .slice(0, 5)
+                    .map(t => `
                     <div style="display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #ffffff05; font-size: 12px;">
                       <div>
-                        <strong>${t.title}</strong>
-                        <div style="font-size: 10px; color: var(--text-tertiary);">${t.assignee || 'Sem dono'}</div>
+                        <strong>${window.escapeHtml(t.title || 'Sem título')}</strong>
+                        <div style="font-size: 10px; color: var(--text-tertiary);">${window.escapeHtml(uidToUser.get(t.ownerUid)?.nome || 'Sem dono')}</div>
                       </div>
                       <div style="color: ${new Date(t.deadline) < now ? '#ef4444' : 'var(--text-tertiary)'}; font-weight: ${new Date(t.deadline) < now ? 'bold' : 'normal'}">
                         ${new Date(t.deadline).toLocaleDateString('pt-BR')}
@@ -1451,8 +1486,8 @@ const NexusAdmin = {
                   ${teamOffToday.map(v => `
                     <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 12px;">
                       <i class="fa-solid fa-circle" style="font-size: 6px; color: #10b981;"></i>
-                      <span>${v.userName || 'Membro'}</span>
-                      <span style="font-size: 10px; color: var(--text-tertiary); margin-left: auto;">${v.type || 'Férias'}</span>
+                      <span>${window.escapeHtml(v.employeeName || 'Membro')}</span>
+                      <span style="font-size: 10px; color: var(--text-tertiary); margin-left: auto;">Férias</span>
                     </div>
                   `).join('') || '<p class="text-muted" style="font-size: 11px;">Todo o time disponível.</p>'}
                 </div>
@@ -1465,8 +1500,8 @@ const NexusAdmin = {
                   ${!this.isFullAdmin() ? '<p class="text-muted" style="font-size: 11px;">Log de auditoria restrito a administradores.</p>' :
         recentAudit.length > 0 ? recentAudit.slice(0, 5).map(a => `
                     <div style="margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid #ffffff05;">
-                      <div style="font-weight: 600; color: #ef4444;">${a.acao}</div>
-                      <div style="color: var(--text-tertiary);">${a.executor_email || 'Sistema'}</div>
+                      <div style="font-weight: 600; color: #ef4444;">${window.escapeHtml(a.acao || 'Ação')}</div>
+                      <div style="color: var(--text-tertiary);">${window.escapeHtml(a.executor_email || 'Sistema')}</div>
                     </div>
                   `).join('') : '<p class="text-muted" style="font-size: 11px;">Nenhuma anomalia detectada.</p>'}
                   ${this.isFullAdmin() && recentAudit.length > 5 ? `<p style="text-align: center; color: var(--primary-400); cursor: pointer;" onclick="NexusAdmin.activeTab='audit'; NexusAdmin.loadTabContent();">Ver todos logs</p>` : ''}
@@ -1480,7 +1515,7 @@ const NexusAdmin = {
                   ${moduleRanking.slice(0, 5).map(m => `
                     <div style="margin-bottom: 10px;">
                       <div style="display: flex; justify-content: space-between; font-size: 10px; margin-bottom: 2px;">
-                        <span>${moduleLabels[m.module] || m.module}</span>
+                        <span>${window.escapeHtml(moduleLabels[m.module] || m.module)}</span>
                         <span>${m.count}</span>
                       </div>
                       <div style="height: 4px; background: rgba(255,255,255,0.05); border-radius: 2px; overflow: hidden;">
@@ -1499,8 +1534,8 @@ const NexusAdmin = {
                   ${stats.recentActivity?.slice(0, 15).map(a => `
                       <div style="display: flex; align-items: center; gap: 10px; padding: 8px 5px; border-bottom: 1px solid #ffffff05; font-size: 12px;">
                           <div style="width: 8px; height: 8px; border-radius: 50%; background: ${a.event_type?.includes('ERROR') ? '#ef4444' : '#6366f1'}"></div>
-                          <span style="font-weight: 600;">${a.user_name || 'Alguém'}</span>
-                          <span style="color: var(--text-tertiary);">${a.event_type}</span>
+                          <span style="font-weight: 600;">${window.escapeHtml(a.user_name || 'Alguém')}</span>
+                          <span style="color: var(--text-tertiary);">${window.escapeHtml(a.event_type || '')}</span>
                           <span style="margin-left: auto; font-size: 10px; color: var(--text-tertiary);">${a.timestamp instanceof Date ? a.timestamp.toLocaleTimeString('pt-BR') : 'Agora'}</span>
                       </div>
                   `).join('') || '<p class="text-muted text-center">Aguardando eventos...</p>'}

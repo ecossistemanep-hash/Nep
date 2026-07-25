@@ -26,7 +26,7 @@ Object.assign(NexusAdmin, {
                 db.collection('users').get(),
                 db.collection('user_analytics').where('timestamp', '>', last30d).get(),
                 db.collection('tasks').get(),
-                db.collection('points').get(),
+                db.collection('user_points').get(),
                 db.collection('deliveries').get()
             ]);
 
@@ -76,7 +76,12 @@ Object.assign(NexusAdmin, {
             <div class="analytics-card">
               <h4><i class="fa-solid fa-chart-line"></i> Tendência de Crescimento</h4>
               <p style="font-size: 11px; color: var(--text-tertiary); margin-bottom: 16px;">Evolução de usuários e tarefas</p>
-              <canvas id="growth-chart" style="max-height: 250px;"></canvas>
+              <!-- Wrapper com altura fixa: o Chart.js com maintainAspectRatio:false
+                   cresce indefinidamente se o canvas não tiver um pai com altura
+                   própria (estilizar o <canvas> direto não é suficiente). -->
+              <div style="height: 250px; position: relative;">
+                <canvas id="growth-chart"></canvas>
+              </div>
             </div>
           </div>
 
@@ -160,12 +165,18 @@ Object.assign(NexusAdmin, {
         const last30d = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
         // Big Numbers
-        const activeUsers30d = new Set(analytics.map(a => a.uid)).size;
-        const activeUsers7d = new Set(analytics.filter(a => a.timestamp?.toDate() > last7d).map(a => a.uid)).size;
-        const totalUsers = users.length;
-        const churnRate = ((totalUsers - activeUsers30d) / totalUsers * 100).toFixed(1);
-        const tasksCompleted30d = tasks.filter(t => t.status === 'Concluído' && t.updated_at?.toDate() > last30d).length;
-        const avgTasksPerUser = (tasksCompleted30d / activeUsers30d || 0).toFixed(1);
+        // Só usuários ATIVO contam como base de engajamento/churn — uma
+        // conta já desligada não é "abandono" (churn), é baixa administrativa.
+        const activeUserIds = new Set(users.filter(u => u.status === 'ATIVO').map(u => u.uid || u.id));
+        const totalUsers = activeUserIds.size;
+        const activeUsers30d = new Set(analytics.filter(a => activeUserIds.has(a.uid)).map(a => a.uid)).size;
+        const activeUsers7d = new Set(analytics.filter(a => a.timestamp?.toDate() > last7d && activeUserIds.has(a.uid)).map(a => a.uid)).size;
+        const churnRate = totalUsers > 0 ? ((totalUsers - activeUsers30d) / totalUsers * 100).toFixed(1) : '0.0';
+        // Status real do Kanban é 'done' (nunca 'Concluído'), e updatedAt é
+        // uma string ISO gravada pelo próprio app — nunca um Timestamp do
+        // Firestore, então não existe .toDate() nela.
+        const tasksCompleted30d = tasks.filter(t => t.status === 'done' && t.validated === true && t.updatedAt && new Date(t.updatedAt) > last30d).length;
+        const avgTasksPerUser = activeUsers30d > 0 ? (tasksCompleted30d / activeUsers30d).toFixed(1) : '0.0';
 
         // Mapa de Calor (24h x 7 dias)
         const heatmap = this.generateHeatmapData(analytics);
@@ -238,7 +249,7 @@ Object.assign(NexusAdmin, {
         <div style="font-size: 10px; opacity: 0.8;">Tarefas/pessoa</div>
       </div>
       <div class="analytics-kpi success">
-        <div class="analytics-kpi-value">${((bn.activeUsers30d / bn.totalUsers) * 100).toFixed(0)}%</div>
+        <div class="analytics-kpi-value">${bn.totalUsers > 0 ? ((bn.activeUsers30d / bn.totalUsers) * 100).toFixed(0) : '0'}%</div>
         <div class="analytics-kpi-label">Engajamento</div>
         <div style="font-size: 10px; opacity: 0.8;">Ativos/Total</div>
       </div>
@@ -315,10 +326,13 @@ Object.assign(NexusAdmin, {
             return date;
         });
 
+        // Cadastro do usuário grava Timestamp em `data_criacao` (user-management.js);
+        // tarefa grava string ISO em `createdAt`, nunca Timestamp (kanban.js) —
+        // eram os nomes/tipos errados que zeravam os dois gráficos sempre.
         const userGrowth = last30Days.map(date => {
             const dateStr = date.toISOString().split('T')[0];
             return users.filter(u => {
-                const createdAt = u.created_at?.toDate?.() || u.criado_em?.toDate?.();
+                const createdAt = u.data_criacao?.toDate?.();
                 if (!createdAt) return false;
                 return createdAt.toISOString().split('T')[0] <= dateStr;
             }).length;
@@ -327,9 +341,9 @@ Object.assign(NexusAdmin, {
         const tasksGrowth = last30Days.map(date => {
             const dateStr = date.toISOString().split('T')[0];
             return tasks.filter(t => {
-                const createdAt = t.created_at?.toDate?.();
-                if (!createdAt) return false;
-                return createdAt.toISOString().split('T')[0] === dateStr && t.status === 'Concluído';
+                if (!t.createdAt) return false;
+                const createdAt = new Date(t.createdAt);
+                return createdAt.toISOString().split('T')[0] === dateStr && t.status === 'done' && t.validated === true;
             }).length;
         });
 
@@ -417,10 +431,9 @@ Object.assign(NexusAdmin, {
 
         // Alerta 3: Tarefas paradas
         const stuckTasks = tasks.filter(t => {
-            const updatedAt = t.updated_at?.toDate?.();
-            if (!updatedAt) return false;
-            const daysSinceUpdate = (Date.now() - updatedAt.getTime()) / (1000 * 60 * 60 * 24);
-            return t.status !== 'Concluído' && daysSinceUpdate > 5;
+            if (!t.updatedAt) return false;
+            const daysSinceUpdate = (Date.now() - new Date(t.updatedAt).getTime()) / (1000 * 60 * 60 * 24);
+            return t.status !== 'done' && t.status !== 'archived' && daysSinceUpdate > 5;
         }).length;
 
         if (stuckTasks > 10) {
@@ -558,9 +571,9 @@ Object.assign(NexusAdmin, {
     analyzeFunnel(users, analytics, tasks) {
         const totalUsers = users.length;
         const usersWithActivity = new Set(analytics.map(a => a.uid)).size;
-        const usersWithTasks = new Set(tasks.map(t => t.created_by || t.executor_uid)).size;
+        const usersWithTasks = new Set(tasks.map(t => t.ownerUid)).size;
         const usersWithCompletedTasks = new Set(
-            tasks.filter(t => t.status === 'Concluído').map(t => t.executor_uid)
+            tasks.filter(t => t.status === 'done' && t.validated === true).map(t => t.ownerUid)
         ).size;
 
         return {
@@ -585,10 +598,10 @@ Object.assign(NexusAdmin, {
         const maxValue = stages[0].value;
 
         return `
-      <divstyle="display: grid; gap: 12px; margin-top: 12px;">
+      <div style="display: grid; gap: 12px; margin-top: 12px;">
         ${stages.map((stage, idx) => {
-            const percentage = (stage.value / maxValue * 100).toFixed(1);
-            const dropoff = idx > 0 ? ((stages[idx - 1].value - stage.value) / stages[idx - 1].value * 100).toFixed(1) : 0;
+            const percentage = maxValue > 0 ? (stage.value / maxValue * 100).toFixed(1) : '0.0';
+            const dropoff = idx > 0 && stages[idx - 1].value > 0 ? ((stages[idx - 1].value - stage.value) / stages[idx - 1].value * 100).toFixed(1) : 0;
 
             return `
             <div>
@@ -621,15 +634,16 @@ Object.assign(NexusAdmin, {
         const topPerformers = usersWithPoints.sort((a, b) => b.total_points - a.total_points).slice(0, 10);
         const topPerformerUIDs = new Set(topPerformers.map(p => p.uid));
 
-        const tasksFromTopPerformers = tasks.filter(t => topPerformerUIDs.has(t.executor_uid)).length;
+        const tasksFromTopPerformers = tasks.filter(t => topPerformerUIDs.has(t.ownerUid)).length;
         const totalTasks = tasks.length;
-        const contributionPct = (tasksFromTopPerformers / totalTasks * 100).toFixed(1);
+        const contributionPct = totalTasks > 0 ? (tasksFromTopPerformers / totalTasks * 100).toFixed(1) : '0.0';
 
         return {
             usersWithPoints: usersWithPoints.length,
             avgPoints: avgPoints.toFixed(0),
             topPerformersContribution: contributionPct,
-            tasksFromTop: tasksFromTopPerformers
+            tasksFromTop: tasksFromTopPerformers,
+            totalTasks
         };
     },
 
@@ -653,7 +667,7 @@ Object.assign(NexusAdmin, {
         <div style="padding: 16px; background: rgba(139, 92, 246, 0.1); border-radius: 8px; border-left: 4px solid #8b5cf6;">
           <div style="font-size: 13px; font-weight: 600; margin-bottom: 8px;">💡 Insight</div>
           <p style="margin: 0; font-size: 12px;">
-            Top 10 ranqueados são responsáveis por <strong>${roi.topPerformersContribution}%</strong> das tarefas (${roi.tasksFromTop} de ${roi.tasksFromTop + 100}).
+            Top 10 ranqueados são responsáveis por <strong>${roi.topPerformersContribution}%</strong> das tarefas (${roi.tasksFromTop} de ${roi.totalTasks}).
             Gamificação está <strong>${parseFloat(roi.topPerformersContribution) > 30 ? 'funcionando bem' : 'precisando ajustes'}</strong>.
           </p>
         </div>
@@ -676,10 +690,10 @@ Object.assign(NexusAdmin, {
         });
 
         tasks.forEach(t => {
-            const user = users.find(u => u.uid === t.executor_uid);
+            const user = users.find(u => u.uid === t.ownerUid);
             if (user) {
                 const sector = user.setor || 'Sem Setor';
-                if (sectorStats[sector] && t.status === 'Concluído') {
+                if (sectorStats[sector] && t.status === 'done' && t.validated === true) {
                     sectorStats[sector].tasks++;
                 }
             }
@@ -731,7 +745,7 @@ Object.assign(NexusAdmin, {
           <tbody>
             ${sectors.map(s => `
               <tr style="border-bottom: 1px solid var(--border-dim);">
-                <td style="padding: 10px; font-weight: 600;">${s.sector}</td>
+                <td style="padding: 10px; font-weight: 600;">${window.escapeHtml(s.sector)}</td>
                 <td style="padding: 10px; text-align: center;">${s.users}</td>
                 <td style="padding: 10px; text-align: center;">${s.tasks}</td>
                 <td style="padding: 10px; text-align: center;">${(s.tasks / s.users).toFixed(1)}</td>
