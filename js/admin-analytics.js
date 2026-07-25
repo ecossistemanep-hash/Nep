@@ -531,7 +531,6 @@ Object.assign(NexusAdmin, {
         const moduleLabels = {
             dashboard: '🏠 Dashboard',
             kanban: '📋 Kanban',
-            calendar: '📅 Agendas',
             forum: '💬 Fórum',
             tools: '🛠️ Ferramentas',
             reports: '📊 Relatórios',
@@ -739,7 +738,6 @@ Object.assign(NexusAdmin, {
               <th style="padding: 10px; text-align: center;">Usuários</th>
               <th style="padding: 10px; text-align: center;">Tarefas Concluídas</th>
               <th style="padding: 10px; text-align: center;">Média/Pessoa</th>
-              <th style="padding: 10px; text-align: center;">Score OKR Médio</th>
             </tr>
           </thead>
           <tbody>
@@ -749,12 +747,6 @@ Object.assign(NexusAdmin, {
                 <td style="padding: 10px; text-align: center;">${s.users}</td>
                 <td style="padding: 10px; text-align: center;">${s.tasks}</td>
                 <td style="padding: 10px; text-align: center;">${(s.tasks / s.users).toFixed(1)}</td>
-                <td style="padding: 10px; text-align: center;">
-                  <span style="background: ${parseFloat(s.avgScore) >= 8 ? 'rgba(34, 197, 94, 0.2)' : parseFloat(s.avgScore) >= 6 ? 'rgba(245, 158, 11, 0.2)' : 'rgba(239, 68, 68, 0.2)'}; 
-                                padding: 4px 8px; border-radius: 4px; font-weight: 600;">
-                    ${s.avgScore || 'N/A'}
-                  </span>
-                </td>
               </tr>
             `).join('')}
           </tbody>

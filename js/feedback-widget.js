@@ -294,16 +294,16 @@ const NexusFeedbackWidget = {
                             <option value="dashboard">Dashboard</option>
                             <option value="kanban">Kanban</option>
                             <option value="forum">Fórum</option>
-                            <option value="courses">Cursos</option>
-                            <option value="calendar">Agendas</option>
                             <option value="testimonials">Depoimentos</option>
                             <option value="ranking">Ranking</option>
-                            <option value="okr">OKR / Entregas</option>
                             <option value="tools">Ferramentas</option>
-                            <option value="reports">Relatórios</option>
+                            <option value="tickets">Chamados</option>
+                            <option value="paineis">Painéis</option>
                             <option value="vacation">Férias</option>
+                            <option value="feriados">Feriados</option>
+                            <option value="chat">Chat Geral</option>
                             <option value="announcements">Avisos</option>
-                            <option value="estagiario">Neuronyo</option>
+                            <option value="analytics">Analytics Studio</option>
                             <option value="outro">Outro</option>
                         </select>
                     </div>

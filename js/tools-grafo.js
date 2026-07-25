@@ -30,7 +30,6 @@ const NepGrafo = {
             { id: 'announcements', label: 'Avisos', category: 'modulo', icon: '📢', size: 22, desc: 'Comunicados oficiais para equipe', ring: 2 },
             { id: 'testimonials', label: 'Depoimentos', category: 'modulo', icon: '⭐', size: 24, desc: 'Feedbacks internos e externos com pontuação', ring: 2 },
             { id: 'vacation', label: 'Férias', category: 'modulo', icon: '🏖️', size: 22, desc: 'Controle de férias e programações', ring: 2 },
-            { id: 'okr', label: 'OKR/Entregas', category: 'modulo', icon: '🎯', size: 26, desc: 'Gestão de entregas individuais e PDI', ring: 2 },
             { id: 'tickets', label: 'Chamados', category: 'modulo', icon: '🎫', size: 24, desc: 'Sistema de chamados e suporte interno', ring: 2 },
             { id: 'profile', label: 'Meu Perfil', category: 'modulo', icon: '👤', size: 22, desc: 'Informações pessoais, nível e conquistas', ring: 2 },
             { id: 'courses', label: 'Cursos', category: 'modulo', icon: '🎓', size: 24, desc: 'Treinamentos com provas e gamificação', ring: 2 },
@@ -39,7 +38,6 @@ const NepGrafo = {
             // INFRASTRUCTURE (ring 2)
             { id: 'firebase', label: 'Firebase', category: 'infra', icon: '🔥', size: 28, desc: 'Auth, Firestore, Hosting, Storage', ring: 2 },
             { id: 'supabase', label: 'Supabase', category: 'infra', icon: '⚡', size: 24, desc: 'Storage de arquivos (anexos de Kanban, Fórum, Chamados)', ring: 2 },
-            { id: 'gemini', label: 'Gemini AI', category: 'ia', icon: '🧠', size: 28, desc: 'Google Gemini 2.5 Flash — Motor de IA', ring: 2 },
             { id: 'auth', label: 'Autenticação', category: 'infra', icon: '🔑', size: 22, desc: 'Login, sessão, JWT via Firebase Auth', ring: 2 },
 
             // SYSTEMS (ring 2-3)
@@ -48,7 +46,6 @@ const NepGrafo = {
             { id: 'notifications', label: 'Notificações', category: 'sistema', icon: '🔔', size: 22, desc: 'Sistema de alertas em tempo real', ring: 2 },
             { id: 'analytics', label: 'Analytics', category: 'sistema', icon: '📡', size: 22, desc: 'Rastreamento de acessos e uso', ring: 2 },
             { id: 'permissions', label: 'Permissões', category: 'sistema', icon: '🔐', size: 22, desc: 'Controle de acesso por cargo', ring: 2 },
-            { id: 'nep_help', label: 'NEP Help', category: 'ia', icon: '💡', size: 20, desc: 'Chat flutuante de ajuda com IA', ring: 3 },
             { id: 'status_page', label: 'Status Page', category: 'sistema', icon: '📡', size: 18, desc: 'Página pública de atualizações', ring: 3 },
             { id: 'feedback_req', label: 'Backlog Feedback', category: 'sistema', icon: '📥', size: 18, desc: 'Requisições de bugs e melhorias', ring: 3 },
 
@@ -92,8 +89,6 @@ const NepGrafo = {
             { from: 'ranking', to: 'points' }, { from: 'ranking', to: 'achievements' },
             { from: 'points', to: 'achievements' }, { from: 'points', to: 'profile' },
 
-            // IA Ecosystem
-            { from: 'nep_help', to: 'gemini' }, { from: 'calendar', to: 'gemini' },
 
             // Tools hub
             { from: 'tools', to: 'tool_pdca' }, { from: 'tools', to: 'tool_dmaic' },
@@ -109,7 +104,7 @@ const NepGrafo = {
             { from: 'firebase', to: 'auth' },
             { from: 'firebase', to: 'forum' }, { from: 'firebase', to: 'announcements' },
             { from: 'firebase', to: 'testimonials' }, { from: 'firebase', to: 'vacation' },
-            { from: 'firebase', to: 'okr' }, { from: 'firebase', to: 'calendar' },
+            { from: 'firebase', to: 'calendar' },
             { from: 'firebase', to: 'reports' }, { from: 'firebase', to: 'courses' },
             { from: 'firebase', to: 'checklist' }, { from: 'firebase', to: 'status_page' },
             { from: 'firebase', to: 'feedback_req' }, { from: 'firebase', to: 'tickets' },
@@ -125,7 +120,7 @@ const NepGrafo = {
             // Cross-module points
             { from: 'auth', to: 'permissions' },
             { from: 'testimonials', to: 'points' }, { from: 'courses', to: 'points' },
-            { from: 'okr', to: 'points' }, { from: 'forum', to: 'points' },
+            { from: 'forum', to: 'points' },
             { from: 'tool_crono', to: 'points' },
             { from: 'podcast', to: 'courses' }, { from: 'profile', to: 'achievements' },
             { from: 'notifications', to: 'firebase' }, { from: 'analytics', to: 'firebase' },

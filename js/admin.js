@@ -1395,8 +1395,9 @@ const NexusAdmin = {
         dashboard: '🏠 Dashboard', kanban: '📋 Kanban', tickets: '🎫 Chamados',
         forum: '💬 Fórum', announcements: '📢 Avisos', podcast: '🎧 Podcast',
         courses: '📚 Cursos', scoring: '🏆 Ranking', tools: '🛠️ Ferramentas',
-        reports: '📊 Relatórios', profile: '👤 Perfil', estagiario: '🤖 Estagiário',
-        vacation: '🏖️ Férias', paineis: '🛰️ Painéis', admin: '⚙️ Admin'
+        reports: '📊 Relatórios', profile: '👤 Perfil',
+        vacation: '🏖️ Férias', paineis: '🛰️ Painéis', admin: '⚙️ Admin',
+        chat: '💬 Chat Geral', feriados: '📅 Feriados', analytics: '📈 Analytics Studio'
       };
 
       // 5. Tendência de atividade no período (para o gráfico de linha)

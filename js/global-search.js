@@ -72,7 +72,6 @@ const NexusGlobalSearch = {
         if (!filter || filter === 'reports') searches.push(this.searchReports(normalizedQuery));
         if (!filter || filter === 'announcements') searches.push(this.searchAnnouncements(normalizedQuery));
         if (!filter || filter === 'users') searches.push(this.searchUsers(normalizedQuery));
-        if (!filter || filter === 'agendas') searches.push(this.searchAgendas(normalizedQuery));
 
         const results = await Promise.all(searches);
         this.searchResults = results.flat().sort((a, b) => b.score - a.score);
@@ -93,7 +92,6 @@ const NexusGlobalSearch = {
         if (query.startsWith('#relatorios') || query.startsWith('#reports')) return 'reports';
         if (query.startsWith('#avisos')) return 'announcements';
         if (query.startsWith('@') || query.startsWith('#pessoas')) return 'users';
-        if (query.startsWith('#agendas')) return 'agendas';
         return null;
     },
 
@@ -299,45 +297,6 @@ const NexusGlobalSearch = {
             return results;
         } catch (error) {
             console.error('[GlobalSearch] Erro busca users:', error);
-            return [];
-        }
-    },
-
-    /**
-     * Busca em Agendas
-     */
-    async searchAgendas(query) {
-        const db = firebase.firestore();
-        try {
-            const snapshot = await db.collection('agendas').limit(50).get();
-            const results = [];
-
-            snapshot.docs.forEach(doc => {
-                const agenda = doc.data();
-                const score = this.calculateScore(query, [
-                    agenda.title || '',
-                    agenda.responsible || '',
-                    agenda.minute || ''
-                ]);
-
-                if (score > 0) {
-                    results.push({
-                        type: 'agenda',
-                        title: agenda.title,
-                        subtitle: `Agenda • ${this.formatDate(agenda.date)} • ${agenda.responsible || 'Sem responsável'}`,
-                        icon: '📅',
-                        score: score,
-                        action: () => {
-                            this.close();
-                            window.NexusApp?.navigate('calendar');
-                        }
-                    });
-                }
-            });
-
-            return results;
-        } catch (error) {
-            console.error('[GlobalSearch] Erro busca agendas:', error);
             return [];
         }
     },

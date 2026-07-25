@@ -121,7 +121,7 @@ const NepDashboard = {
         <!-- Header with Streak -->
         <div class="dash-header">
           <div>
-            <h1 class="dash-title">Bem-vindo, ${user?.name?.split(' ')[0] || 'Usuário'}! 👋</h1>
+            <h1 class="dash-title">Bem-vindo, ${window.escapeHtml(user?.name?.split(' ')[0] || 'Usuário')}! 👋</h1>
             <p class="dash-subtitle">Performance operacional em tempo real</p>
           </div>
           <div class="dash-header-right">
@@ -163,20 +163,23 @@ const NepDashboard = {
             <div class="kpi-icon icon-orange">⏳</div>
             <div class="kpi-data">
               <span class="kpi-value" id="kpi-pending">${stats.pending}</span>
-              <span class="kpi-label">Aguardando</span>
+              <span class="kpi-label">Bloqueadas</span>
             </div>
           </div>
           <div class="kpi-card">
             <div class="kpi-icon icon-green">✅</div>
             <div class="kpi-data">
-              <span class="kpi-value" id="kpi-done">${stats.done}</span>
-              <span class="kpi-label">Concluídas</span>
+              <span class="kpi-value" id="kpi-done">${stats.totalValidated}</span>
+              <span class="kpi-label">Entregues</span>
+              ${stats.awaitingValidation > 0
+        ? `<span class="kpi-sub">+${stats.awaitingValidation} aguardando gestor</span>`
+        : ''}
             </div>
           </div>
           <div class="kpi-card highlight">
             <div class="kpi-icon icon-teal">📈</div>
             <div class="kpi-data">
-              <span class="kpi-value" id="kpi-ontime">${stats.onTimeRate}%</span>
+              <span class="kpi-value" id="kpi-ontime">${stats.onTimeRate === null ? '—' : stats.onTimeRate + '%'}</span>
               <span class="kpi-label">Taxa On-Time</span>
             </div>
           </div>
@@ -245,8 +248,8 @@ const NepDashboard = {
               ${topUsers.length > 0 ? topUsers.map((u, i) => `
                 <div class="rank-row ${u.uid === uid ? 'is-me' : ''}">
                   <span class="rank-pos rank-${i + 1}">${i + 1}</span>
-                  <div class="rank-avatar" style="background: ${this.getAvatarGradient(u.nome)}">${this.getInitials(u.nome)}</div>
-                  <span class="rank-name">${u.nome || 'Usuário'}</span>
+                  <div class="rank-avatar" style="background: ${this.getAvatarGradient(u.nome)}">${window.escapeHtml(this.getInitials(u.nome))}</div>
+                  <span class="rank-name">${window.escapeHtml(u.nome || 'Usuário')}</span>
                   <span class="rank-pts">${u.total_points?.toLocaleString() || 0} pts</span>
                 </div>
               `).join('') : '<div class="empty-state-small">Nenhum dado ainda</div>'}
@@ -275,10 +278,10 @@ const NepDashboard = {
                 <div class="alert-item">
                   <div class="alert-icon">⚠️</div>
                   <div class="alert-content">
-                    <span class="alert-title">${t.title}</span>
-                    <span class="alert-meta">${t.owner || 'Sem responsável'} • Venceu em ${this.formatDate(t.deadline)}</span>
+                    <span class="alert-title">${window.escapeHtml(t.title || 'Sem título')}</span>
+                    <span class="alert-meta">${window.escapeHtml(t.owner || 'Sem responsável')} • Venceu em ${this.formatDate(t.deadline)}</span>
                   </div>
-                  <span class="alert-badge priority-${(t.priority || 'medio').toLowerCase()}">${t.priority || 'Médio'}</span>
+                  <span class="alert-badge priority-${window.escapeHtml(String(t.priority || 'medio').toLowerCase())}">${window.escapeHtml(t.priority || 'Médio')}</span>
                 </div>
               `).join('') : '<div class="empty-state-small">✅ Nenhuma demanda atrasada!</div>'}
             </div>
@@ -357,8 +360,8 @@ const NepDashboard = {
       'kpi-total': stats.total,
       'kpi-doing': stats.doing,
       'kpi-pending': stats.pending,
-      'kpi-done': stats.done,
-      'kpi-ontime': stats.onTimeRate + '%'
+      'kpi-done': stats.totalValidated,
+      'kpi-ontime': stats.onTimeRate === null ? '—' : stats.onTimeRate + '%'
     };
 
     for (const [id, value] of Object.entries(updates)) {
@@ -367,7 +370,9 @@ const NepDashboard = {
         el.textContent = value;
         el.style.transition = 'color 0.3s';
         el.style.color = '#3b82f6';
-        setTimeout(() => { el.style.color = '#fff'; }, 600);
+        // Volta ao token do tema, não a branco fixo — no tema claro o
+        // número sumia no fundo depois do flash.
+        setTimeout(() => { el.style.color = 'var(--text-primary)'; }, 600);
       }
     }
   },
@@ -379,6 +384,14 @@ const NepDashboard = {
     if (!window.db) return;
 
     this._kpiUnsub = window.db.collection('tasks').onSnapshot(snapshot => {
+      // Auto-cancelamento: ao navegar para outro módulo o dashboard sai do
+      // DOM, mas o listener seguia ativo consumindo leituras do Firestore
+      // (plano Spark) e redesenhando gráficos que já não existem.
+      if (!document.getElementById('kpi-total')) {
+        if (this._kpiUnsub) { this._kpiUnsub(); this._kpiUnsub = null; }
+        return;
+      }
+
       let tasks = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
 
       // Apply same user filter as render()
@@ -437,7 +450,7 @@ const NepDashboard = {
     const stats = {
       total: tasks.length,
       backlog: 0, doing: 0, pending: 0, done: 0,
-      onTime: 0, totalValidated: 0,
+      onTime: 0, totalValidated: 0, awaitingValidation: 0,
       units: {}, workload: {},
       priorityCounts: { 'Urgente': 0, 'Alto': 0, 'Médio': 0, 'Baixo': 0 }
     };
@@ -455,19 +468,28 @@ const NepDashboard = {
         stats.priorityCounts[t.priority]++;
       }
 
-      if (t.status === 'done' && t.validated) {
-        stats.totalValidated++;
-        if (t.deadline && t.deliveredAt) {
-          if (new Date(t.deliveredAt) <= new Date(t.deadline + 'T23:59:59')) {
-            stats.onTime++;
+      // Entrega real = concluída E validada pelo gestor direto. 'done' sem
+      // validação ainda está pendente de aprovação, não é entrega.
+      if (t.status === 'done') {
+        if (t.validated) {
+          stats.totalValidated++;
+          if (t.deadline && t.deliveredAt) {
+            if (new Date(t.deliveredAt) <= new Date(t.deadline + 'T23:59:59')) {
+              stats.onTime++;
+            }
           }
+        } else {
+          stats.awaitingValidation++;
         }
       }
     });
 
+    // Sem nenhuma entrega validada não existe taxa a informar. Antes isso
+    // devolvia 100%, então um usuário recém-chegado via "100% On-Time"
+    // sem ter entregue nada — um elogio falso vindo do sistema.
     stats.onTimeRate = stats.totalValidated > 0
       ? Math.round((stats.onTime / stats.totalValidated) * 100)
-      : 100;
+      : null;
 
     return stats;
   },
@@ -490,7 +512,10 @@ const NepDashboard = {
     this.charts.status = new Chart(ctx, {
       type: 'doughnut',
       data: {
-        labels: ['Backlog', 'Em Andamento', 'Revisão', 'Concluído'],
+        // Rótulos canônicos do Kanban (kanban.js:1511) — antes esta tela
+        // chamava 'pending' de "Revisão" e 'done' de "Concluído", nomes que
+        // não existem no board, então a mesma tarefa tinha dois nomes.
+        labels: ['Backlog', 'Execução', 'Bloqueado', 'Entregue'],
         datasets: [{
           data: [stats.backlog, stats.doing, stats.pending, stats.done],
           backgroundColor: ['#64748b', '#f2b705', '#e5533d', '#2ecc71'],
@@ -654,8 +679,16 @@ const NepDashboard = {
 
   formatDate(dateStr) {
     if (!dateStr) return 'N/D';
+    // 'YYYY-MM-DD' puro é interpretado como UTC pelo JS; no Brasil (UTC-3)
+    // isso exibia o dia ANTERIOR ao prazo real. Forçar o fuso na leitura
+    // resolve sem depender de como a string foi gravada.
     const d = new Date(dateStr);
-    return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+    if (isNaN(d)) return 'N/D';
+    const isDateOnly = /^\d{4}-\d{2}-\d{2}$/.test(String(dateStr));
+    return d.toLocaleDateString('pt-BR', {
+      day: '2-digit', month: '2-digit',
+      ...(isDateOnly ? { timeZone: 'UTC' } : {})
+    });
   }
 };
 
