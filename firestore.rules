@@ -387,12 +387,61 @@ service cloud.firestore {
     match /user_analytics/{docId} { allow read, write: if isActive(); }
     match /user_data/{docId} { allow read, write: if isActive(); }
 
-    match /points/{docId} { allow read, write: if isActive(); }
-    match /user_points/{userId} { allow read, write: if isActive(); }
+    // Coleção legada: nenhum código escreve nela, mas os painéis do Admin
+    // ainda a leem (top 5 do ranking). Somente-leitura para não virar porta
+    // de entrada de dado falso num painel de gestão.
+    match /points/{docId} {
+      allow read: if isActive();
+      allow write: if isAdmin();
+    }
 
+    // ------------------------------------------------------------------
+    // COFRE DE PONTOS
+    //
+    // Limitação conhecida: no plano Spark não há Cloud Functions, e vários
+    // fluxos legítimos exigem que o próprio usuário grave os próprios pontos
+    // (fórum, cursos, relatórios, rotinas, chamados). Por isso NÃO é possível
+    // bloquear a auto-premiação sem quebrar o sistema — a regra não distingue
+    // "o app chamou" de "o console chamou".
+    //
+    // O que dá para fazer, e está feito aqui: limitar o ESTRAGO por escrita.
+    // A maior premiação legítima única é 150 (conquista/curso), então o teto
+    // de 200 não afeta nenhum fluxo real, mas impede o golpe de uma tacada
+    // ("me dou 999999"). Quem quiser fraudar precisa de centenas de escritas,
+    // cada uma deixando rastro no ledger append-only abaixo — que é
+    // exatamente o que o detector de fraude do painel Admin procura.
+    // ------------------------------------------------------------------
+
+    // O saldo precisa ser um número não-negativo e o doc referir-se a si mesmo
+    function pointsShapeOk(userId) {
+      return request.resource.data.uid == userId
+        && request.resource.data.total_points is number
+        && request.resource.data.total_points >= 0;
+    }
+
+    match /user_points/{userId} {
+      allow read: if isActive();
+
+      // Admin ignora o teto: recálculo e correção retroativa gravam totais cheios
+      allow create: if isAdmin()
+        || (isActive() && pointsShapeOk(userId)
+            && request.resource.data.total_points <= 200);
+
+      allow update: if isAdmin()
+        || (isActive() && pointsShapeOk(userId)
+            && request.resource.data.total_points <= resource.data.total_points + 200
+            && request.resource.data.total_points >= resource.data.total_points - 200);
+
+      allow delete: if isAdmin();
+    }
+
+    // Ledger append-only: só o admin altera ou apaga histórico.
     match /points_transactions/{transactionId} {
       allow read: if isActive();
-      allow create: if isActive();
+      allow create: if isAdmin() || (isActive()
+        && request.resource.data.points is number
+        && request.resource.data.points <= 200
+        && request.resource.data.points >= -200);
       allow update, delete: if isAdmin();
     }
 

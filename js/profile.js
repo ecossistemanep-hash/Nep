@@ -1143,8 +1143,10 @@ const NexusProfile = {
 
   /**
    * Férias e chamados.
-   * Atenção: a coleção `vacations` não guarda uid — só `employeeName`.
-   * O casamento é feito por nome (normalizado), então é aproximado.
+   * O vínculo correto é por `employeeUid`. Registros criados antes do
+   * seletor de colaborador só têm `employeeName`, então o nome continua
+   * valendo como fallback — mas só para documentos sem uid, para não
+   * atribuir férias a um homônimo.
    */
   async renderVacationsAndTickets() {
     const uid = localStorage.getItem('nep_user_uid');
@@ -1164,10 +1166,14 @@ const NexusProfile = {
 
       // --- Férias ---
       let vacHtml = '<div class="vt-empty">Nenhuma férias programada.</div>';
-      if (vacSnap && myName) {
+      if (vacSnap) {
         const today = new Date(); today.setHours(0, 0, 0, 0);
         const mine = vacSnap.docs.map(d => d.data())
-          .filter(v => norm(v.employeeName) === myName && v.startDate)
+          .filter(v => v.startDate && (
+            v.employeeUid
+              ? v.employeeUid === uid                       // vínculo real
+              : (myName && norm(v.employeeName) === myName) // legado, só por nome
+          ))
           .sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
 
         const next = mine.find(v => new Date(v.endDate || v.startDate) >= today) || null;

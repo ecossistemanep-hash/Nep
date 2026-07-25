@@ -7,6 +7,60 @@
 const NexusVacation = {
     vacations: [],
     statusFilter: 'all',
+    systemUsers: null, // cache da lista de usuários para o seletor de colaborador
+
+    /**
+     * Carrega (e cacheia) os usuários do sistema para o seletor de colaborador.
+     * Antes o nome era digitado à mão, o que impedia ligar a férias ao usuário:
+     * qualquer divergência de grafia quebrava o vínculo.
+     */
+    async loadSystemUsers() {
+        if (this.systemUsers) return this.systemUsers;
+        try {
+            const snap = await window.db.collection('users').get();
+            this.systemUsers = snap.docs
+                .map(d => ({ uid: d.id, ...d.data() }))
+                .filter(u => u.cargo !== 'PENDENTE')
+                .sort((a, b) => String(a.nome || '').localeCompare(String(b.nome || '')));
+        } catch (e) {
+            console.warn('[NexusVacation] Não foi possível carregar usuários:', e);
+            this.systemUsers = [];
+        }
+        return this.systemUsers;
+    },
+
+    /** Popula o <select> de colaborador e liga o modo "não cadastrado". */
+    async populateEmployeeSelect(currentUid, currentName) {
+        const select = document.getElementById('v-employee');
+        const manual = document.getElementById('v-name-manual');
+        if (!select) return;
+
+        const users = await this.loadSystemUsers();
+        users.forEach(u => {
+            const opt = document.createElement('option');
+            opt.value = u.uid;
+            opt.textContent = `${u.nome || u.email || 'Sem nome'} — ${(u.cargo || 'N/A').toUpperCase()}`;
+            select.appendChild(opt);
+        });
+
+        const toggleManual = () => {
+            if (!manual) return;
+            const isManual = select.value === '__manual__';
+            manual.style.display = isManual ? '' : 'none';
+            manual.required = isManual;
+        };
+        select.addEventListener('change', toggleManual);
+
+        // Edição: pré-seleciona pelo uid; registros antigos só têm o nome
+        if (currentUid && users.some(u => u.uid === currentUid)) {
+            select.value = currentUid;
+        } else if (currentName) {
+            const byName = users.find(u =>
+                String(u.nome || '').trim().toLowerCase() === String(currentName).trim().toLowerCase());
+            select.value = byName ? byName.uid : '__manual__';
+        }
+        toggleManual();
+    },
 
     init() {
         console.log('[NexusVacation] Módulo inicializado - Enterprise Edition v2');
@@ -504,8 +558,13 @@ const NexusVacation = {
                         <div class="form-body">
                             <div class="form-row">
                                 <div class="form-group">
-                                    <label>Nome Completo</label>
-                                    <input type="text" id="v-name" class="form-input" required value="${item?.employeeName || ''}">
+                                    <label>Colaborador</label>
+                                    <select id="v-employee" class="form-select" required>
+                                        <option value="">Selecione...</option>
+                                        <option value="__manual__">— Não cadastrado (digitar) —</option>
+                                    </select>
+                                    <input type="text" id="v-name-manual" class="form-input" placeholder="Nome completo"
+                                           style="display:none; margin-top:8px;" value="${window.escapeHtml(item?.employeeName || '')}">
                                 </div>
                                 <div class="form-group">
                                     <label>Logo / Produto</label>
@@ -567,6 +626,9 @@ const NexusVacation = {
         `;
         document.body.insertAdjacentHTML('beforeend', modalHtml);
 
+        // Preencher colaboradores (vincula o registro ao uid, não só ao nome)
+        this.populateEmployeeSelect(item?.employeeUid || null, item?.employeeName || '');
+
         // Preencher logos no select de form
         if (window.LogoService) {
             window.LogoService.listLogos().then(logos => {
@@ -596,8 +658,31 @@ const NexusVacation = {
     },
 
     async submitForm(id) {
+        // O colaborador vem do seletor (uid real). "__manual__" cobre quem
+        // ainda não tem cadastro no sistema — aí fica só o nome, sem vínculo.
+        const selected = document.getElementById('v-employee').value;
+        const isManual = selected === '__manual__';
+        const picked = !isManual
+            ? (this.systemUsers || []).find(u => u.uid === selected)
+            : null;
+
+        if (!isManual && !picked) {
+            NexusApp.showToast('Selecione o colaborador', 'error');
+            return;
+        }
+
+        const employeeName = isManual
+            ? document.getElementById('v-name-manual').value.trim()
+            : (picked.nome || picked.email || '');
+
+        if (!employeeName) {
+            NexusApp.showToast('Informe o nome do colaborador', 'error');
+            return;
+        }
+
         const data = {
-            employeeName: document.getElementById('v-name').value,
+            employeeUid: isManual ? null : picked.uid,
+            employeeName: employeeName,
             product: document.getElementById('v-product').value,
             role: document.getElementById('v-role').value,
             city: document.getElementById('v-city').value,
