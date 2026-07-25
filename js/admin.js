@@ -90,6 +90,15 @@ const NexusAdmin = {
     return this.MANAGER_ROLES.includes(roleKey);
   },
 
+  // Escalão executivo: enxerga a operação inteira quebrada por logo, em vez
+  // de só a própria equipe. Mesma fronteira que LogoService.isGlobalViewer()
+  // já usa para decidir quem não é filtrado por logo — não inventamos um
+  // conceito novo de permissão aqui.
+  isExecutive() {
+    const roleKey = (localStorage.getItem('nep_user_role_key') || '').toUpperCase();
+    return this.isFullAdmin() || roleKey === 'DIRETOR' || roleKey === 'SUPERINTENDENTE';
+  },
+
   async render(container) {
     const isAdmin = this.isFullAdmin();
     const isManager = this.isManagerAccess();
@@ -1177,10 +1186,11 @@ const NexusAdmin = {
         db.collection('users').get().catch(() => emptySnap),
         db.collection('tickets').get().catch(() => emptySnap),
         db.collection('user_analytics').where('timestamp', '>', periodStart).get().catch(() => emptySnap),
-        // Top 15 por saldo: filtramos por status ATIVO depois e cortamos pra
-        // 5, então o limit precisa de folga (senão um top-5 bruto podia
-        // incluir gente desativada e sobrar menos de 5 no "Elite da Semana").
-        db.collection('user_points').orderBy('total_points', 'desc').limit(15).get().catch(() => emptySnap),
+        // Saldo de todos: além do top-5 do "Elite da Semana" (que precisa
+        // filtrar inativos antes de cortar), a visão executiva agrega pontos
+        // médios por logo. É um doc por usuário — mesma ordem de grandeza da
+        // coleção `users`, que já é lida inteira aqui do lado.
+        db.collection('user_points').get().catch(() => emptySnap),
         db.collection('audit_logs').where('timestamp', '>', last12h).get().catch(() => emptySnap)
       ]);
 
@@ -1203,12 +1213,15 @@ const NexusAdmin = {
       // ex-colaborador desligado não deveria aparecer sendo celebrado), e o
       // nome/cargo vêm sempre do cadastro atual — não do que foi gravado em
       // user_points quando o saldo foi criado, que pode estar desatualizado.
+      const pointsByUid = new Map(rankingRaw.map(r => [r.uid, Number(r.total_points) || 0]));
+
       const ranking = rankingRaw
         .map(r => {
           const u = uidToUser.get(r.uid);
           return { ...r, nome: u?.nome || r.name || 'Usuário', status: u?.status };
         })
         .filter(r => r.status === 'ATIVO')
+        .sort((a, b) => (Number(b.total_points) || 0) - (Number(a.total_points) || 0))
         .slice(0, 5);
 
       // 1. Engajamento (Usuários Ativos)
@@ -1243,6 +1256,134 @@ const NexusAdmin = {
         v.startDate <= todayStr &&
         v.endDate >= todayStr
       );
+
+      // 4. Taxa de entrega no prazo (organização)
+      // Só entra no cálculo tarefa validada E com prazo definido — tarefa sem
+      // prazo não tem como estar "no prazo" ou "atrasada", incluí-la
+      // distorceria o indicador para cima.
+      const onTimeOf = (list) => {
+        const withDeadline = list.filter(t => t.status === 'done' && t.validated === true && t.deadline && t.validatedAt);
+        if (withDeadline.length === 0) return { pct: null, onTime: 0, total: 0 };
+        const onTime = withDeadline.filter(t => {
+          const due = new Date(t.deadline);
+          due.setHours(23, 59, 59, 999);
+          return new Date(t.validatedAt) <= due;
+        }).length;
+        return { pct: Math.round((onTime / withDeadline.length) * 100), onTime, total: withDeadline.length };
+      };
+      const orgOnTime = onTimeOf(tasks);
+
+      const overdueNow = tasks.filter(t =>
+        t.status !== 'done' && t.status !== 'archived' &&
+        t.deadline && new Date(t.deadline) < new Date(todayStr)
+      ).length;
+
+      // Trabalho órfão: tarefa aberta cujo dono saiu da empresa (ou foi
+      // desativado). Ela some da visão por logo — que só olha gente ativa —
+      // mas continua sendo trabalho parado de verdade. Sem expor isso, o
+      // total da organização não fecharia com a soma das logos e o executivo
+      // ficaria sem entender a diferença.
+      const orphanTasks = tasks.filter(t => {
+        if (t.status === 'done' || t.status === 'archived') return false;
+        const owner = uidToUser.get(t.ownerUid);
+        return !owner || owner.status !== 'ATIVO';
+      });
+      const orphanOverdue = orphanTasks.filter(t =>
+        t.deadline && new Date(t.deadline) < new Date(todayStr)
+      ).length;
+
+      // 5. Gargalo de aprovação por gestor
+      // A tarefa é aprovada pelo gestor direto do DONO da tarefa — então o
+      // gargalo se acumula no gestor do executor, não em quem criou a tarefa.
+      const bottleneckByManager = {};
+      tasks.filter(t => t.status === 'done' && !t.validated).forEach(t => {
+        const owner = uidToUser.get(t.ownerUid);
+        const managerUid = owner?.gestor_uid;
+        if (!managerUid) {
+          bottleneckByManager['__sem_gestor__'] = (bottleneckByManager['__sem_gestor__'] || 0) + 1;
+          return;
+        }
+        bottleneckByManager[managerUid] = (bottleneckByManager[managerUid] || 0) + 1;
+      });
+      const bottlenecks = Object.entries(bottleneckByManager)
+        .map(([uid, count]) => ({
+          uid,
+          count,
+          nome: uid === '__sem_gestor__'
+            ? 'Sem gestor definido'
+            : (uidToUser.get(uid)?.nome || 'Gestor removido')
+        }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 6);
+
+      // 6. VISÃO EXECUTIVA POR LOGO (Diretor/Superintendente/Admin)
+      // Consolida cada logo como uma unidade de negócio. Um usuário pode
+      // atuar em mais de uma logo — nesse caso ele conta em todas, porque a
+      // pergunta que o executivo faz é "como está a logo X", não "a quem
+      // pertence exclusivamente esta pessoa".
+      const activeUsers = allUsers.filter(u => u.status === 'ATIVO');
+      const logosOf = (u) => {
+        if (Array.isArray(u.logos) && u.logos.length > 0) return u.logos.filter(Boolean);
+        if (u.setor) return [u.setor];
+        return ['Sem Logo'];
+      };
+      const uidsAtivosPeriodo = new Set(analytics.map(a => a.uid));
+      const nomesEmFeriasHoje = new Set(teamOffToday.map(v => String(v.employeeName || '').trim().toLowerCase()));
+
+      const executiveByLogo = (() => {
+        const map = {};
+        const ensure = (logo) => {
+          if (!map[logo]) {
+            map[logo] = {
+              logo, pessoas: 0, ativos: 0, ferias: 0,
+              tarefasAbertas: 0, atrasadas: 0, aguardando: 0,
+              entregues: 0, pontos: 0, uids: new Set()
+            };
+          }
+          return map[logo];
+        };
+
+        activeUsers.forEach(u => {
+          logosOf(u).forEach(l => {
+            const e = ensure(l);
+            e.pessoas++;
+            e.uids.add(u.uid);
+            if (uidsAtivosPeriodo.has(u.uid)) e.ativos++;
+            if (nomesEmFeriasHoje.has(String(u.nome || '').trim().toLowerCase())) e.ferias++;
+            e.pontos += Number(pointsByUid.get(u.uid) || 0);
+          });
+        });
+
+        tasks.forEach(t => {
+          const owner = uidToUser.get(t.ownerUid);
+          if (!owner || owner.status !== 'ATIVO') return;
+          logosOf(owner).forEach(l => {
+            const e = ensure(l);
+            if (t.status !== 'done' && t.status !== 'archived') {
+              e.tarefasAbertas++;
+              if (t.deadline && new Date(t.deadline) < new Date(todayStr)) e.atrasadas++;
+            }
+            if (t.status === 'done' && !t.validated) e.aguardando++;
+            if (t.status === 'done' && t.validated === true) e.entregues++;
+          });
+        });
+
+        return Object.values(map).map(e => {
+          const tarefasDaLogo = tasks.filter(t => {
+            const o = uidToUser.get(t.ownerUid);
+            return o && o.status === 'ATIVO' && logosOf(o).includes(e.logo);
+          });
+          const prazo = onTimeOf(tarefasDaLogo);
+          const engajamento = e.pessoas > 0 ? Math.round((e.ativos / e.pessoas) * 100) : 0;
+          return {
+            ...e,
+            engajamento,
+            prazoPct: prazo.pct,
+            prazoTotal: prazo.total,
+            pontosMedios: e.pessoas > 0 ? Math.round(e.pontos / e.pessoas) : 0
+          };
+        }).sort((a, b) => b.pessoas - a.pessoas);
+      })();
 
       const moduleRanking = Object.entries(stats.moduleViews || {})
         .map(([module, count]) => ({ module, count }))
@@ -1363,6 +1504,16 @@ const NexusAdmin = {
               <div class="analytics-kpi-label">Pontos Cegos</div>
               <div style="font-size: 10px; opacity: 0.8;">Sem move +3d</div>
             </div>
+            <div class="analytics-kpi ${orgOnTime.pct === null ? '' : orgOnTime.pct >= 90 ? 'success' : orgOnTime.pct >= 70 ? 'warning' : 'danger'}">
+              <div class="analytics-kpi-value">${orgOnTime.pct === null ? '—' : orgOnTime.pct + '%'}</div>
+              <div class="analytics-kpi-label">Entrega no Prazo</div>
+              <div style="font-size: 10px; opacity: 0.8;">${orgOnTime.total > 0 ? `${orgOnTime.onTime}/${orgOnTime.total} validadas` : 'sem tarefa com prazo'}</div>
+            </div>
+            <div class="analytics-kpi ${overdueNow > 0 ? 'danger' : 'success'}">
+              <div class="analytics-kpi-value">${overdueNow}</div>
+              <div class="analytics-kpi-label">Atrasadas Agora</div>
+              <div style="font-size: 10px; opacity: 0.8;">Prazo já vencido</div>
+            </div>
             <div class="analytics-kpi info">
               <div class="analytics-kpi-value">${this.isFullAdmin() ? openTickets : '—'}</div>
               <div class="analytics-kpi-label">Tickets</div>
@@ -1379,6 +1530,99 @@ const NexusAdmin = {
               <div style="font-size: 10px; color: #a78bfa;">Entregue, falta validar</div>
             </div>
           </div>
+
+          ${this.isExecutive() ? `
+          <!-- VISÃO EXECUTIVA POR LOGO (Diretor / Superintendente / Admin) -->
+          <div class="analytics-card exec-panel" style="margin-bottom: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 8px;">
+              <div>
+                <h4 style="margin: 0 0 4px;"><i class="fa-solid fa-chess-king"></i> Visão Estratégica por Logo</h4>
+                <p style="font-size: 11px; color: var(--text-tertiary); margin: 0;">
+                  Cada logo como unidade de negócio · ${executiveByLogo.length} logo(s) · janela de ${periodDays} dias
+                </p>
+              </div>
+              <span class="status-badge" style="background: rgba(139,92,246,.15); color: #a78bfa;">
+                <i class="fa-solid fa-lock"></i> Diretoria
+              </span>
+            </div>
+
+            ${executiveByLogo.length === 0 ? `
+              <p class="text-muted" style="margin-top: 14px; font-size: 12px;">Nenhuma logo com colaborador ativo cadastrado.</p>
+            ` : `
+            <div class="exec-grid">
+              ${executiveByLogo.map(e => {
+        // Saúde da logo: combina prazo, engajamento e represamento.
+        // Sem tarefa com prazo não há como afirmar saúde — mostra "—"
+        // em vez de inventar um número.
+        const prazoOk = e.prazoPct === null ? null : e.prazoPct >= 85;
+        const engajOk = e.engajamento >= 60;
+        const semGargalo = e.aguardando === 0;
+        const sinais = [prazoOk, engajOk, semGargalo].filter(s => s !== null);
+        const verdes = sinais.filter(Boolean).length;
+        const saude = sinais.length === 0 ? null : Math.round((verdes / sinais.length) * 100);
+        const cor = saude === null ? '#64748b' : saude >= 80 ? '#22c55e' : saude >= 50 ? '#f59e0b' : '#ef4444';
+        const rotulo = saude === null ? 'Sem dados' : saude >= 80 ? 'Saudável' : saude >= 50 ? 'Atenção' : 'Crítico';
+        return `
+                <div class="exec-logo-card" style="border-left: 4px solid ${cor};">
+                  <div class="exec-logo-head">
+                    <strong>${window.escapeHtml(e.logo)}</strong>
+                    <span class="exec-badge" style="background:${cor}22; color:${cor};">${rotulo}</span>
+                  </div>
+
+                  <div class="exec-metrics">
+                    <div class="exec-metric">
+                      <span class="exec-val">${e.pessoas}</span>
+                      <span class="exec-lbl">Pessoas</span>
+                    </div>
+                    <div class="exec-metric">
+                      <span class="exec-val" style="color:${e.engajamento >= 60 ? '#22c55e' : '#f59e0b'};">${e.engajamento}%</span>
+                      <span class="exec-lbl">Engajamento</span>
+                    </div>
+                    <div class="exec-metric">
+                      <span class="exec-val" style="color:${e.prazoPct === null ? 'var(--text-tertiary)' : e.prazoPct >= 85 ? '#22c55e' : '#ef4444'};">${e.prazoPct === null ? '—' : e.prazoPct + '%'}</span>
+                      <span class="exec-lbl">No prazo</span>
+                    </div>
+                    <div class="exec-metric">
+                      <span class="exec-val" style="color:${e.atrasadas > 0 ? '#ef4444' : 'inherit'};">${e.atrasadas}</span>
+                      <span class="exec-lbl">Atrasadas</span>
+                    </div>
+                    <div class="exec-metric">
+                      <span class="exec-val" style="color:${e.aguardando > 0 ? '#f59e0b' : 'inherit'};">${e.aguardando}</span>
+                      <span class="exec-lbl">Represadas</span>
+                    </div>
+                    <div class="exec-metric">
+                      <span class="exec-val">${e.entregues}</span>
+                      <span class="exec-lbl">Entregues</span>
+                    </div>
+                  </div>
+
+                  <div class="exec-foot">
+                    <span><i class="fa-solid fa-umbrella-beach"></i> ${e.ferias} em férias</span>
+                    <span><i class="fa-solid fa-star"></i> ${e.pontosMedios} pts/pessoa</span>
+                    <span><i class="fa-solid fa-list-check"></i> ${e.tarefasAbertas} em aberto</span>
+                  </div>
+                </div>`;
+      }).join('')}
+            </div>
+
+            ${orphanTasks.length > 0 ? `
+              <div style="margin-top: 14px; padding: 10px 12px; border-radius: 8px; background: rgba(239,68,68,.08); border-left: 3px solid #ef4444; font-size: 12px;">
+                <strong style="color:#ef4444;"><i class="fa-solid fa-user-slash"></i> ${orphanTasks.length} tarefa(s) órfã(s)</strong>
+                <span style="color: var(--text-secondary);">
+                  &mdash; em aberto sob responsáveis desativados${orphanOverdue > 0 ? `, sendo <strong>${orphanOverdue} já atrasada(s)</strong>` : ''}.
+                  Não aparecem nos cards de logo acima (que contam só gente ativa), mas seguem no total da organização.
+                </span>
+              </div>
+            ` : ''}
+
+            <p style="font-size: 10px; color: var(--text-tertiary); margin: 12px 0 0; line-height: 1.5;">
+              <strong>Engajamento</strong> = pessoas com atividade registrada no período ÷ pessoas ativas da logo.
+              <strong>No prazo</strong> considera apenas tarefas já validadas pelo gestor e que tinham prazo definido.
+              <strong>Represadas</strong> = entregues aguardando validação. Quem atua em mais de uma logo conta em todas.
+            </p>
+            `}
+          </div>
+          ` : ''}
 
           <!-- TENDÊNCIA DE ATIVIDADE + EQUIPE/SETOR -->
           <div class="analytics-grid" style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin-bottom: 20px;">
@@ -1491,6 +1735,22 @@ const NexusAdmin = {
                     </div>
                   `).join('') || '<p class="text-muted" style="font-size: 11px;">Todo o time disponível.</p>'}
                 </div>
+              </div>
+
+              <!-- Gargalo de Aprovação -->
+              <div class="analytics-card" style="margin-top: 20px;">
+                <h4><i class="fa-solid fa-hourglass-half"></i> Gargalo de Aprovação</h4>
+                <p style="font-size: 10px; color: var(--text-tertiary); margin: 4px 0 10px;">Entregas represadas por gestor responsável</p>
+                ${bottlenecks.length === 0
+        ? '<p class="text-muted" style="font-size: 11px;">Nenhuma entrega aguardando validação. 👏</p>'
+        : bottlenecks.map(b => `
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 12px;">
+                      <span style="flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; ${b.uid === '__sem_gestor__' ? 'color:#ef4444;' : ''}">
+                        ${window.escapeHtml(b.nome)}
+                      </span>
+                      <span style="font-weight: 700; color: ${b.count >= 5 ? '#ef4444' : b.count >= 3 ? '#f59e0b' : 'var(--text-secondary)'};">${b.count}</span>
+                    </div>
+                  `).join('')}
               </div>
 
               <!-- Alertas de Segurança (Audit) -->
@@ -2762,6 +3022,18 @@ adminStyles.textContent = `
 .usage-heatmap-row{display:grid;grid-template-columns:48px repeat(24,1fr);gap:3px;align-items:center}
 .usage-heatmap-daylabel{font-size:11px;color:var(--text-tertiary);font-weight:600}
 .usage-heatmap-cell{height:16px;border-radius:3px;cursor:default}
+/* Visão Estratégica por Logo (Diretor/Superintendente/Admin) */
+.exec-panel{border:1px solid rgba(139,92,246,.35);background:linear-gradient(180deg,rgba(139,92,246,.06),transparent 60%)}
+.exec-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-top:16px}
+.exec-logo-card{background:var(--surface-card,rgba(255,255,255,.03));border:1px solid var(--border-dim,rgba(255,255,255,.08));border-radius:10px;padding:14px}
+.exec-logo-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
+.exec-logo-head strong{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.exec-badge{font-size:10px;font-weight:600;padding:3px 8px;border-radius:20px;white-space:nowrap}
+.exec-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.exec-metric{display:flex;flex-direction:column;gap:2px}
+.exec-val{font-size:17px;font-weight:700;line-height:1.1}
+.exec-lbl{font-size:10px;color:var(--text-tertiary)}
+.exec-foot{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px;padding-top:10px;border-top:1px solid var(--border-dim,rgba(255,255,255,.08));font-size:10px;color:var(--text-tertiary)}
 .admin-section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:16px}
 .admin-section-left{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
 .admin-stat-badge{background:var(--surface-elevated);padding:6px 12px;border-radius:20px;font-size:12px;color:var(--text-secondary)}
@@ -2822,9 +3094,19 @@ adminStyles.textContent = `
 .analytics-kpi{background:var(--surface-elevated);border:1px solid var(--surface-border);border-radius:12px;padding:20px;text-align:center}
 .analytics-kpi.highlight{border-color:var(--success-500);background:rgba(16,185,129,.08)}
 .analytics-kpi.warning{border-color:var(--warning-500);background:rgba(245,158,11,.08)}
+/* success/danger/info/active já eram usadas no HTML dos KPIs mas nunca
+   tiveram estilo definido — os cards ficavam todos com a cor neutra. */
+.analytics-kpi.success{border-color:#22c55e;background:rgba(34,197,94,.08)}
+.analytics-kpi.danger{border-color:#ef4444;background:rgba(239,68,68,.08)}
+.analytics-kpi.info{border-color:#3b82f6;background:rgba(59,130,246,.08)}
+.analytics-kpi.active{border-color:#6366f1;background:rgba(99,102,241,.08)}
 .analytics-kpi-value{font-size:24px;font-weight:700;color:var(--text-primary);margin-bottom:4px}
 .analytics-kpi.highlight .analytics-kpi-value{color:var(--success-500)}
 .analytics-kpi.warning .analytics-kpi-value{color:var(--warning-500)}
+.analytics-kpi.success .analytics-kpi-value{color:#22c55e}
+.analytics-kpi.danger .analytics-kpi-value{color:#ef4444}
+.analytics-kpi.info .analytics-kpi-value{color:#3b82f6}
+.analytics-kpi.active .analytics-kpi-value{color:#818cf8}
 .analytics-kpi-label{font-size:12px;color:var(--text-secondary)}
 .analytics-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(400px,1fr));gap:20px;margin-bottom:24px}
 .analytics-card{background:var(--surface-elevated);border:1px solid var(--surface-border);border-radius:12px;padding:20px}
