@@ -199,10 +199,47 @@ service cloud.firestore {
 
     function tasksNoProtectedChanges() {
       return !request.resource.data.diff(resource.data).affectedKeys()
+        // `priority` NÃO entra aqui: é derivada de `deadline` (que é
+        // protegido) e não influencia pontuação alguma. Protegê-la só
+        // quebrava o salvamento — o cliente recalcula a prioridade a partir
+        // da data de hoje em cada gravação, então o campo mudava sozinho com
+        // o tempo e o update do criador passava a ser rejeitado.
         .hasAny(['validated', 'validatedBy', 'validatedAt',
                  'finalPoints', 'points', 'deadline',
-                 'deadlineChangePenalty', 'priority',
-                 'taskType', 'deadlineChanged']);
+                 'deadlineChangePenalty',
+                 'taskType', 'deadlineChanged', 'basePoints']);
+    }
+
+    // Gestor DIRETO do responsável da tarefa, e nunca o próprio responsável.
+    //
+    // Antes, qualquer isManager() (Coordenador para cima) podia validar
+    // QUALQUER tarefa — inclusive a própria. Um coordenador entregava e
+    // aprovava a si mesmo pelo console, creditando os próprios pontos. A
+    // regra de "só o gestor direto aprova" existia apenas no cliente, que
+    // não é fronteira de segurança.
+    // `ownerUid` pode vir vazio em tarefas antigas (atribuídas só por nome).
+    // Montar caminho de documento com string vazia é erro de avaliação, que
+    // derrubaria a regra inteira — por isso a checagem vem antes.
+    function taskHasOwnerDoc() {
+      return resource.data.ownerUid is string
+        && resource.data.ownerUid != ''
+        && exists(/databases/$(database)/documents/users/$(resource.data.ownerUid));
+    }
+
+    function isDirectManagerOfTaskOwner() {
+      return isActive()
+        && resource.data.ownerUid != request.auth.uid
+        && taskHasOwnerDoc()
+        && get(/databases/$(database)/documents/users/$(resource.data.ownerUid))
+             .data.get('gestor_uid', '') == request.auth.uid;
+    }
+
+    // Responsável sem gestor cadastrado: gestor/admin destrava, senão a
+    // tarefa ficaria represada para sempre por falha de cadastro.
+    function taskOwnerHasNoManager() {
+      return !taskHasOwnerDoc()
+        || get(/databases/$(database)/documents/users/$(resource.data.ownerUid))
+             .data.get('gestor_uid', '') == '';
     }
 
     match /tasks/{taskId} {
@@ -218,13 +255,34 @@ service cloud.firestore {
       allow update: if isActive() && (
         // Admin pode tudo
         isAdmin()
-        // Gestor (Coordenador+): pode validar, alterar prazo e status
-        // mas não pode alterar creatorUid (impedir roubo de autoria)
-        || (isManager()
+        // Gestor DIRETO do responsável: valida a entrega e ajusta prazo/tipo.
+        // Trocado de isManager() (qualquer Coordenador+, em qualquer tarefa,
+        // inclusive a própria) para o vínculo real de hierarquia.
+        || (isDirectManagerOfTaskOwner()
             && !request.resource.data.diff(resource.data).affectedKeys()
-                .hasAny(['creatorUid']))
-        // Responsável: campos operacionais (status, entrega, reconhecimento)
-        // — NUNCA pontuação, validação ou prazo
+                .hasAny(['creatorUid', 'basePoints']))
+        // Gestor sem vínculo cadastrado no responsável: só destrava se de
+        // fato não existe gestor (evita tarefa represada por falha de
+        // cadastro) e ainda assim nunca na própria tarefa.
+        || (isManager()
+            && resource.data.ownerUid != request.auth.uid
+            && taskOwnerHasNoManager()
+            && !request.resource.data.diff(resource.data).affectedKeys()
+                .hasAny(['creatorUid', 'basePoints']))
+        // Topo da hierarquia entregando tarefa própria: auto-validação.
+        // Diretor e Superintendente não têm gestor acima (hierarquia oficial
+        // do NEP), então a entrega deles se valida sozinha. É a ÚNICA
+        // autovalidação permitida, e é restrita pelo cargo de quem chama —
+        // não pelo que o cliente manda.
+        || (resource.data.ownerUid == request.auth.uid
+            && myProfile().cargo in ['ADMIN', 'DIRETOR', 'SUPERINTENDENTE']
+            && tasksOnlyChanges(['status', 'acknowledged', 'evidence',
+                                 'evidenceLink', 'deliveredAt', 'history',
+                                 'hasAttachments', 'updatedAt', 'validated',
+                                 'validatedBy', 'validatedAt']))
+        // Responsável comum: campos operacionais apenas.
+        // `validated` fica FORA — é o que impede um analista de se
+        // autoaprovar pelo console e creditar os próprios pontos.
         || (resource.data.ownerUid == request.auth.uid
             && tasksOnlyChanges(['status', 'acknowledged', 'evidence',
                                  'evidenceLink', 'deliveredAt', 'history',

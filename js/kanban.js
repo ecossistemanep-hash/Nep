@@ -37,22 +37,12 @@ const NexusKanban = {
   },
 
   // ============ PONTUAÇÃO AUTOMÁTICA ============
-  // Pontos base calculados pelo prazo (dias úteis até deadline)
-  DEADLINE_POINTS: [
-    { maxDays: 0,  points: 25 },  // Mesmo dia (urgente real)
-    { maxDays: 2,  points: 15 },  // 1-2 dias úteis
-    { maxDays: 5,  points: 10 },  // 3-5 dias úteis
-    { maxDays: 10, points: 7 },   // 6-10 dias úteis
-    { maxDays: Infinity, points: 5 } // 11+ dias
-  ],
-
-  // Multiplicador por tipo (legado — mantido p/ tarefas antigas sem tipo no catálogo)
-  TASK_TYPE_MULTIPLIER: {
-    'Rotina': 1.0,
-    'Análise': 1.3,
-    'Projeto': 1.5,
-    'Correção Urgente': 1.8
-  },
+  // NOTA: as tabelas antigas que pontuavam POR PRAZO (DEADLINE_POINTS,
+  // TASK_TYPE_MULTIPLIER, EARLY_BONUS, DELAY_PENALTY, DEADLINE_CHANGE_PENALTY)
+  // foram removidas. Nenhuma era lida por código — ficaram do modelo anterior
+  // e davam a impressão errada de que escolher um prazo curto rendia mais
+  // pontos. O modelo vigente é: valor-base pelo TIPO (catálogo abaixo) e
+  // ajuste percentual por atraso/antecedência em calculateFinalPoints.
 
   // CATÁLOGO DE TIPOS — pontos-base FIXOS por tipo (anti-fraude).
   // O prazo é definido pelo usuário, então NÃO entra nos pontos-base
@@ -71,24 +61,6 @@ const NexusKanban = {
     'Apresentação executiva': 20,
     'Projeto de melhoria': 25
   },
-
-  // Bônus por entrega antecipada
-  EARLY_BONUS: { 1: 2, 2: 5 }, // 1 dia antes = +2, 2+ dias = +5
-
-  // Penalidade por atraso
-  DELAY_PENALTY: [
-    { maxDays: 1, penalty: -5 },
-    { maxDays: 2, penalty: -10 },
-    { maxDays: 5, penalty: -15 },
-    { maxDays: Infinity, penalty: -20 }
-  ],
-
-  // Penalidade por extensão de prazo
-  DEADLINE_CHANGE_PENALTY: [
-    { maxDays: 2, penalty: -3 },
-    { maxDays: 5, penalty: -5 },
-    { maxDays: Infinity, penalty: -8 }
-  ],
 
   // Limite de WIP (tarefas em execução simultânea por responsável)
   WIP_LIMIT: 5,
@@ -229,22 +201,43 @@ const NexusKanban = {
     return this.isCreatorMe(task);
   },
 
-  // SEGURANÇA: Somente gestor direto do responsável ou admin pode alterar prazo
-  // Exceção: Superintendente e Diretor podem alterar os próprios prazos
+  // SEGURANÇA: somente o gestor direto do responsável altera prazo/tipo.
+  //
+  // Antes `isTopLevel() && isCreatorMe(task)` permitia que diretor/
+  // superintendente afrouxasse o próprio prazo depois de criar a tarefa
+  // para si — exatamente o que a regra de "prazo não vale ponto" tenta
+  // evitar. Só quem não é o responsável pode mexer.
   canEditDeadline(task) {
-    if (this.isAdmin()) return true;
-    if (this.isTopLevel() && this.isCreatorMe(task)) return true;
-    return this.isManagerOfOwner(task);
+    if (this.isOwnerMe(task)) return false;
+    if (this.isManagerOfOwner(task)) return true;
+    if (this.isAdmin() && !this.getManagerUidOfOwner(task)) return true;
+    return false;
   },
 
-  // SEGURANÇA: Somente gestor direto do responsável ou admin pode validar
-  // Exceção: Superintendente e Diretor são auto-validados (não precisam de aprovação)
+  // SEGURANÇA: só o gestor DIRETO do responsável valida a tarefa.
+  //
+  // Ninguém valida a própria entrega — nem admin, nem diretor. Antes,
+  // `isAdmin()` e `isTopLevel()` liberavam a validação de QUALQUER tarefa,
+  // inclusive a do próprio usuário: um diretor entregava e aprovava a si
+  // mesmo, creditando os próprios pontos. E um diretor aprovava tarefa de
+  // gente que não era sua liderada, furando a regra de gestor direto.
+  //
+  // Diretor e Superintendente não têm gestor acima (hierarquia oficial), por
+  // isso as tarefas DELES são auto-validadas na entrega — em
+  // isOwnerTopLevel/confirmDelivery, não aqui.
   canValidateTask(task) {
     if (!task || task.status !== 'done' || task.validated) return false;
-    if (this.isAdmin()) return true;
-    // Superintendente/Diretor: podem validar qualquer tarefa da sua estrutura
-    if (this.isTopLevel()) return true;
-    return this.isManagerOfOwner(task);
+
+    // A própria entrega nunca é validada por quem a fez
+    if (this.isOwnerMe(task)) return false;
+
+    if (this.isManagerOfOwner(task)) return true;
+
+    // Admin destrava casos de cadastro incompleto (responsável sem
+    // `gestor_uid`), senão a tarefa ficaria represada para sempre.
+    if (this.isAdmin() && !this.getManagerUidOfOwner(task)) return true;
+
+    return false;
   },
 
   // Verifica se o usuário logado é Superintendente ou Diretor (topo de hierarquia)
@@ -295,10 +288,21 @@ const NexusKanban = {
     } catch { return dateStr; }
   },
 
+  // Data local em YYYY-MM-DD.
+  // toISOString() converte para UTC: no Brasil (UTC−3), qualquer horário a
+  // partir das 21h virava o DIA SEGUINTE em UTC, então o prazo saía um dia
+  // deslocado para quem mexia no sistema à noite.
+  toLocalISODate(d) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  },
+
   getDeadline(days) {
     const d = new Date();
     d.setDate(d.getDate() + days);
-    return d.toISOString().split('T')[0];
+    return this.toLocalISODate(d);
   },
 
   // ============ PONTUAÇÃO AUTOMÁTICA ============
@@ -346,36 +350,36 @@ const NexusKanban = {
   //   • Antecedência: +10% (entregou antes do prazo comprometido).
   //   • Alteração de prazo depois de criada: −15% (uma vez).
   calculateFinalPoints(task) {
-    const base = this.calculatePoints(task.taskType || 'Rotina');
+    const currentBase = this.calculatePoints(task.taskType || 'Rotina');
+
+    // ANTI-FRAUDE: o valor-base é congelado na criação (`basePoints`). Sem
+    // isso, um gestor trocava o tipo depois de criada — de 5 para 25 pts —
+    // pagando só os −15% de edição e saindo com 21 pontos numa tarefa
+    // trivial. O tipo ainda pode ser corrigido PARA BAIXO (erro de
+    // classificação a favor da empresa), mas nunca infla o crédito.
+    const base = typeof task.basePoints === 'number'
+      ? Math.min(currentBase, task.basePoints)
+      : currentBase;
+
     let factor = 1;
 
     if (task.deadline && task.deliveredAt) {
       const deadline = new Date(task.deadline + 'T23:59:59');
       const delivered = new Date(task.deliveredAt);
-      const daysLate = Math.floor((delivered - deadline) / (1000 * 60 * 60 * 24));
+      // Atraso contado em dias corridos ARREDONDADOS PARA CIMA: antes usava
+      // Math.floor, então entregar com até 24h de atraso não gerava
+      // penalidade alguma.
+      const msLate = delivered - deadline;
+      const daysLate = Math.ceil(msLate / (1000 * 60 * 60 * 24));
       if (daysLate > 0) factor -= 0.20 * daysLate;      // −20% por dia
-      else if (daysLate < 0) factor += 0.10;            // +10% adiantado
+      else if (msLate < 0) factor += 0.10;              // +10% adiantado
     }
 
     // Penalidade única por alteração de prazo/tipo após criação
-    if (task.wasEdited || task.deadlineChanged) factor -= 0.15;
+    if (task.deadlineChanged) factor -= 0.15;
 
     const points = Math.round(base * factor);
     return Math.max(1, points); // piso de 1 ponto — nunca zera nem fica negativo
-  },
-
-  // Calcula a penalidade por extensão de prazo
-  calcDeadlineChangePenalty(oldDeadline, newDeadline) {
-    if (!oldDeadline || !newDeadline) return 0;
-    const oldDate = new Date(oldDeadline + 'T23:59:59');
-    const newDate = new Date(newDeadline + 'T23:59:59');
-    const diffDays = Math.floor((newDate - oldDate) / (1000 * 60 * 60 * 24));
-    if (diffDays <= 0) return 0; // Redução de prazo não penaliza
-
-    for (const tier of this.DEADLINE_CHANGE_PENALTY) {
-      if (diffDays <= tier.maxDays) return tier.penalty;
-    }
-    return -8;
   },
 
   // ============ FIREBASE ============
@@ -385,6 +389,15 @@ const NexusKanban = {
     console.log('[Kanban] Inscrevendo para atualizações em tempo real...');
 
     this.unsubscribe = this.db.collection('tasks').onSnapshot(snapshot => {
+      // Auto-cancelamento ao sair do módulo. Sem isto o listener continuava
+      // vivo pelo resto da sessão: além de consumir leituras, seguia
+      // chamando renderBoard() → autoArchiveCompletedTasks(), que ESCREVE no
+      // Firestore, com o usuário navegando em outra tela.
+      if (!document.getElementById('kb-board')) {
+        if (this.unsubscribe) { this.unsubscribe(); this.unsubscribe = null; }
+        return;
+      }
+
       this.allTasks = [];
       snapshot.forEach(doc => this.allTasks.push({ ...doc.data(), id: doc.id }));
       console.log('[Kanban] Recebidas', this.allTasks.length, 'tarefas');
@@ -526,7 +539,7 @@ const NexusKanban = {
         <header class="kb-header">
           <div class="kb-header-left">
             <h1 class="kb-title">📋 Gestão de Demandas</h1>
-            <p class="kb-subtitle">Sistema Kanban • ${this.myRoleLabel} • ${this.myName || 'Usuário'}</p>
+            <p class="kb-subtitle">Sistema Kanban • ${this.esc(this.myRoleLabel)} • ${this.esc(this.myName || 'Usuário')}</p>
           </div>
           <div class="kb-header-right">
             <button class="kb-btn kb-btn-secondary" id="kb-btn-archive">
@@ -630,7 +643,7 @@ const NexusKanban = {
               <div class="kb-form-group"><label>Responsável</label>
                 <select id="kb-task-owner" required>
                   <option value="">Selecione...</option>
-                  ${(window.LogoService ? window.LogoService.filterUsersByLogo(this.activeUsers) : this.activeUsers).sort((a, b) => a.nome.localeCompare(b.nome)).map(u => `<option value="${u.nome}" data-cargo="${u.cargo}" data-uid="${u.uid}">${u.nome}</option>`).join('')}
+                  ${(window.LogoService ? window.LogoService.filterUsersByLogo(this.activeUsers) : this.activeUsers).sort((a, b) => String(a.nome || '').localeCompare(String(b.nome || ''))).map(u => `<option value="${this.esc(u.nome)}" data-cargo="${this.esc(u.cargo)}" data-uid="${this.esc(u.uid)}">${this.esc(u.nome)}</option>`).join('')}
                 </select>
               </div>
               <div class="kb-form-group"><label>Cargo</label><input type="text" id="kb-task-owner-role" readonly placeholder="Automático"></div>
@@ -642,10 +655,10 @@ const NexusKanban = {
                   <div class="kb-viewers-chips" id="kb-viewers-chips"></div>
                   <input type="text" id="kb-viewers-search" class="kb-viewers-search" placeholder="🔍 Buscar por nome..." autocomplete="off">
                   <div class="kb-viewers-dropdown" id="kb-viewers-dropdown">
-                    ${(window.LogoService ? window.LogoService.filterUsersByLogo(this.activeUsers) : this.activeUsers).sort((a, b) => a.nome.localeCompare(b.nome)).map(u => `
-                      <label class="kb-viewer-option" data-uid="${u.uid}" data-nome="${u.nome}">
-                        <input type="checkbox" value="${u.uid}" data-nome="${u.nome}">
-                        <span>${this.esc(u.nome.toUpperCase())} - ${this.esc((u.cargo || '').toUpperCase())}</span>
+                    ${(window.LogoService ? window.LogoService.filterUsersByLogo(this.activeUsers) : this.activeUsers).sort((a, b) => String(a.nome || '').localeCompare(String(b.nome || ''))).map(u => `
+                      <label class="kb-viewer-option" data-uid="${this.esc(u.uid)}" data-nome="${this.esc(u.nome)}">
+                        <input type="checkbox" value="${this.esc(u.uid)}" data-nome="${this.esc(u.nome)}">
+                        <span>${this.esc(String(u.nome || '').toUpperCase())} - ${this.esc((u.cargo || '').toUpperCase())}</span>
                       </label>
                     `).join('')}
                   </div>
@@ -1070,7 +1083,14 @@ const NexusKanban = {
 
   // ============ MODAL METHODS ============
   openModal(id) { document.getElementById(id)?.classList.remove('hidden'); },
-  closeModal(id) { document.getElementById(id)?.classList.add('hidden'); },
+  closeModal(id) {
+    document.getElementById(id)?.classList.add('hidden');
+    // Limpa o alvo pendente ao fechar sem confirmar. Sem isso, arrastar uma
+    // tarefa para "Entregue", fechar o modal e depois entregar OUTRA tarefa
+    // aplicava a entrega na primeira (o id antigo continuava em memória).
+    if (id === 'kb-modal-delivery') this.deliveryTaskId = null;
+    if (id === 'kb-modal-review') this.reviewTaskId = null;
+  },
 
   openNewModal() {
     this.isEditing = false;
@@ -1224,20 +1244,51 @@ const NexusKanban = {
     files.forEach(file => {
       const div = document.createElement('div');
       div.className = 'kb-attachment-item';
-      const deleteBtn = !readOnly ? `
-            <button type="button" class="kb-attachment-btn delete" onclick="NexusKanban.deleteAttachment('${file.name}')" title="Excluir">
-                <i class="fa-solid fa-trash"></i>
-            </button>` : '';
+
+      // O nome do arquivo é escolhido por quem faz o upload. Antes ele era
+      // interpolado dentro de onclick="...('NOME')" — bastava um anexo
+      // chamado `x');algumaCoisa();//` para executar JS em quem abrisse a
+      // tarefa. Agora o nome nunca entra em HTML: vai por textContent e o
+      // clique é ligado por listener.
+      const safeHref = this.safeUrl(file.url);
+      const icon = String(file.name || '').toLowerCase().endsWith('.pdf')
+        ? 'fa-file-pdf' : 'fa-file-image';
 
       div.innerHTML = `
             <div class="kb-attachment-info">
-                <i class="fa-solid ${file.name.endsWith('.pdf') ? 'fa-file-pdf' : 'fa-file-image'}"></i>
-                <a href="${file.url}" target="_blank" class="kb-attachment-name" style="text-decoration:none; color:inherit;">${file.name}</a>
+                <i class="fa-solid ${icon}"></i>
+                <a class="kb-attachment-name" target="_blank" rel="noopener noreferrer"
+                   style="text-decoration:none; color:inherit;"></a>
             </div>
-            <div class="kb-attachment-actions">
-                ${readOnly ? `<a href="${file.url}" target="_blank" class="kb-attachment-btn" title="Baixar"><i class="fa-solid fa-download"></i></a>` : deleteBtn}
-            </div>
+            <div class="kb-attachment-actions"></div>
         `;
+
+      const link = div.querySelector('.kb-attachment-name');
+      link.textContent = file.name || 'arquivo';
+      if (safeHref) link.href = safeHref;
+
+      const actions = div.querySelector('.kb-attachment-actions');
+      if (readOnly) {
+        if (safeHref) {
+          const dl = document.createElement('a');
+          dl.className = 'kb-attachment-btn';
+          dl.title = 'Baixar';
+          dl.target = '_blank';
+          dl.rel = 'noopener noreferrer';
+          dl.href = safeHref;
+          dl.innerHTML = '<i class="fa-solid fa-download"></i>';
+          actions.appendChild(dl);
+        }
+      } else {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'kb-attachment-btn delete';
+        btn.title = 'Excluir';
+        btn.innerHTML = '<i class="fa-solid fa-trash"></i>';
+        btn.addEventListener('click', () => this.deleteAttachment(file.name));
+        actions.appendChild(btn);
+      }
+
       container.appendChild(div);
     });
 
@@ -1250,14 +1301,17 @@ const NexusKanban = {
         div.innerHTML = `
                 <div class="kb-attachment-info">
                     <i class="fa-solid fa-cloud-arrow-up" style="color:#10b981;"></i>
-                    <span class="kb-attachment-name" style="color:#cbd5e1;">${file.name} (Pendente)</span>
+                    <span class="kb-attachment-name" style="color:var(--text-secondary);"></span>
                 </div>
                 <div class="kb-attachment-actions">
-                    <button type="button" class="kb-attachment-btn delete" onclick="NexusKanban.removeFileToUpload(${index})">
+                    <button type="button" class="kb-attachment-btn delete" title="Remover">
                         <i class="fa-solid fa-times"></i>
                     </button>
                 </div>
             `;
+        // Nome do arquivo via textContent — nunca interpolado em HTML.
+        div.querySelector('.kb-attachment-name').textContent = `${file.name || 'arquivo'} (Pendente)`;
+        div.querySelector('.kb-attachment-btn').addEventListener('click', () => this.removeFileToUpload(index));
         container.appendChild(div);
       });
     }
@@ -1347,9 +1401,13 @@ const NexusKanban = {
     data.viewers = selectedViewers.map(v => v.uid);
     data.viewersNames = selectedViewers.map(v => v.nome);
 
-    try {
-      let savedTaskId = this.editId;
+    // Declarado FORA do try: o bloco de notificação abaixo roda depois do
+    // try/finally e lia esta variável. Com `let` dentro do try ela não
+    // existia lá, então a leitura lançava ReferenceError e a notificação de
+    // atribuição nunca era enviada (a tarefa salvava, o aviso não saía).
+    let savedTaskId = this.editId;
 
+    try {
       if (this.isEditing && this.editId) {
         data.updatedAt = new Date().toISOString();
         // Detectar mudanças para histórico
@@ -1387,6 +1445,9 @@ const NexusKanban = {
         data.creatorRoleKey = this.myRoleKey;
         data.acknowledged = false;
         data.validated = false;
+        // Teto de pontuação congelado na criação: mudar o tipo depois pode
+        // reduzir o crédito (correção de classificação), nunca aumentá-lo.
+        data.basePoints = this.calculatePoints(taskType);
         data.history = [{ date: new Date().toISOString(), action: 'Tarefa criada', user: this.myName, details: `Status: Backlog | Responsável: ${data.owner} | Prazo: ${this.toBRDate(data.deadline)}` }];
         savedTaskId = await this.saveTaskToFirebase(data);
 
@@ -1601,6 +1662,10 @@ const NexusKanban = {
       }
 
       // Verificar se é auto-validação para Superintendente / Diretor / Admin
+      // `task` precisa ser buscada aqui: sem esta linha o identificador não
+      // existia neste escopo e a leitura lançava ReferenceError dentro do
+      // try, fazendo TODA entrega falhar com "Erro ao registrar entrega".
+      const task = this.allTasks.find(t => t.id === this.deliveryTaskId);
       const isAuto = task && this.isOwnerTopLevel(task);
 
       await this.addHistory(this.deliveryTaskId, 'Entrega registrada', evidence ? evidence.substring(0, 100) : 'Evidência anexada');
@@ -1896,23 +1961,48 @@ const NexusKanban = {
   // ============ AUTO-ARCHIVE ============
   async autoArchiveCompletedTasks() {
     if (!this.allTasks || this.allTasks.length === 0) return;
-    const now = new Date();
-    const thresholdMs = this.AUTO_ARCHIVE_DAYS * 24 * 60 * 60 * 1000;
 
-    const toArchive = this.allTasks.filter(t => {
-      if (t.status !== 'done' || !t.validated || !t.validatedAt) return false;
-      const valDate = new Date(t.validatedAt);
-      return (now - valDate) >= thresholdMs;
-    });
+    // Roda uma vez por sessão do módulo. Antes era disparado a CADA snapshot:
+    // com várias pessoas com o Kanban aberto, todas tentavam arquivar as
+    // mesmas tarefas em paralelo, multiplicando escritas e gravando entradas
+    // duplicadas de "Arquivado automaticamente" no histórico (o arrayUnion
+    // não deduplica, porque cada cliente escreve um timestamp diferente).
+    if (this._archiveRunning) return;
+    this._archiveRunning = true;
 
-    for (const task of toArchive) {
-      try {
-        console.log(`[Kanban] Auto-arquivando tarefa ${task.id} (${task.title})`);
-        await this.addHistory(task.id, 'Arquivado automaticamente', `Arquivado após ${this.AUTO_ARCHIVE_DAYS} dias de conclusão`);
-        await this.updateTaskInFirebase(task.id, { status: 'archived' });
-      } catch (err) {
-        console.warn(`[Kanban] Erro no auto-arquivamento da tarefa ${task.id}:`, err);
+    try {
+      const now = new Date();
+      const thresholdMs = this.AUTO_ARCHIVE_DAYS * 24 * 60 * 60 * 1000;
+
+      const toArchive = this.allTasks.filter(t => {
+        if (t.status !== 'done') return false;
+        // Marco temporal: validação quando existe; senão a entrega. Antes
+        // exigia `validated && validatedAt`, então tarefa entregue e nunca
+        // aprovada — e tarefa antiga validada antes de `validatedAt` existir
+        // — ficavam no board para sempre.
+        const marco = t.validatedAt || t.deliveredAt;
+        if (!marco) return false;
+        const d = new Date(marco);
+        if (isNaN(d)) return false;
+        return (now - d) >= thresholdMs;
+      });
+
+      for (const task of toArchive) {
+        // Só quem tem permissão de escrita tenta: um mero visualizador
+        // disparava updates que as rules rejeitam, repetidamente.
+        if (!this.canValidateTask({ ...task, status: 'done', validated: false })
+          && !this.isCreatorMe(task) && !this.isOwnerMe(task) && !this.isAdmin()) {
+          continue;
+        }
+        try {
+          await this.updateTaskInFirebase(task.id, { status: 'archived' });
+          await this.addHistory(task.id, 'Arquivado automaticamente', `Arquivado após ${this.AUTO_ARCHIVE_DAYS} dias de conclusão`);
+        } catch (err) {
+          console.warn(`[Kanban] Erro no auto-arquivamento da tarefa ${task.id}:`, err);
+        }
       }
+    } finally {
+      this._archiveRunning = false;
     }
   },
 
@@ -1925,15 +2015,16 @@ const NexusKanban = {
         ? parentTask.recurringDay
         : today.getDay(); // Padrão: mesmo dia da semana
 
-      let nextDate = new Date(today);
-      nextDate.setDate(today.getDate() + 7); // Próxima semana
+      // Próxima ocorrência do dia da semana escolhido, sempre no FUTURO.
+      // O cálculo anterior somava 7 dias e depois ajustava pelo dia da
+      // semana com uma diferença que podia ser negativa (até −6), fazendo a
+      // "recorrência semanal" cair já no dia seguinte.
+      const nextDate = new Date(today);
+      let delta = (targetDay - today.getDay() + 7) % 7;
+      if (delta === 0) delta = 7; // mesma data de hoje → só na semana que vem
+      nextDate.setDate(today.getDate() + delta);
 
-      // Ajustar para o dia exato da semana se necessário
-      const dayDiff = targetDay - nextDate.getDay();
-      nextDate.setDate(nextDate.getDate() + dayDiff);
-      if (nextDate <= today) nextDate.setDate(nextDate.getDate() + 7);
-
-      const nextDeadlineStr = nextDate.toISOString().split('T')[0];
+      const nextDeadlineStr = this.toLocalISODate(nextDate);
 
       const newTaskData = {
         title: parentTask.title,
@@ -2033,9 +2124,22 @@ const NexusKanban = {
   },
 
   exportCSV() {
+    // Uma célula iniciada por = + - @ é executada como fórmula pelo Excel e
+    // pelo Sheets. Como o título é texto livre, alguém poderia gravar uma
+    // tarefa chamada `=HYPERLINK(...)` e atacar quem abrisse a planilha.
+    // Prefixar com aspa simples neutraliza sem alterar o texto exibido.
+    const cell = (v) => {
+      let s = String(v ?? '');
+      if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
+      return `"${s.replace(/"/g, '""')}"`; // aspas duplicadas = escape CSV
+    };
+
     let csv = 'ID,TITULO,RESPONSAVEL,UNIDADE,STATUS,PRIORIDADE,PRAZO\n';
-    this.allTasks.forEach(t => {
-      csv += `"${t.id}","${t.title}","${t.owner}","${t.unit}","${t.status}","${t.priority}","${t.deadline}"\n`;
+    // Exporta apenas o que o usuário realmente pode ver. Antes percorria
+    // `allTasks` cru, então o CSV entregava tarefas que a tela escondia.
+    this.allTasks.filter(t => this.canSeeTask(t)).forEach(t => {
+      csv += [t.id, t.title, t.owner, t.unit, t.status, t.priority, t.deadline]
+        .map(cell).join(',') + '\n';
     });
     const a = document.createElement('a');
     a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
@@ -2049,7 +2153,12 @@ const NexusKanban = {
     const container = document.getElementById('toast-container') || document.body;
     const toast = document.createElement('div');
     toast.className = `kb-toast kb-toast-${type}`;
-    toast.innerHTML = `<span>${msg}</span>`;
+    // textContent em vez de innerHTML: hoje as mensagens são literais, mas
+    // era um sink aberto — bastaria alguém passar um título de tarefa aqui
+    // para virar XSS. Fechado por construção.
+    const span = document.createElement('span');
+    span.textContent = String(msg ?? '');
+    toast.appendChild(span);
     container.appendChild(toast);
     setTimeout(() => toast.classList.add('kb-toast-show'), 10);
     setTimeout(() => { toast.classList.remove('kb-toast-show'); setTimeout(() => toast.remove(), 300); }, 3000);
@@ -2059,8 +2168,15 @@ const NexusKanban = {
     const container = document.getElementById('toast-container') || document.body;
     const toast = document.createElement('div');
     toast.className = `kb-toast kb-toast-${type}`;
-    const pointsHtml = points !== 0 ? `<span class="kb-toast-pts ${points > 0 ? 'positive' : 'negative'}">${points > 0 ? '+' : ''}${points} pts</span>` : '';
-    toast.innerHTML = `<span>${msg}</span>${pointsHtml}`;
+    const span = document.createElement('span');
+    span.textContent = String(msg ?? '');
+    toast.appendChild(span);
+    if (points !== 0) {
+      const pts = document.createElement('span');
+      pts.className = `kb-toast-pts ${points > 0 ? 'positive' : 'negative'}`;
+      pts.textContent = `${points > 0 ? '+' : ''}${points} pts`;
+      toast.appendChild(pts);
+    }
     container.appendChild(toast);
     setTimeout(() => toast.classList.add('kb-toast-show'), 10);
     setTimeout(() => { toast.classList.remove('kb-toast-show'); setTimeout(() => toast.remove(), 300); }, 4000);
