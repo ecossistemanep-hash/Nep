@@ -2187,27 +2187,28 @@ const NexusKanban = {
   },
 
   exportCSV() {
-    // Uma célula iniciada por = + - @ é executada como fórmula pelo Excel e
-    // pelo Sheets. Como o título é texto livre, alguém poderia gravar uma
-    // tarefa chamada `=HYPERLINK(...)` e atacar quem abrisse a planilha.
-    // Prefixar com aspa simples neutraliza sem alterar o texto exibido.
-    const cell = (v) => {
-      let s = String(v ?? '');
-      if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
-      return `"${s.replace(/"/g, '""')}"`; // aspas duplicadas = escape CSV
-    };
+    const rotulos = { backlog: 'Backlog', doing: 'Execução', pending: 'Bloqueado', done: 'Entregue', archived: 'Arquivado' };
 
-    let csv = 'ID,TITULO,RESPONSAVEL,UNIDADE,STATUS,PRIORIDADE,PRAZO\n';
     // Exporta apenas o que o usuário realmente pode ver. Antes percorria
     // `allTasks` cru, então o CSV entregava tarefas que a tela escondia.
-    this.allTasks.filter(t => this.canSeeTask(t)).forEach(t => {
-      csv += [t.id, t.title, t.owner, t.unit, t.status, t.priority, t.deadline]
-        .map(cell).join(',') + '\n';
-    });
-    const a = document.createElement('a');
-    a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
-    a.download = `kanban_${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
+    const linhas = this.allTasks.filter(t => this.canSeeTask(t)).map(t => [
+      t.id,
+      t.title,
+      t.owner,
+      t.unit,
+      rotulos[t.status] || t.status,
+      t.priority || this.derivePriority(t.deadline),
+      t.deadline,
+      t.taskType || '',
+      t.validated ? 'Sim' : 'Não',
+      t.validated ? this.calculateFinalPoints(t) : ''
+    ]);
+
+    window.ExportService.baixarCSV(
+      ['ID', 'Título', 'Responsável', 'Unidade', 'Status', 'Prioridade', 'Prazo', 'Tipo', 'Validada', 'Pontos'],
+      linhas,
+      'kanban'
+    );
     this.showToast('CSV exportado!', 'success');
   },
 

@@ -947,19 +947,23 @@ const NexusAdmin = {
       return;
     }
 
-    const data = this.users.map(u => ({
-      'Nome': u.nome || '',
-      'Email': u.email || '',
-      'Status': u.status || 'INATIVO',
-      'Produto': u.produto || u.setor || '',
-      'Cargo': u.cargo || '',
-      'Último Acesso': u.ultimo_login || 'Nunca'
-    }));
+    // `ultimo_login` é Timestamp do Firestore (serverTimestamp): entregue
+    // cru ao XLSX, a coluna "Último Acesso" saía ilegível.
+    const linhas = this.users.map(u => [
+      u.nome || '',
+      u.email || '',
+      u.status || 'INATIVO',
+      u.produto || u.setor || '',
+      u.cargo || '',
+      u.gestor_nome || '',
+      u.ultimo_login || 'Nunca'
+    ]);
 
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Usuários");
-    XLSX.writeFile(wb, `usuarios_sistema_${new Date().toISOString().split('T')[0]}.xlsx`);
+    window.ExportService.baixarExcel([{
+      nome: 'Usuários',
+      cabecalho: ['Nome', 'Email', 'Status', 'Produto', 'Cargo', 'Gestor', 'Último Acesso'],
+      linhas
+    }], 'usuarios_sistema');
   },
 
   exportAuditLogs() {
@@ -967,18 +971,20 @@ const NexusAdmin = {
       NexusApp.showToast('Sem logs para exportar', 'warning');
       return;
     }
-    let csv = 'Data,Ação,Executor,Detalhes\n';
-    this.auditLogs.forEach(l => {
-      csv += `"${l.timestamp || ''}","${l.acao || ''}","${l.executor_nome || ''}","${(l.detalhe || '').replace(/"/g, '""')}"\n`;
-    });
+    // `timestamp` é Timestamp do Firestore: interpolado direto virava
+    // "[object Object]" na coluna de data. O ExportService converte.
+    const linhas = this.auditLogs.map(l => [
+      l.timestamp,
+      l.acao || '',
+      l.executor_nome || l.executor_email || '',
+      l.detalhe || ''
+    ]);
 
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `audit_logs_${Date.now()}.csv`;
-    a.click();
-    window.URL.revokeObjectURL(url);
+    window.ExportService.baixarCSV(
+      ['Data', 'Ação', 'Executor', 'Detalhes'],
+      linhas,
+      'logs_auditoria'
+    );
   },
 
   // =========================================
@@ -1115,20 +1121,23 @@ const NexusAdmin = {
           'Detalhes': t.metadata
         }));
 
-      // 6) Gerar Excel com 2 abas
-      const wb = XLSX.utils.book_new();
-      const wsResumo = XLSX.utils.json_to_sheet(summaryData);
-      const wsDetalhes = XLSX.utils.json_to_sheet(detailData);
+      // 6) Gerar Excel com 2 abas.
+      // Converte os objetos em matriz porque o ExportService normaliza cada
+      // célula (Timestamp, data, decimal) antes de entregar ao XLSX, e ajusta
+      // a largura das colunas pelo conteúdo em vez de valores fixos.
+      const paraMatriz = (lista) => {
+        if (!lista.length) return { cabecalho: [], linhas: [] };
+        const cabecalho = Object.keys(lista[0]);
+        return { cabecalho, linhas: lista.map(o => cabecalho.map(k => o[k])) };
+      };
 
-      // Ajustar largura das colunas
-      wsResumo['!cols'] = [{ wch: 25 }, { wch: 30 }, { wch: 20 }, { wch: 16 }, { wch: 12 }, { wch: 16 }, { wch: 8 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 12 }, { wch: 12 }, { wch: 10 }, { wch: 12 }];
-      wsDetalhes['!cols'] = [{ wch: 25 }, { wch: 30 }, { wch: 15 }, { wch: 30 }, { wch: 10 }, { wch: 20 }, { wch: 30 }];
+      const resumo = paraMatriz(summaryData);
+      const detalhes = paraMatriz(detailData);
 
-      XLSX.utils.book_append_sheet(wb, wsResumo, 'Resumo');
-      XLSX.utils.book_append_sheet(wb, wsDetalhes, 'Transações');
-
-      const fileName = `auditoria_pontos_${new Date().toISOString().split('T')[0]}.xlsx`;
-      XLSX.writeFile(wb, fileName);
+      window.ExportService.baixarExcel([
+        { nome: 'Resumo', cabecalho: resumo.cabecalho, linhas: resumo.linhas },
+        { nome: 'Transações', cabecalho: detalhes.cabecalho, linhas: detalhes.linhas }
+      ], 'auditoria_pontos');
 
       if (window.NepApp?.showToast) {
         NepApp.showToast(`✅ Auditoria exportada: ${summaryData.length} usuários, ${transactions.length} transações`, 'success');

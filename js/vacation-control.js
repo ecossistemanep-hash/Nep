@@ -526,17 +526,11 @@ const NexusVacation = {
             v.status === 'SCHEDULED' ? 'Agendada' : v.status === 'ON_VACATION' ? 'Em Férias' : 'Concluída'
         ]);
 
-        const csvContent = [
-            headers.join(';'),
-            ...rows.map(row => row.join(';'))
-        ].join('\n');
-
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = `ferias_${new Date().toISOString().split('T')[0]}.csv`;
-        link.click();
-
+        // O ExportService cuida do BOM de UTF-8, do separador do Excel em
+        // português, do escape e da neutralização de fórmula. Antes isto era
+        // um join(';') cru: qualquer ponto e vírgula dentro de um campo
+        // partia a linha, e os acentos saíam corrompidos.
+        window.ExportService.baixarCSV(headers, rows, 'ferias');
         NexusApp.showToast('Relatório exportado com sucesso', 'success');
     },
 
