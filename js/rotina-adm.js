@@ -79,9 +79,16 @@ const RotinaADM = {
     }
   },
 
+  /**
+   * Chave do cache local, sempre pelo uid.
+   *
+   * Antes era montada com cargo + nome: quem trocasse o nome no perfil (ou
+   * fosse promovido) perdia o checklist local, e duas pessoas de mesmo nome
+   * no mesmo computador compartilhavam a lista uma da outra.
+   */
   getStorageKey() {
-    const user = NepAuth?.getUser?.();
-    return `nep_rotina_${user?.roleKey || 'default'}_${(user?.name || 'user').toLowerCase().replace(/\s/g, '_')}`;
+    const uid = window.NepAuth?.getUser?.()?.uid || localStorage.getItem('nep_user_uid') || 'anon';
+    return `nep_rotina_${uid}`;
   },
 
   save() {
@@ -96,11 +103,14 @@ const RotinaADM = {
 
   async saveToFirebase() {
     try {
-      const user = NepAuth?.getUser?.();
+      const user = window.NepAuth?.getUser?.();
       const uid = user?.uid || localStorage.getItem('nep_user_uid');
       if (!uid || !window.db) return;
 
-      const today = new Date().toISOString().split('T')[0];
+      // Grava no dia que está sendo editado. Antes usava sempre a data de
+      // hoje: ao abrir um dia passado e marcar algo, a alteração ia parar no
+      // documento de hoje, corrompendo os dois dias de uma vez.
+      const today = this.getActiveDate();
       const docId = `${uid}_${today}`; // ID único por dia
 
       await window.db.collection('rotinas_adm').doc(docId).set({
@@ -122,11 +132,11 @@ const RotinaADM = {
 
   async loadFromFirebase() {
     try {
-      const user = NepAuth?.getUser?.();
+      const user = window.NepAuth?.getUser?.();
       const uid = user?.uid || localStorage.getItem('nep_user_uid');
       if (!uid || !window.db) return false;
 
-      const today = new Date().toISOString().split('T')[0];
+      const today = this.getActiveDate();
       const docId = `${uid}_${today}`;
 
       const docSnap = await window.db.collection('rotinas_adm').doc(docId).get();
@@ -144,58 +154,27 @@ const RotinaADM = {
     }
   },
 
-  async saveToSupabase() {
-    try {
-      const user = NepAuth?.getUser?.();
-      if (!user || typeof supabaseClient === 'undefined') return;
-
-      const today = new Date().toISOString().split('T')[0];
-
-      // Upsert rotina do dia
-      const { error } = await supabaseClient
-        .from('rotinas_adm')
-        .upsert({
-          user_id: user.id || user.email,
-          user_name: user.name,
-          data: today,
-          tarefas: this.tasks,
-          total: this.tasks.length,
-          concluidas: this.getCompletedCount(),
-          percentual: this.getProgress(),
-          updated_at: new Date().toISOString()
-        }, { onConflict: 'user_id,data' });
-
-      if (error) console.warn('[RotinaADM] Supabase error:', error);
-    } catch (e) {
-      console.warn('[RotinaADM] Supabase save failed:', e);
-    }
-  },
-
-  async loadFromSupabase() {
-    try {
-      const user = NepAuth?.getUser?.();
-      if (!user || typeof supabaseClient === 'undefined') return;
-
-      const today = new Date().toISOString().split('T')[0];
-
-      const { data, error } = await supabaseClient
-        .from('rotinas_adm')
-        .select('*')
-        .eq('user_id', user.id || user.email)
-        .eq('data', today)
-        .single();
-
-      if (data && !error) {
-        this.tasks = data.tarefas || [];
-        this.save(); // Sincronizar com localStorage
-      }
-    } catch (e) {
-      console.warn('[RotinaADM] Supabase load failed:', e);
-    }
+  /**
+   * Data local em YYYY-MM-DD.
+   *
+   * toISOString() converte para UTC. No Brasil (UTC−3), das 21h em diante o
+   * dia virava o SEGUINTE: quem usava o checklist à noite via a lista
+   * zerada, e as tarefas concluídas eram gravadas no dia errado. Num módulo
+   * cuja unidade é o dia, esse era o defeito mais grave.
+   */
+  toLocalISODate(d) {
+    return d.getFullYear() + '-' +
+      String(d.getMonth() + 1).padStart(2, '0') + '-' +
+      String(d.getDate()).padStart(2, '0');
   },
 
   getToday() {
-    return new Date().toISOString().split('T')[0];
+    return this.toLocalISODate(new Date());
+  },
+
+  /** Escapa texto para interpolação segura em HTML. */
+  esc(v) {
+    return window.escapeHtml ? window.escapeHtml(v) : String(v == null ? '' : v);
   },
 
   getActiveDate() {
@@ -238,7 +217,7 @@ const RotinaADM = {
     for (let i = 0; i < 60; i++) {
       const checkDate = new Date(today);
       checkDate.setDate(checkDate.getDate() - i);
-      const dateStr = checkDate.toISOString().split('T')[0];
+      const dateStr = this.toLocalISODate(checkDate);
 
       // Pular fins de semana
       if (!this.isWeekday(dateStr)) continue;
@@ -264,7 +243,7 @@ const RotinaADM = {
     for (let i = 0; daysFound < 5; i++) {
       const checkDate = new Date(today);
       checkDate.setDate(checkDate.getDate() - i);
-      const dateStr = checkDate.toISOString().split('T')[0];
+      const dateStr = this.toLocalISODate(checkDate);
 
       if (!this.isWeekday(dateStr)) continue;
 
@@ -290,8 +269,8 @@ const RotinaADM = {
     let prev = new Date(current);
     do {
       prev.setDate(prev.getDate() - 1);
-    } while (!this.isWeekday(prev.toISOString().split('T')[0]));
-    this.goToDate(prev.toISOString().split('T')[0]);
+    } while (!this.isWeekday(this.toLocalISODate(prev)));
+    this.goToDate(this.toLocalISODate(prev));
   },
 
   /**
@@ -303,8 +282,8 @@ const RotinaADM = {
     let next = new Date(current);
     do {
       next.setDate(next.getDate() + 1);
-    } while (!this.isWeekday(next.toISOString().split('T')[0]));
-    const nextStr = next.toISOString().split('T')[0];
+    } while (!this.isWeekday(this.toLocalISODate(next)));
+    const nextStr = this.toLocalISODate(next);
     if (nextStr > today) return; // Não pode ir para o futuro
     this.goToDate(nextStr);
   },
@@ -329,7 +308,7 @@ const RotinaADM = {
    */
   async loadDateFromFirebase(dateStr) {
     try {
-      const user = NepAuth?.getUser?.();
+      const user = window.NepAuth?.getUser?.();
       const uid = user?.uid || localStorage.getItem('nep_user_uid');
       if (!uid || !window.db) return;
 
@@ -348,20 +327,29 @@ const RotinaADM = {
     }
   },
 
-  render(container) {
+  async render(container) {
     if (!this.selectedDate) this.selectedDate = this.getToday();
     const activeDate = this.getActiveDate();
     const isToday = activeDate === this.getToday();
     this.viewingReadOnly = !isToday;
 
-    if (isToday) this.loadFromStorage();
+    // A carga é assíncrona e antes não era aguardada: a tela desenhava com a
+    // lista ainda vazia e nada re-renderizava quando os dados chegavam — o
+    // checklist aparecia em branco até o usuário interagir. Agora mostra
+    // esqueleto, espera os dados e só então desenha.
+    if (!this._carregouUmaVez) {
+      container.innerHTML = this.renderSkeleton();
+      this._carregouUmaVez = true;
+    }
+    if (isToday) await this.loadFromStorage();
+
     const progress = this.getProgress();
     const completed = this.getCompletedCount();
     const total = this.tasks.length;
     const streak = this.getStreakDays();
     const weeklyStats = this.getWeeklyStats();
     const phrase = this.getMotivationalPhrase();
-    const user = NepAuth?.getUser?.();
+    const user = window.NepAuth?.getUser?.();
 
     // Calcular média dos dias úteis
     const weeklyAvg = weeklyStats.reduce((sum, d) => sum + d.percentage, 0) / 5;
@@ -861,6 +849,41 @@ const RotinaADM = {
         .rotina-task-item:hover .rotina-task-delete {
           opacity: 1;
         }
+
+        /* Ações da rotina: reordenar e excluir */
+        .rotina-task-actions {
+          display: flex; gap: 2px; align-items: center; flex: none;
+        }
+        .rotina-task-move {
+          width: 30px; height: 30px; border-radius: 8px; border: none;
+          background: transparent; color: var(--text-tertiary);
+          cursor: pointer; opacity: 0; transition: all .2s;
+          display: flex; align-items: center; justify-content: center;
+        }
+        .rotina-task-item:hover .rotina-task-move { opacity: 1; }
+        .rotina-task-move:hover:not(:disabled) {
+          background: var(--surface-hover); color: var(--text-primary);
+        }
+        .rotina-task-move:disabled { opacity: 0 !important; cursor: default; }
+        .rotina-task-move:focus-visible,
+        .rotina-task-delete:focus-visible,
+        .rotina-task-checkbox:focus-visible,
+        .rotina-task-text[data-action]:focus-visible {
+          opacity: 1; outline: 2px solid var(--primary-500); outline-offset: 2px;
+        }
+
+        /* Texto clicável para edição — sinaliza que é editável */
+        .rotina-task-text[data-action] { cursor: text; border-radius: 4px; }
+        .rotina-task-text[data-action]:hover {
+          background: var(--surface-hover);
+          box-shadow: 0 0 0 4px var(--surface-hover);
+        }
+
+        /* No toque não há hover: os controles ficam sempre visíveis */
+        @media (hover: none) {
+          .rotina-task-move, .rotina-task-delete { opacity: 1; }
+          .rotina-task-move, .rotina-task-delete { min-width: 40px; min-height: 40px; }
+        }
         
         .rotina-task-delete:hover {
           background: rgba(239, 68, 68, 0.1);
@@ -1023,19 +1046,72 @@ const RotinaADM = {
     this.bindEvents(container);
   },
 
+  /** Esqueleto exibido enquanto o checklist do dia é buscado. */
+  renderSkeleton() {
+    const linha = () => `
+      <div class="rotina-sk-item">
+        <div class="rotina-sk-box"></div>
+        <div class="rotina-sk-line"></div>
+      </div>`;
+    return `
+      <div class="rotina-container" aria-busy="true">
+        <div class="rotina-sk-head"></div>
+        <div class="rotina-sk-cards">
+          <div class="rotina-sk-card"></div><div class="rotina-sk-card"></div>
+          <div class="rotina-sk-card"></div><div class="rotina-sk-card"></div>
+        </div>
+        <div class="rotina-tasks-list">${linha() + linha() + linha() + linha()}</div>
+      </div>
+      <style>
+        .rotina-sk-head, .rotina-sk-card, .rotina-sk-box, .rotina-sk-line {
+          background: linear-gradient(90deg,
+            var(--surface-border, #334155) 25%,
+            var(--surface-hover, #475569) 50%,
+            var(--surface-border, #334155) 75%);
+          background-size: 200% 100%;
+          animation: rotina-shimmer 1.4s ease-in-out infinite;
+          border-radius: 8px;
+        }
+        .rotina-sk-head { height: 64px; margin-bottom: 18px; }
+        .rotina-sk-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 18px; }
+        .rotina-sk-card { height: 84px; }
+        .rotina-sk-item { display: flex; align-items: center; gap: 12px; padding: 14px 16px; }
+        .rotina-sk-box { width: 24px; height: 24px; border-radius: 6px; flex: none; }
+        .rotina-sk-line { height: 12px; flex: 1; max-width: 60%; }
+        @keyframes rotina-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+        @media (prefers-reduced-motion: reduce) {
+          .rotina-sk-head, .rotina-sk-card, .rotina-sk-box, .rotina-sk-line { animation: none; }
+        }
+      </style>`;
+  },
+
   renderTask(task, idx) {
     const activeDate = this.getActiveDate();
     const isCompleted = task.completedAt?.startsWith(activeDate);
     const completedTime = isCompleted && task.completedAt ? new Date(task.completedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '';
 
+    const rotulo = this.esc(task.text);
+
+    // O checkbox era um <div>: não recebia foco nem respondia a teclado, e o
+    // leitor de tela não anunciava o estado. Agora é role="checkbox" com
+    // aria-checked, focável e operável por Enter/Espaço.
     return `
       <div class="rotina-task-item ${isCompleted ? 'completed' : ''}" data-idx="${idx}">
-        <div class="rotina-task-checkbox ${isCompleted ? 'checked' : ''} ${this.viewingReadOnly ? 'readonly' : ''}" ${!this.viewingReadOnly ? `data-action="toggle" data-idx="${idx}"` : ''}>
+        <div class="rotina-task-checkbox ${isCompleted ? 'checked' : ''} ${this.viewingReadOnly ? 'readonly' : ''}"
+             role="checkbox"
+             aria-checked="${isCompleted ? 'true' : 'false'}"
+             aria-label="${rotulo}"
+             ${this.viewingReadOnly ? 'aria-disabled="true"' : `tabindex="0" data-action="toggle" data-idx="${idx}"`}>
           ${isCompleted ? '<i class="fa-solid fa-check"></i>' : ''}
         </div>
-        <span class="rotina-task-text">${task.text}</span>
+        <span class="rotina-task-text" ${!this.viewingReadOnly ? `data-action="edit" data-idx="${idx}" title="Clique para editar"` : ''}>${rotulo}</span>
         ${isCompleted ? `<span class="rotina-task-time">✓ ${completedTime}</span>` : ''}
-        ${!this.viewingReadOnly ? `<button class="rotina-task-delete" data-action="delete" data-idx="${idx}"><i class="fa-solid fa-trash"></i></button>` : ''}
+        ${!this.viewingReadOnly ? `
+          <div class="rotina-task-actions">
+            <button class="rotina-task-move" data-action="up" data-idx="${idx}" title="Subir" aria-label="Mover ${rotulo} para cima" ${idx === 0 ? 'disabled' : ''}><i class="fa-solid fa-chevron-up"></i></button>
+            <button class="rotina-task-move" data-action="down" data-idx="${idx}" title="Descer" aria-label="Mover ${rotulo} para baixo" ${idx === this.tasks.length - 1 ? 'disabled' : ''}><i class="fa-solid fa-chevron-down"></i></button>
+            <button class="rotina-task-delete" data-action="delete" data-idx="${idx}" title="Excluir" aria-label="Excluir ${rotulo}"><i class="fa-solid fa-trash"></i></button>
+          </div>` : ''}
       </div>
     `;
   },
@@ -1096,22 +1172,81 @@ const RotinaADM = {
       if (e.key === 'Enter') this.addTask();
     });
 
-    // Toggle e Delete
+    const executar = (action, idx) => {
+      if (action === 'toggle') this.toggleTask(idx);
+      if (action === 'delete') this.deleteTask(idx);
+      if (action === 'edit') this.editTask(idx);
+      if (action === 'up') this.moveTask(idx, -1);
+      if (action === 'down') this.moveTask(idx, 1);
+    };
+
     container.querySelectorAll('[data-action]').forEach(el => {
       el.addEventListener('click', (e) => {
-        const action = e.currentTarget.dataset.action;
-        const idx = parseInt(e.currentTarget.dataset.idx);
-
-        if (action === 'toggle') this.toggleTask(idx);
-        if (action === 'delete') this.deleteTask(idx);
+        executar(e.currentTarget.dataset.action, parseInt(e.currentTarget.dataset.idx));
       });
+
+      // Enter/Espaço nos elementos que não são <button> nativo (o checkbox
+      // é um div com role=checkbox, então o teclado precisa ser tratado).
+      if (el.tagName !== 'BUTTON') {
+        el.addEventListener('keydown', (e) => {
+          if (e.key !== 'Enter' && e.key !== ' ' && e.key !== 'Spacebar') return;
+          e.preventDefault();
+          executar(e.currentTarget.dataset.action, parseInt(e.currentTarget.dataset.idx));
+        });
+      }
     });
   },
 
+  /** Reordena a rotina. A ordem importa: o checklist segue o fluxo do dia. */
+  moveTask(idx, delta) {
+    if (this.viewingReadOnly) return;
+    const destino = idx + delta;
+    if (destino < 0 || destino >= this.tasks.length) return;
+
+    const [item] = this.tasks.splice(idx, 1);
+    this.tasks.splice(destino, 0, item);
+    this.save();
+    this.refresh();
+  },
+
+  /** Corrige o texto de uma rotina sem precisar excluir e recadastrar. */
+  editTask(idx) {
+    if (this.viewingReadOnly) return;
+    const task = this.tasks[idx];
+    if (!task) return;
+
+    const novo = prompt('Editar rotina:', task.text);
+    if (novo === null) return; // cancelou
+
+    const limpo = novo.trim();
+    if (!limpo) {
+      NexusApp?.showToast?.('O texto não pode ficar vazio', 'warning');
+      return;
+    }
+    if (limpo === task.text) return;
+
+    task.text = limpo;
+    this.save();
+    this.refresh();
+    NexusApp?.showToast?.('Rotina atualizada', 'success');
+  },
+
   addTask() {
+    if (this.viewingReadOnly) return;
+
     const input = document.getElementById('rotina-new-task');
     const text = input?.value?.trim();
     if (!text) return;
+
+    // Evita a mesma rotina duas vezes: o checklist é uma lista de conferência,
+    // item repetido só atrapalha a contagem de progresso.
+    const jaExiste = this.tasks.some(t =>
+      String(t.text || '').trim().toLowerCase() === text.toLowerCase());
+    if (jaExiste) {
+      NexusApp?.showToast?.('Essa rotina já está na lista', 'warning');
+      input.select();
+      return;
+    }
 
     this.tasks.push({
       id: Date.now().toString(),
@@ -1128,10 +1263,17 @@ const RotinaADM = {
   },
 
   toggleTask(idx) {
+    // Dia passado é somente leitura — a navegação já bloqueia, mas a ação
+    // não verificava, então uma chamada direta alterava o histórico.
+    if (this.viewingReadOnly) {
+      NexusApp?.showToast?.('Dias anteriores são somente leitura', 'info');
+      return;
+    }
+
     const task = this.tasks[idx];
     if (!task) return;
 
-    const today = this.getToday();
+    const today = this.getActiveDate();
 
     if (task.completedAt?.startsWith(today)) {
       task.completedAt = null;
@@ -1141,12 +1283,21 @@ const RotinaADM = {
       // Mostrar incentivo
       const progress = this.getProgress();
       if (progress >= 100) {
-        NexusApp?.showToast?.('🏆 PERFEITO! Todas as rotinas concluídas! +15 pts', 'success');
-        // Gamificação
-        const uid = localStorage.getItem('nep_user_uid');
-        if (uid && window.NexusGamification) {
-          window.NexusGamification.addPoints(uid, 15, 'ROUTINE_COMPLETED', 'Checklist diário completo');
-          if (window.NexusAchievements) window.NexusAchievements.incrementStat(uid, 'routines_completed');
+        // ANTI-FRAUDE: os 15 pontos são creditados UMA VEZ por dia.
+        // Antes bastava desmarcar e remarcar a última tarefa para ganhar
+        // +15 a cada clique, sem limite — farm de pontos trivial.
+        const jaPontuou = (this.history.find(h => h.date === today) || {}).pontuado === true;
+
+        if (jaPontuou) {
+          NexusApp?.showToast?.('🏆 Rotina do dia completa!', 'success');
+        } else {
+          NexusApp?.showToast?.('🏆 PERFEITO! Todas as rotinas concluídas! +15 pts', 'success');
+          this._marcarPontuado(today);
+          const uid = localStorage.getItem('nep_user_uid');
+          if (uid && window.NexusGamification) {
+            window.NexusGamification.addPoints(uid, 15, 'ROUTINE_COMPLETED', 'Checklist diário completo');
+            if (window.NexusAchievements) window.NexusAchievements.incrementStat(uid, 'routines_completed');
+          }
         }
       } else if (progress >= 75) {
         NexusApp?.showToast?.('💪 Quase lá! Não desiste!', 'success');
@@ -1169,23 +1320,36 @@ const RotinaADM = {
     this.refresh();
   },
 
+  /** Registra que o bônus diário já foi creditado nesta data. */
+  _marcarPontuado(dateStr) {
+    const idx = this.history.findIndex(h => h.date === dateStr);
+    if (idx >= 0) this.history[idx].pontuado = true;
+    else this.history.push({ date: dateStr, total: 0, completed: 0, percentage: 0, pontuado: true });
+  },
+
   updateHistory() {
-    const today = this.getToday();
+    const today = this.getActiveDate();
+    const existingIdx = this.history.findIndex(h => h.date === today);
+
     const historyEntry = {
       date: today,
       total: this.tasks.length,
       completed: this.getCompletedCount(),
-      percentage: this.getProgress()
+      percentage: this.getProgress(),
+      // Preserva a marca de bônus creditado: sobrescrever a entrega inteira
+      // apagaria o registro e reabriria o farm de pontos.
+      pontuado: existingIdx >= 0 ? (this.history[existingIdx].pontuado === true) : false
     };
 
-    const existingIdx = this.history.findIndex(h => h.date === today);
     if (existingIdx >= 0) {
       this.history[existingIdx] = historyEntry;
     } else {
       this.history.push(historyEntry);
     }
 
-    // Manter apenas últimos 30 dias
+    // Mantém os últimos 30 dias, em ordem cronológica (o slice sozinho
+    // dependia da ordem de inserção, que se perdia ao navegar entre dias).
+    this.history.sort((a, b) => a.date.localeCompare(b.date));
     this.history = this.history.slice(-30);
     this.save();
   },
