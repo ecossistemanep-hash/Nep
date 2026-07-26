@@ -48,8 +48,36 @@ const NepApp = {
       }
     });
 
+    // Os itens de menu são <div>, então o navegador não os torna focáveis
+    // nem os anuncia como interativos: não dava para navegar o sistema por
+    // teclado e leitor de tela os lia como texto solto. Marcamos por JS para
+    // valer também em itens inseridos depois (ex.: menus por permissão).
+    this.makeNavItemsAccessible();
+
+    // Enter/Espaço ativam o item focado, como faria um <button> nativo.
+    document.addEventListener('keydown', e => {
+      if (e.key !== 'Enter' && e.key !== ' ' && e.key !== 'Spacebar') return;
+      const navItem = e.target.closest?.('[data-page]');
+      if (!navItem) return;
+      e.preventDefault(); // Espaço rolaria a página
+      this.navigate(navItem.dataset.page);
+    });
+
     window.addEventListener('popstate', e => {
       if (e.state?.page) this.navigate(e.state.page, false);
+    });
+  },
+
+  /** Torna os itens de navegação focáveis e legíveis por leitor de tela. */
+  makeNavItemsAccessible() {
+    document.querySelectorAll('[data-page]').forEach(item => {
+      if (item.tagName === 'A' || item.tagName === 'BUTTON') return;
+      if (!item.hasAttribute('tabindex')) item.setAttribute('tabindex', '0');
+      if (!item.hasAttribute('role')) item.setAttribute('role', 'button');
+      if (!item.hasAttribute('aria-label')) {
+        const label = item.querySelector('.nav-item-text')?.textContent?.trim();
+        if (label) item.setAttribute('aria-label', label);
+      }
     });
   },
 
@@ -142,7 +170,12 @@ const NepApp = {
     this.currentPage = page;
 
     document.querySelectorAll('.nav-item').forEach(item => {
-      item.classList.toggle('active', item.dataset.page === page);
+      const isActive = item.dataset.page === page;
+      item.classList.toggle('active', isActive);
+      // Sem isso o leitor de tela não informa em que página o usuário está —
+      // a indicação de "ativo" era puramente visual.
+      if (isActive) item.setAttribute('aria-current', 'page');
+      else item.removeAttribute('aria-current');
     });
 
     if (pushState) {

@@ -289,39 +289,6 @@
 }
 
 /* =========================================
-   NEP HELP CHATBOT - Light Mode
-   ========================================= */
-[data-theme="light"] #nep-help-container,
-[data-theme="light"] .nep-help-chat {
-    background: var(--surface-card) !important;
-    border-color: var(--surface-border) !important;
-}
-
-[data-theme="light"] .nep-help-header {
-    background: linear-gradient(135deg, var(--primary-500), var(--primary-600)) !important;
-}
-
-[data-theme="light"] .nep-help-message.bot {
-    background: var(--surface-elevated) !important;
-    color: var(--text-primary) !important;
-}
-
-[data-theme="light"] .nep-help-message.user {
-    background: var(--primary-500) !important;
-}
-
-[data-theme="light"] .nep-help-input-container {
-    background: var(--surface-card) !important;
-    border-color: var(--surface-border) !important;
-}
-
-[data-theme="light"] .nep-help-input {
-    background: var(--surface-elevated) !important;
-    color: var(--text-primary) !important;
-    border-color: var(--surface-border) !important;
-}
-
-/* =========================================
    FORMS & INPUTS - Light Mode
    ========================================= */
 [data-theme="light"] input,
