@@ -596,22 +596,24 @@ const NexusKanban = {
           </div>
         </div>
 
-        <div class="kb-board" id="kb-board">
+        <!-- aria-live: o board se atualiza em tempo real; sem isto o leitor
+             de tela não anuncia que as demandas mudaram. -->
+        <div class="kb-board" id="kb-board" aria-live="polite" aria-busy="true">
           <div class="kb-column" data-status="backlog">
             <div class="kb-column-header kb-col-blue"><span>📋 Backlog</span><span class="kb-count" id="kb-count-backlog">0</span></div>
-            <div class="kb-track" id="kb-track-backlog" data-status="backlog"></div>
+            <div class="kb-track" id="kb-track-backlog" data-status="backlog">${this.renderSkeletonCards(3)}</div>
           </div>
           <div class="kb-column" data-status="doing">
             <div class="kb-column-header kb-col-yellow"><span>⚡ Execução</span><span class="kb-count" id="kb-count-doing">0</span></div>
-            <div class="kb-track" id="kb-track-doing" data-status="doing"></div>
+            <div class="kb-track" id="kb-track-doing" data-status="doing">${this.renderSkeletonCards(2)}</div>
           </div>
           <div class="kb-column" data-status="pending">
             <div class="kb-column-header kb-col-red"><span>🚫 Bloqueado</span><span class="kb-count" id="kb-count-pending">0</span></div>
-            <div class="kb-track" id="kb-track-pending" data-status="pending"></div>
+            <div class="kb-track" id="kb-track-pending" data-status="pending">${this.renderSkeletonCards(1)}</div>
           </div>
           <div class="kb-column" data-status="done">
             <div class="kb-column-header kb-col-green"><span>✅ Entregue</span><span class="kb-count" id="kb-count-done">0</span></div>
-            <div class="kb-track" id="kb-track-done" data-status="done"></div>
+            <div class="kb-track" id="kb-track-done" data-status="done">${this.renderSkeletonCards(2)}</div>
           </div>
         </div>
 
@@ -842,9 +844,70 @@ const NexusKanban = {
     Object.keys(counts).forEach(s => {
       const el = document.getElementById(`kb-count-${s}`);
       if (el) el.textContent = counts[s];
+
+      // Coluna sem cartão recebe orientação em vez de ficar em branco
+      const track = document.getElementById(`kb-track-${s}`);
+      if (track && counts[s] === 0) track.innerHTML = this.emptyStateFor(s);
     });
 
+    // Dados chegaram: encerra o estado de carregamento para leitores de tela
+    const boardEl = document.getElementById('kb-board');
+    if (boardEl) boardEl.setAttribute('aria-busy', 'false');
+
     this.updateFilters();
+  },
+
+  /**
+   * Cartões-fantasma exibidos até o primeiro snapshot chegar.
+   * Antes o board aparecia simplesmente vazio durante a carga, e o usuário
+   * não sabia se estava carregando ou se não havia demanda nenhuma.
+   */
+  renderSkeletonCards(n) {
+    return Array.from({ length: n }, () => `
+      <div class="kb-skeleton-card" aria-hidden="true">
+        <div class="kb-sk-line kb-sk-title"></div>
+        <div class="kb-sk-line kb-sk-sub"></div>
+        <div class="kb-sk-foot">
+          <div class="kb-sk-pill"></div>
+          <div class="kb-sk-pill kb-sk-pill-sm"></div>
+        </div>
+      </div>`).join('');
+  },
+
+  /**
+   * Estado vazio por coluna, com orientação do que fazer.
+   * Uma coluna vazia sem texto parecia falha de carregamento.
+   */
+  emptyStateFor(status) {
+    const estados = {
+      backlog: {
+        icon: '📥',
+        titulo: 'Nada no backlog',
+        dica: 'Clique em "Nova Demanda" para começar.'
+      },
+      doing: {
+        icon: '⚡',
+        titulo: 'Nada em execução',
+        dica: 'Arraste uma demanda do Backlog para cá ao iniciar.'
+      },
+      pending: {
+        icon: '🚫',
+        titulo: 'Nada bloqueado',
+        dica: 'Use esta coluna quando algo travar por dependência externa.'
+      },
+      done: {
+        icon: '✅',
+        titulo: 'Nada entregue ainda',
+        dica: 'Ao concluir, arraste para cá e registre a evidência.'
+      }
+    };
+    const e = estados[status] || { icon: '—', titulo: 'Vazio', dica: '' };
+    return `
+      <div class="kb-empty-col">
+        <div class="kb-empty-col-icon">${e.icon}</div>
+        <div class="kb-empty-col-title">${this.esc(e.titulo)}</div>
+        <div class="kb-empty-col-hint">${this.esc(e.dica)}</div>
+      </div>`;
   },
 
   createArchivedCard(task) {
@@ -2390,7 +2453,64 @@ const NexusKanban = {
       @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
       .kb-board { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; min-height: 500px; }
       @media (max-width: 1200px) { .kb-board { grid-template-columns: repeat(2, 1fr); } }
-      @media (max-width: 768px) { .kb-board { grid-template-columns: 1fr; } }
+
+      /* ===== ESQUELETO DE CARREGAMENTO ===== */
+      .kb-skeleton-card {
+        background: var(--surface-elevated, #0f172a);
+        border: 1px solid var(--surface-border, #334155);
+        border-radius: 10px; padding: 14px; margin-bottom: 10px;
+      }
+      .kb-sk-line, .kb-sk-pill {
+        background: linear-gradient(90deg,
+          var(--surface-border, #334155) 25%,
+          var(--surface-hover, #475569) 50%,
+          var(--surface-border, #334155) 75%);
+        background-size: 200% 100%;
+        animation: kb-shimmer 1.4s ease-in-out infinite;
+        border-radius: 6px;
+      }
+      .kb-sk-title { height: 12px; width: 85%; margin-bottom: 10px; }
+      .kb-sk-sub   { height: 9px;  width: 55%; margin-bottom: 14px; }
+      .kb-sk-foot  { display: flex; gap: 8px; }
+      .kb-sk-pill  { height: 18px; width: 62px; border-radius: 20px; }
+      .kb-sk-pill-sm { width: 38px; }
+      @keyframes kb-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+      /* Respeita quem pediu menos animação no sistema operacional */
+      @media (prefers-reduced-motion: reduce) {
+        .kb-sk-line, .kb-sk-pill { animation: none; }
+      }
+
+      /* ===== ESTADO VAZIO POR COLUNA ===== */
+      .kb-empty-col {
+        text-align: center; padding: 28px 16px;
+        border: 1px dashed var(--surface-border, #334155);
+        border-radius: 10px; margin: 4px;
+      }
+      .kb-empty-col-icon { font-size: 28px; opacity: .55; margin-bottom: 8px; }
+      .kb-empty-col-title { font-size: 13px; font-weight: 600; color: var(--text-secondary, #94a3b8); }
+      .kb-empty-col-hint { font-size: 11px; color: var(--text-tertiary, #64748b); margin-top: 4px; line-height: 1.5; }
+
+      /* ===== MOBILE ===== */
+      @media (max-width: 768px) {
+        /* Colunas viram carrossel horizontal: empilhar as 4 obrigava a
+           rolar a tela inteira para ver "Entregue". */
+        .kb-board {
+          grid-template-columns: repeat(4, 78vw);
+          overflow-x: auto;
+          scroll-snap-type: x mandatory;
+          -webkit-overflow-scrolling: touch;
+          padding-bottom: 8px;
+        }
+        .kb-column { scroll-snap-align: start; }
+        .kb-column-header { position: sticky; top: 0; z-index: 2; background: var(--surface-card, #1e293b); }
+        /* Alvos de toque com no mínimo 44px (recomendação de acessibilidade) */
+        .kb-act-btn, .kb-attachment-btn { min-width: 44px; min-height: 44px; }
+        .kb-filters { flex-direction: column; align-items: stretch; gap: 8px; }
+        .kb-filters select, .kb-filters input { width: 100%; }
+        .kb-modal-content { width: 96vw; max-height: 92vh; }
+        .kb-form-row { grid-template-columns: 1fr; }
+        .kb-archive-zone { position: sticky; bottom: 0; z-index: 3; }
+      }
       .kb-column { background: var(--surface-card, #1e293b); border: 1px solid var(--surface-border, #334155); border-radius: 12px; display: flex; flex-direction: column; }
       .kb-column-header { padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; font-weight: 600; border-bottom: 3px solid; }
       .kb-col-blue { border-bottom-color: #3b82f6; }
