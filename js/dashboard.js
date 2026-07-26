@@ -18,32 +18,26 @@ const NepDashboard = {
 
     const user = NepAuth?.getUser() || { name: localStorage.getItem('nep_user_name') || 'Usuário' };
 
-    // Carregar tarefas do Firebase diretamente se NexusKanban não tiver dados
-    let tasks = NexusKanban?.allTasks || [];
-    if (tasks.length === 0 && window.db) {
-      try {
-        const snap = await window.db.collection('tasks').orderBy('createdAt', 'desc').limit(100).get();
-        tasks = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      } catch (e) { console.warn('[Dashboard] Erro ao carregar tarefas:', e); }
-    }
-
-    // FILTRAR TAREFAS POR USUÁRIO/VISUALIZADOR (corrigido)
     const uid = localStorage.getItem('nep_user_uid');
     const userName = localStorage.getItem('nep_user_name');
     const isAdmin = localStorage.getItem('nep_is_admin') === 'true';
     const roleKey = (localStorage.getItem('nep_user_role_key') || '').toLowerCase();
     const isGlobalViewer = isAdmin || roleKey === 'superintendente' || roleKey === 'diretor';
 
-    if (!isGlobalViewer && uid) {
-      tasks = tasks.filter(t => {
-        // Usuário é o responsável
-        if (t.ownerUid === uid || t.owner === userName) return true;
-        // Usuário é o criador
-        if (t.creatorUid === uid) return true;
-        // Usuário está nos visualizadores
-        if (t.viewers && Array.isArray(t.viewers) && t.viewers.includes(uid)) return true;
-        return false;
-      });
+    // Reaproveita o que o Kanban já carregou (evita ida ao Firestore); caindo
+    // fora disso, busca só o que é do usuário, em vez da coleção inteira.
+    let tasks = NexusKanban?.allTasks || [];
+    if (tasks.length > 0) {
+      if (!isGlobalViewer && uid) {
+        tasks = tasks.filter(t => {
+          if (t.ownerUid === uid || t.owner === userName) return true;
+          if (t.creatorUid === uid) return true;
+          if (t.viewers && Array.isArray(t.viewers) && t.viewers.includes(uid)) return true;
+          return false;
+        });
+      }
+    } else {
+      tasks = await this.fetchScopedTasks();
     }
 
     const stats = this.calculateStats(tasks);
@@ -377,42 +371,100 @@ const NepDashboard = {
     }
   },
 
+  /**
+   * Monta as consultas de `tasks` já escopadas ao que o usuário pode ver.
+   *
+   * Antes o dashboard baixava a coleção inteira e filtrava no navegador:
+   * cada pessoa puxava o board completo da empresa (leitura cobrada no
+   * plano Spark) e, na carga inicial, o `limit(100)` por data podia nem
+   * conter as tarefas dela — quem tivesse tarefa antiga simplesmente não
+   * a via.
+   *
+   * São várias consultas porque o SDK v8 não faz OR entre campos. A
+   * visibilidade replicada é exatamente a de antes: sou o responsável
+   * (por uid OU por nome — tarefas antigas podem ter `owner` preenchido
+   * e `ownerUid` vazio, ver kanban.js:1335), sou o criador, ou estou em
+   * `viewers`.
+   *
+   * @returns {Array|null} lista de queries, ou null se não há db
+   */
+  buildScopedTaskQueries() {
+    if (!window.db) return null;
+
+    const uid = localStorage.getItem('nep_user_uid');
+    const userName = localStorage.getItem('nep_user_name');
+    const isAdmin = localStorage.getItem('nep_is_admin') === 'true';
+    const roleKey = (localStorage.getItem('nep_user_role_key') || '').toLowerCase();
+    const isGlobalViewer = isAdmin || roleKey === 'superintendente' || roleKey === 'diretor';
+
+    const col = window.db.collection('tasks');
+    if (isGlobalViewer || !uid) return [col];
+
+    return [
+      col.where('ownerUid', '==', uid),
+      col.where('creatorUid', '==', uid),
+      col.where('viewers', 'array-contains', uid),
+      ...(userName ? [col.where('owner', '==', userName)] : [])
+    ];
+  },
+
+  /** Executa as consultas escopadas uma vez e devolve a união, sem duplicatas. */
+  async fetchScopedTasks() {
+    const queries = this.buildScopedTaskQueries();
+    if (!queries) return [];
+
+    const snaps = await Promise.all(
+      queries.map(q => q.get().catch(e => {
+        console.warn('[Dashboard] Falha em consulta de tarefas:', e);
+        return { docs: [] };
+      }))
+    );
+
+    const byId = new Map();
+    snaps.forEach(s => s.docs.forEach(d => byId.set(d.id, { id: d.id, ...d.data() })));
+    return [...byId.values()];
+  },
+
   // Real-time KPI refresh: listens to Firestore task changes
   subscribeToTaskUpdates() {
     if (this._kpiUnsub) this._kpiUnsub(); // Unsub previous listener
 
     if (!window.db) return;
 
-    this._kpiUnsub = window.db.collection('tasks').onSnapshot(snapshot => {
-      // Auto-cancelamento: ao navegar para outro módulo o dashboard sai do
-      // DOM, mas o listener seguia ativo consumindo leituras do Firestore
-      // (plano Spark) e redesenhando gráficos que já não existem.
-      if (!document.getElementById('kpi-total')) {
-        if (this._kpiUnsub) { this._kpiUnsub(); this._kpiUnsub = null; }
-        return;
-      }
+    const queries = this.buildScopedTaskQueries();
+    if (!queries) return;
 
-      let tasks = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+    const buckets = new Array(queries.length).fill(null);
+    const unsubs = [];
 
-      // Apply same user filter as render()
-      const uid = localStorage.getItem('nep_user_uid');
-      const userName = localStorage.getItem('nep_user_name');
-      const isAdmin = localStorage.getItem('nep_is_admin') === 'true';
-      const roleKey = (localStorage.getItem('nep_user_role_key') || '').toLowerCase();
-      const isGlobalViewer = isAdmin || roleKey === 'superintendente' || roleKey === 'diretor';
+    const stopAll = () => {
+      unsubs.forEach(u => { try { u(); } catch (_) { } });
+      unsubs.length = 0;
+      this._kpiUnsub = null;
+    };
+    this._kpiUnsub = stopAll;
 
-      if (!isGlobalViewer && uid) {
-        tasks = tasks.filter(t => {
-          if (t.ownerUid === uid || t.owner === userName) return true;
-          if (t.creatorUid === uid) return true;
-          if (t.viewers && Array.isArray(t.viewers) && t.viewers.includes(uid)) return true;
-          return false;
-        });
-      }
-
-      this.dataCache = tasks;
+    const merge = () => {
+      // Deduplica por id: a mesma tarefa pode aparecer em mais de uma
+      // consulta (ex.: sou criador e responsável ao mesmo tempo).
+      const byId = new Map();
+      buckets.forEach(b => (b || []).forEach(t => byId.set(t.id, t)));
+      this.dataCache = [...byId.values()];
       this.refreshDashboardData(this.dataCache);
-    }, err => console.warn('[Dashboard] KPI listener error:', err));
+    };
+
+    queries.forEach((q, i) => {
+      const unsub = q.onSnapshot(snapshot => {
+        // Auto-cancelamento: ao navegar para outro módulo o dashboard sai do
+        // DOM, mas os listeners seguiriam ativos consumindo leituras e
+        // redesenhando gráficos de canvas que já não existem.
+        if (!document.getElementById('kpi-total')) { stopAll(); return; }
+
+        buckets[i] = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+        merge();
+      }, err => console.warn('[Dashboard] KPI listener error:', err));
+      unsubs.push(unsub);
+    });
   },
 
   // Update only the KPI number elements (no full re-render)
