@@ -1,0 +1,614 @@
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEP Delivery Control — Visão Executiva</title>
+
+<style>
+  :root {
+    --paper:    #E7EBE6;
+    --paper-2:  #DCE1DA;
+    --card:     #F5F7F3;
+    --ink:      #0B1E2B;
+    --ink-2:    #3C4A47;
+    --ink-3:    #6B7975;
+    --rule:     #C3CBC2;
+
+    --line:     #3E7C8C;
+    --accent:   #C97A2E;
+    --ok:       #4C7A5B;
+    --critical: #A8442E;
+
+    --shadow: 0 1px 2px rgba(11,30,43,.05), 0 12px 32px -16px rgba(11,30,43,.22);
+    --mono: ui-monospace, "Cascadia Code", "SF Mono", "JetBrains Mono", Consolas, monospace;
+    --sans: -apple-system, "Segoe UI", system-ui, Roboto, sans-serif;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper:    #0B1E2B;
+      --paper-2:  #0F2634;
+      --card:     #122A3A;
+      --ink:      #E9EEEA;
+      --ink-2:    #AEBBB6;
+      --ink-3:    #79908C;
+      --rule:     #1E3D4C;
+
+      --line:     #5FA3B4;
+      --accent:   #E0964A;
+      --ok:       #6FA383;
+      --critical: #C96B54;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 16px 40px -18px rgba(0,0,0,.75);
+    }
+  }
+  :root[data-theme="light"] {
+    --paper:#E7EBE6; --paper-2:#DCE1DA; --card:#F5F7F3;
+    --ink:#0B1E2B; --ink-2:#3C4A47; --ink-3:#6B7975; --rule:#C3CBC2;
+    --line:#3E7C8C; --accent:#C97A2E; --ok:#4C7A5B; --critical:#A8442E;
+    --shadow: 0 1px 2px rgba(11,30,43,.05), 0 12px 32px -16px rgba(11,30,43,.22);
+  }
+  :root[data-theme="dark"] {
+    --paper:#0B1E2B; --paper-2:#0F2634; --card:#122A3A;
+    --ink:#E9EEEA; --ink-2:#AEBBB6; --ink-3:#79908C; --rule:#1E3D4C;
+    --line:#5FA3B4; --accent:#E0964A; --ok:#6FA383; --critical:#C96B54;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 16px 40px -18px rgba(0,0,0,.75);
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font-family: var(--sans); line-height: 1.55; -webkit-font-smoothing: antialiased;
+    background-image:
+      linear-gradient(var(--rule) 1px, transparent 1px),
+      linear-gradient(90deg, var(--rule) 1px, transparent 1px);
+    background-size: 100% 34px, 34px 100%;
+    background-attachment: local;
+    opacity: 0; animation: fade-in .5s ease forwards;
+  }
+  @keyframes fade-in { to { opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    body { opacity: 1; animation: none; }
+  }
+
+  /* ---------- Ficha fixa lateral (número da folha) ---------- */
+  .folio {
+    position: fixed; top: 0; right: 0; z-index: 20;
+    display: flex; flex-direction: column; align-items: flex-end; gap: 2px;
+    padding: 18px 22px; font-family: var(--mono); font-size: 11px;
+    color: var(--ink-3); letter-spacing: .04em; pointer-events: none;
+  }
+  .folio b { color: var(--ink); font-size: 13px; font-variant-numeric: tabular-nums; }
+  .folio .theme-btn {
+    pointer-events: auto; margin-top: 8px; border: 1px solid var(--rule);
+    background: var(--card); color: var(--ink-2); border-radius: 6px;
+    padding: 5px 10px; font-family: var(--mono); font-size: 10px; cursor: pointer;
+  }
+  .folio .theme-btn:focus-visible { outline: 2px solid var(--line); outline-offset: 2px; }
+
+  .rail {
+    position: fixed; left: 0; top: 0; bottom: 0; width: 3px; z-index: 20;
+    background: var(--rule);
+  }
+  .rail-fill { width: 100%; background: var(--accent); height: 0%; transition: height .1s linear; }
+
+  main { max-width: 900px; margin: 0 auto; padding: 0 28px; }
+
+  /*
+   * Visível por padrão — SEMPRE. O reveal de rolagem é um bônus que só se
+   * ativa depois que o JS confirma, na prática, que o IntersectionObserver
+   * está disparando neste navegador. Em qualquer ambiente onde a API falhe
+   * ou seja bloqueada (proxy corporativo, extensão, alguns modos headless —
+   * reproduzido durante o teste desta página), o documento tem que continuar
+   * legível. Depender só da classe "in" para revelar o conteúdo deixava a
+   * página inteira em branco para sempre se o observer nunca disparasse.
+   */
+  .sheet {
+    padding: 108px 0 88px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .sheet:last-of-type { border-bottom: none; }
+  body.reveal-ready .sheet.pre {
+    opacity: 0; transform: translateY(14px);
+    transition: opacity .6s ease, transform .6s ease;
+  }
+  body.reveal-ready .sheet.pre.in { opacity: 1; transform: translateY(0); }
+  @media (prefers-reduced-motion: reduce) {
+    body.reveal-ready .sheet.pre { opacity: 1; transform: none; transition: none; }
+  }
+
+  .tag {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: var(--mono); font-size: 11px; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--line); margin-bottom: 18px;
+  }
+  .tag::before { content: ""; width: 22px; height: 1px; background: var(--line); }
+
+  h1, h2, h3 { font-family: var(--mono); font-weight: 700; letter-spacing: -.01em; text-wrap: balance; margin: 0; }
+  h1 { font-size: clamp(34px, 5.4vw, 58px); line-height: 1.04; }
+  h2 { font-size: clamp(26px, 3.6vw, 38px); line-height: 1.1; }
+  h3 { font-size: 18px; line-height: 1.3; }
+
+  p { margin: 0; }
+  .lede { font-size: 19px; line-height: 1.6; color: var(--ink-2); max-width: 62ch; }
+  .body-text { font-size: 16px; color: var(--ink-2); max-width: 66ch; }
+  .body-text + .body-text { margin-top: 14px; }
+
+  strong { color: var(--ink); font-weight: 700; }
+  a { color: var(--line); }
+
+  /* ---------- Hero ---------- */
+  .hero { padding-top: 64px; }
+  .hero-head { display: flex; flex-direction: column; gap: 22px; margin-bottom: 44px; }
+  .hero-brand { font-family: var(--mono); font-size: 13px; letter-spacing: .16em; color: var(--ink-3); text-transform: uppercase; }
+  .hero-meta {
+    display: flex; flex-wrap: wrap; gap: 28px; margin-top: 40px;
+    padding-top: 24px; border-top: 1px solid var(--rule);
+  }
+  .hero-meta-item { display: flex; flex-direction: column; gap: 4px; }
+  .hero-meta-item b { font-family: var(--mono); font-size: 22px; color: var(--accent); font-variant-numeric: tabular-nums; }
+  .hero-meta-item span { font-size: 12px; color: var(--ink-3); }
+
+  /* ---------- Grade de capacidades ---------- */
+  .cap-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1px; background: var(--rule); border: 1px solid var(--rule); margin-top: 32px; }
+  .cap-card { background: var(--card); padding: 24px; display: flex; flex-direction: column; gap: 10px; }
+  .cap-card .k { font-family: var(--mono); font-size: 11px; color: var(--line); letter-spacing: .06em; }
+  .cap-card h3 { font-size: 16px; }
+  .cap-card p { font-size: 13.5px; color: var(--ink-2); line-height: 1.55; }
+
+  /* ---------- Fluxo (sequência real) ---------- */
+  .flow { display: flex; flex-direction: column; margin-top: 36px; }
+  .flow-step {
+    display: grid; grid-template-columns: 52px 1fr; gap: 20px;
+    padding: 22px 0; border-top: 1px solid var(--rule);
+  }
+  .flow-step:last-child { border-bottom: 1px solid var(--rule); }
+  .flow-num { font-family: var(--mono); font-size: 13px; color: var(--ink-3); padding-top: 2px; }
+  .flow-step.guard .flow-num { color: var(--critical); }
+  .flow-body h3 { margin-bottom: 6px; }
+  .flow-body p { font-size: 14.5px; color: var(--ink-2); max-width: 58ch; }
+  .flow-guard {
+    display: inline-flex; align-items: center; gap: 7px; margin-top: 10px;
+    font-family: var(--mono); font-size: 11.5px; color: var(--critical);
+    background: color-mix(in srgb, var(--critical) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--critical) 35%, transparent);
+    padding: 5px 10px; border-radius: 5px;
+  }
+
+  /* ---------- Catálogo de ferramentas ---------- */
+  .tool-groups { display: grid; gap: 22px; margin-top: 32px; }
+  .tool-group { display: grid; grid-template-columns: 168px 1fr; gap: 20px; align-items: baseline; }
+  .tool-group .gname { font-family: var(--mono); font-size: 12px; color: var(--ink-3); letter-spacing: .04em; }
+  .tool-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .tool-chip {
+    font-size: 13px; padding: 6px 12px; border-radius: 20px;
+    border: 1px solid var(--rule); color: var(--ink-2); background: var(--card);
+  }
+  @media (max-width: 640px) { .tool-group { grid-template-columns: 1fr; } }
+
+  /* ---------- Selo executivo (visão por logo) ---------- */
+  .seal-wrap { display: grid; grid-template-columns: 1.1fr 1fr; gap: 40px; margin-top: 30px; align-items: center; }
+  @media (max-width: 760px) { .seal-wrap { grid-template-columns: 1fr; } }
+  .seal-card {
+    background: var(--card); border: 1px solid var(--rule); border-radius: 4px;
+    padding: 26px; box-shadow: var(--shadow); font-family: var(--mono);
+  }
+  .seal-row { display: flex; justify-content: space-between; align-items: baseline; padding: 9px 0; border-top: 1px dashed var(--rule); font-size: 12.5px; }
+  .seal-row:first-child { border-top: none; }
+  .seal-row b { font-size: 16px; font-variant-numeric: tabular-nums; }
+  .seal-row.ok b { color: var(--ok); }
+  .seal-row.warn b { color: var(--accent); }
+  .seal-title { display: flex; justify-content: space-between; margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--rule); }
+  .seal-title span:first-child { font-weight: 700; color: var(--ink); font-size: 13px; }
+  .seal-badge { font-size: 10px; padding: 2px 8px; border-radius: 10px; background: color-mix(in srgb, var(--ok) 16%, transparent); color: var(--ok); }
+
+  /* ---------- Princípios / governança ---------- */
+  .principles { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 26px; margin-top: 32px; }
+  .principle .num { font-family: var(--mono); font-size: 12px; color: var(--line); margin-bottom: 8px; }
+  .principle h3 { margin-bottom: 8px; }
+  .principle p { font-size: 14px; color: var(--ink-2); }
+
+  /* ---------- Encerramento ---------- */
+  .closing { text-align: left; }
+  .closing .lede { max-width: 58ch; margin-bottom: 34px; }
+  .closing-grid { display: flex; flex-wrap: wrap; gap: 40px; padding-top: 28px; border-top: 1px solid var(--rule); }
+  .closing-item span { display: block; font-size: 12px; color: var(--ink-3); margin-bottom: 6px; }
+  .closing-item b { font-family: var(--mono); font-size: 15px; }
+
+  footer {
+    max-width: 900px; margin: 0 auto; padding: 40px 28px 60px;
+    display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+    font-family: var(--mono); font-size: 11px; color: var(--ink-3); letter-spacing: .03em;
+  }
+
+  ::selection { background: var(--accent); color: #fff; }
+
+  @media print {
+    .folio, .rail { display: none; }
+    body { background-image: none; }
+    .sheet { opacity: 1 !important; transform: none !important; page-break-inside: avoid; padding: 40px 0; }
+  }
+</style>
+
+<div class="rail"><div class="rail-fill" id="railFill"></div></div>
+<div class="folio">
+  <button class="theme-btn" id="themeBtn" type="button">MODO: SISTEMA</button>
+  <span>FOLHA <b id="folioNow">01</b> / <span id="folioTotal">09</span></span>
+</div>
+
+<main>
+
+  <!-- 01 — HERO -->
+  <section class="sheet hero" data-n="01" id="s1">
+    <div class="hero-head">
+      <div class="hero-brand">Ecossistema NEP — Delivery Control</div>
+      <h1>O sistema operacional<br>da qualidade e da entrega.</h1>
+      <p class="lede">
+        Um único lugar onde demanda vira tarefa, tarefa vira entrega validada,
+        e entrega vira dado de gestão — sem planilha paralela, sem aprovação
+        por WhatsApp, sem pontuação que ninguém confere.
+      </p>
+    </div>
+    <div class="hero-meta">
+      <div class="hero-meta-item"><b>17</b><span>rotas de trabalho, de Kanban a Fórum</span></div>
+      <div class="hero-meta-item"><b>17</b><span>ferramentas de qualidade embutidas</span></div>
+      <div class="hero-meta-item"><b>8</b><span>níveis de cargo, cada um com seu escopo</span></div>
+      <div class="hero-meta-item"><b>1</b><span>lugar só para auditar tudo</span></div>
+    </div>
+  </section>
+
+  <!-- 02 — O QUE É -->
+  <section class="sheet" data-n="02" id="s2">
+    <div class="tag">O que é</div>
+    <h2>Não é um quadro de tarefas.<br>É uma cadeia de custódia do trabalho.</h2>
+    <p class="body-text" style="margin-top:22px;">
+      A maioria dos sistemas de tarefas registra <em>o que foi pedido</em>.
+      O NEP registra o pedido, quem executou, quem aprovou, quando, com que
+      evidência, e o que isso valeu em pontuação — tudo no mesmo lugar,
+      consultável a qualquer momento por quem tem autoridade para ver.
+    </p>
+    <p class="body-text">
+      Isso muda a pergunta que a liderança consegue responder: não mais
+      <em>"alguém pode me atualizar sobre isso?"</em>, e sim
+      <strong>"eu abro o sistema e já sei"</strong>.
+    </p>
+
+    <div class="cap-grid">
+      <div class="cap-card">
+        <span class="k">MEU ESPAÇO</span>
+        <h3>Perfil &amp; Dashboard</h3>
+        <p>Hierarquia real (quem é seu gestor, de fato), desempenho pessoal, pontos e histórico — sem precisar perguntar a ninguém.</p>
+      </div>
+      <div class="cap-card">
+        <span class="k">TRABALHO</span>
+        <h3>Kanban, Chamados, Rotina ADM</h3>
+        <p>Demanda, aprovação e checklist diário no mesmo fluxo — descrito em detalhe na próxima folha.</p>
+      </div>
+      <div class="cap-card">
+        <span class="k">COMUNICAÇÃO</span>
+        <h3>Fórum, Avisos, Chat Geral</h3>
+        <p>Dúvida vira conhecimento registrado; aviso chega a quem precisa; chat geral sem anexo e sem histórico permanente.</p>
+      </div>
+      <div class="cap-card">
+        <span class="k">QUALIDADE</span>
+        <h3>17 ferramentas &amp; Analytics Studio</h3>
+        <p>Método formal de qualidade (Pareto, Ishikawa, GUT, PDCA, DMAIC, carta de controle) sem precisar abrir uma planilha à parte.</p>
+      </div>
+      <div class="cap-card">
+        <span class="k">GESTÃO DE PESSOAS</span>
+        <h3>Férias &amp; Feriados</h3>
+        <p>Programação de férias vinculada à pessoa real; calendário de feriados mantido pelos próprios coordenadores.</p>
+      </div>
+      <div class="cap-card">
+        <span class="k">GOVERNANÇA</span>
+        <h3>Admin &amp; Visão Executiva</h3>
+        <p>Painel por papel — cada cargo vê exatamente o que precisa, nem mais, nem menos. Detalhe na folha 06.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 03 — FLUXO DE TRABALHO -->
+  <section class="sheet" data-n="03" id="s3">
+    <div class="tag">O motor do sistema</div>
+    <h2>Uma demanda só vira ponto<br>depois de passar por quatro travas.</h2>
+    <p class="body-text" style="margin-top:22px;">
+      Isto é o que diferencia o NEP de um quadro Kanban comum: a pontuação e
+      a aprovação foram desenhadas para que <strong>ninguém consiga inflar o
+      próprio resultado</strong> — nem por engano, nem de propósito.
+    </p>
+
+    <div class="flow">
+      <div class="flow-step">
+        <div class="flow-num">1</div>
+        <div class="flow-body">
+          <h3>Demanda criada com tipo fixo</h3>
+          <p>Onze tipos de tarefa, cada um com um valor de pontos já definido — de rotina diária a projeto de melhoria. O valor não depende do prazo escolhido.</p>
+        </div>
+      </div>
+      <div class="flow-step guard">
+        <div class="flow-num">⌁</div>
+        <div class="flow-body">
+          <h3>Trava — prazo não gera ponto</h3>
+          <p>Se dependesse do prazo, bastaria marcar "para hoje" para ganhar mais. O valor vem só do tipo da tarefa; o prazo entra apenas depois, como bônus ou penalidade.</p>
+          <span class="flow-guard">● por desenho, não por confiança</span>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">2</div>
+        <div class="flow-body">
+          <h3>Execução e entrega com evidência</h3>
+          <p>A pessoa move a tarefa, anexa a prova do que foi feito e registra a entrega.</p>
+        </div>
+      </div>
+      <div class="flow-step guard">
+        <div class="flow-num">⌁</div>
+        <div class="flow-body">
+          <h3>Trava — só o gestor direto aprova</h3>
+          <p>Ninguém aprova a própria entrega — nem um diretor, nem um coordenador. A validação exige o vínculo real de hierarquia entre quem entregou e quem aprova.</p>
+          <span class="flow-guard">● reforçado no servidor, não só na tela</span>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">3</div>
+        <div class="flow-body">
+          <h3>Pontuação final, ajustada pelo prazo real</h3>
+          <p>Atraso reduz o valor progressivamente; entrega antecipada soma um bônus; qualquer edição do tipo ou prazo depois de criada custa uma penalidade — e nunca aumenta o crédito.</p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">4</div>
+        <div class="flow-body">
+          <h3>Arquivamento automático</h3>
+          <p>Entregas validadas saem do quadro sozinhas em três dias — ninguém precisa lembrar de arrumar a casa.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 04 — FERRAMENTAS -->
+  <section class="sheet" data-n="04" id="s4">
+    <div class="tag">Metodologia embutida</div>
+    <h2>As ferramentas clássicas de qualidade,<br>sem curva de aprendizado.</h2>
+    <p class="body-text" style="margin-top:22px;">
+      Cada ferramenta vem com uma demonstração no primeiro uso — quem nunca
+      fez um diagrama de Ishikawa ou uma carta de controle aprende fazendo,
+      dentro do próprio sistema.
+    </p>
+    <div class="tool-groups">
+      <div class="tool-group">
+        <span class="gname">CAUSA E EFEITO</span>
+        <div class="tool-chips">
+          <span class="tool-chip">Ishikawa</span>
+          <span class="tool-chip">5 Porquês</span>
+          <span class="tool-chip">Matriz GUT</span>
+        </div>
+      </div>
+      <div class="tool-group">
+        <span class="gname">MÉTODO ESTRUTURADO</span>
+        <div class="tool-chips">
+          <span class="tool-chip">PDCA</span>
+          <span class="tool-chip">DMAIC</span>
+          <span class="tool-chip">Plano de ação</span>
+        </div>
+      </div>
+      <div class="tool-group">
+        <span class="gname">DADOS E ESTATÍSTICA</span>
+        <div class="tool-chips">
+          <span class="tool-chip">Diagrama de Pareto</span>
+          <span class="tool-chip">Carta de Controle (CEP)</span>
+          <span class="tool-chip">Gerador de Gráficos</span>
+          <span class="tool-chip">Analytics Studio</span>
+        </div>
+      </div>
+      <div class="tool-group">
+        <span class="gname">OPERAÇÃO DO DIA A DIA</span>
+        <div class="tool-chips">
+          <span class="tool-chip">Cronômetro / Pomodoro</span>
+          <span class="tool-chip">Calculadora de Factibilidade</span>
+          <span class="tool-chip">Criador de Fluxograma</span>
+          <span class="tool-chip">Compressor de Vídeo</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 05 — ANALYTICS STUDIO destaque -->
+  <section class="sheet" data-n="05" id="s5">
+    <div class="tag">Em destaque</div>
+    <h2>Um laboratório de estatística,<br>não uma planilha a mais.</h2>
+    <p class="body-text" style="margin-top:22px;">
+      O Analytics Studio carrega a planilha da própria pessoa e devolve
+      correlação com teste de significância, controle estatístico de
+      processo, capacidade (Cp/Cpk), previsão e simulação — tudo processado
+      no navegador, nada enviado para fora.
+    </p>
+    <p class="body-text">
+      Cada aba tem um roteiro de apresentação embutido: não é só o gráfico,
+      é a fala pronta para levar o resultado a uma reunião.
+    </p>
+  </section>
+
+  <!-- 06 — VISÃO EXECUTIVA -->
+  <section class="sheet" data-n="06" id="s6">
+    <div class="tag">Para a Diretoria</div>
+    <h2>Cada logo, cada cliente,<br>como uma unidade de negócio.</h2>
+    <p class="body-text" style="margin-top:22px;">
+      Diretor e Superintendente têm uma visão que ninguém mais vê: a operação
+      inteira quebrada por logo, com um semáforo de saúde combinando entrega
+      no prazo, engajamento da equipe e represamento de aprovações.
+    </p>
+
+    <div class="seal-wrap">
+      <div class="body-text">
+        <p><strong>Nada precisa ser perguntado por e-mail.</strong> O gargalo
+        de aprovação aparece agrupado por gestor — dá para ver, sem
+        constranger ninguém, quem está represando validação.</p>
+        <p style="margin-top:14px;">Um relatório diário de uso chega
+        automaticamente por e-mail para Coordenador e acima — quem acessou,
+        com que frequência, sem precisar pedir.</p>
+      </div>
+      <div class="seal-card">
+        <div class="seal-title"><span>VISÃO POR LOGO</span><span class="seal-badge">exemplo ilustrativo</span></div>
+        <div class="seal-row ok"><span>Entrega no prazo</span><b>92%</b></div>
+        <div class="seal-row ok"><span>Engajamento da equipe</span><b>78%</b></div>
+        <div class="seal-row warn"><span>Aprovações represadas</span><b>3</b></div>
+        <div class="seal-row"><span>Pessoas ativas</span><b>24</b></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 07 — GOVERNANÇA -->
+  <section class="sheet" data-n="07" id="s7">
+    <div class="tag">Governança &amp; segurança</div>
+    <h2>Acesso por papel, não por confiança.</h2>
+    <div class="principles">
+      <div class="principle">
+        <div class="num">01</div>
+        <h3>Fronteira no servidor</h3>
+        <p>O que cada pessoa pode ver e alterar é decidido no banco de dados, não na tela — a interface é conveniência, a regra é a autoridade real.</p>
+      </div>
+      <div class="principle">
+        <div class="num">02</div>
+        <h3>Painel Admin escalonado</h3>
+        <p>Coordenador e acima entram só no essencial (visão de uso e cadastro). O restante — auditoria, permissões, configurações — é exclusivo da administração.</p>
+      </div>
+      <div class="principle">
+        <div class="num">03</div>
+        <h3>Trilha de auditoria</h3>
+        <p>Toda ação administrativa fica registrada de forma imutável: quem fez, o quê, quando.</p>
+      </div>
+      <div class="principle">
+        <div class="num">04</div>
+        <h3>Detector de fraude de pontos</h3>
+        <p>Uma auditoria própria cruza o saldo de cada pessoa com o extrato de movimentações e sinaliza qualquer divergência.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 08 — PRINCÍPIOS DE CONSTRUÇÃO -->
+  <section class="sheet" data-n="08" id="s8">
+    <div class="tag">Como foi construído</div>
+    <h2>Disciplina de custo, não corte de escopo.</h2>
+    <p class="body-text" style="margin-top:22px;">
+      O NEP roda inteiro em infraestrutura gratuita — a mesma solidez de
+      um sistema corporativo, sem linha de custo de servidor. Isso não é
+      limitação escondida: é um princípio de projeto, mantido de propósito
+      e revisado com regularidade.
+    </p>
+    <div class="principles" style="margin-top:26px;">
+      <div class="principle">
+        <h3>Sem IA embutida</h3>
+        <p>Decisão deliberada — o sistema não depende de um modelo de linguagem para funcionar nem para decidir nada.</p>
+      </div>
+      <div class="principle">
+        <h3>Auditado continuamente</h3>
+        <p>Cada módulo passa por revisão de segurança e de regra de negócio — não é só "funciona", é "funciona do jeito que deveria".</p>
+      </div>
+      <div class="principle">
+        <h3>Um único dono de cada regra</h3>
+        <p>Pontuação, exportação de planilha, notificação — cada uma tem um único ponto no sistema que decide como funciona, para não haver duas versões da mesma verdade.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 09 — ENCERRAMENTO -->
+  <section class="sheet closing" data-n="09" id="s9">
+    <div class="tag">Em uma frase</div>
+    <h2>O trabalho que já é feito,<br>agora com registro, aprovação e prova.</h2>
+    <p class="lede" style="margin-top:22px;">
+      O NEP não pede que a operação mude para caber no sistema. Ele registra
+      a operação como ela já acontece — e devolve, para quem lidera,
+      exatamente a visão que faltava.
+    </p>
+    <div class="closing-grid">
+      <div class="closing-item"><span>Sistema em produção</span><b>ecossistema-nep.web.app</b></div>
+      <div class="closing-item"><span>Responsável</span><b>Fernando Evangelista</b></div>
+      <div class="closing-item"><span>Papel</span><b>Quality Coordinator</b></div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <span>ECOSSISTEMA NEP · DELIVERY CONTROL</span>
+  <span>DOCUMENTO EXECUTIVO — USO INTERNO</span>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+
+  var root = document.documentElement;
+  var themeBtn = document.getElementById('themeBtn');
+  var themes = ['sistema', 'claro', 'escuro'];
+  var idx = 0;
+
+  themeBtn.addEventListener('click', function () {
+    idx = (idx + 1) % themes.length;
+    var t = themes[idx];
+    if (t === 'sistema') root.removeAttribute('data-theme');
+    else root.setAttribute('data-theme', t === 'claro' ? 'light' : 'dark');
+    themeBtn.textContent = 'MODO: ' + t.toUpperCase();
+  });
+
+  var sheets = Array.prototype.slice.call(document.querySelectorAll('.sheet'));
+  document.getElementById('folioTotal').textContent = String(sheets.length).padStart(2, '0');
+
+  // O reveal de rolagem só é ligado depois de confirmar, na prática, que o
+  // IntersectionObserver dispara neste navegador — testado na primeira folha,
+  // que já está visível ao carregar a página. Sem essa confirmação, o motivo
+  // real da falha (proxy, extensão, ambiente automatizado) não importa: o
+  // documento já está com o conteúdo visível por padrão (CSS acima), então o
+  // pior cenário é só "sem animação", nunca "página em branco".
+  if (window.IntersectionObserver && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    var probe = new IntersectionObserver(function (entries, obs) {
+      if (entries.some(function (e) { return e.isIntersecting; })) {
+        obs.disconnect();
+        ativarReveal();
+      }
+    }, { threshold: 0.1 });
+    probe.observe(sheets[0]);
+
+    // Watchdog: se em 700ms o teste não confirmar, desiste da animação.
+    setTimeout(function () { probe.disconnect(); }, 700);
+  }
+
+  function ativarReveal() {
+    document.body.classList.add('reveal-ready');
+    sheets.forEach(function (s) { s.classList.add('pre'); });
+
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) e.target.classList.add('in');
+      });
+    }, { threshold: 0.12 });
+    sheets.forEach(function (s) { io.observe(s); });
+  }
+
+  var folioNow = document.getElementById('folioNow');
+  var railFill = document.getElementById('railFill');
+  var current = '01';
+
+  function onScroll() {
+    var mid = window.innerHeight * 0.35;
+    var best = sheets[0];
+    sheets.forEach(function (s) {
+      var r = s.getBoundingClientRect();
+      if (r.top <= mid) best = s;
+    });
+    var n = best.getAttribute('data-n');
+    if (n !== current) { current = n; folioNow.textContent = n; }
+
+    // window.pageYOffset funciona independente de qual elemento é a raiz de
+    // rolagem (documentElement ou body) — evita depender de um comportamento
+    // de navegador que varia entre motores.
+    var scrollTop = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop;
+    var scrollable = document.documentElement.scrollHeight - window.innerHeight;
+    var scrolled = scrollable > 0 ? (scrollTop / scrollable) * 100 : 0;
+    railFill.style.height = Math.min(100, Math.max(0, scrolled)) + '%';
+  }
+
+  document.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+})();
+</script>
