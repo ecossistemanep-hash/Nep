@@ -23,6 +23,7 @@ desktop.ini
 # Logs
 *.log
 npm-debug.log*
+build_log*.txt
 
 # Editor
 .vscode/

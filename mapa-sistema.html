@@ -1,0 +1,871 @@
+<title>Mapa do Ecossistema NEP</title>
+
+<style>
+  :root {
+    --paper:      #EDF0EF;
+    --paper-2:    #E3E8E7;
+    --card:       #FFFFFF;
+    --ink:        #0C1618;
+    --ink-2:      #3A4A4E;
+    --ink-3:      #6B7C80;
+    --rule:       #CBD5D3;
+    --grid:       #D8DEDC;
+
+    --rota:    #0F766E;
+    --modulo:  #1D4ED8;
+    --servico: #6D28D9;
+    --dados:   #B45309;
+    --infra:   #BE123C;
+
+    --signal:  #C2410C;
+    --ok:      #15803D;
+
+    --shadow: 0 1px 2px rgba(12,22,24,.06), 0 8px 24px -12px rgba(12,22,24,.18);
+    --mono: ui-monospace, "Cascadia Code", "JetBrains Mono", Menlo, Consolas, monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper:   #0C1618;
+      --paper-2: #0A1214;
+      --card:    #122024;
+      --ink:     #E6EDEC;
+      --ink-2:   #A8B8BA;
+      --ink-3:   #71868A;
+      --rule:    #22383D;
+      --grid:    #182B30;
+
+      --rota:    #2DD4BF;
+      --modulo:  #7CA5FF;
+      --servico: #B594FF;
+      --dados:   #F0AB55;
+      --infra:   #FF8098;
+
+      --signal:  #FB923C;
+      --ok:      #4ADE80;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 28px -14px rgba(0,0,0,.8);
+    }
+  }
+
+  :root[data-theme="light"] {
+    --paper:#EDF0EF; --paper-2:#E3E8E7; --card:#FFFFFF;
+    --ink:#0C1618; --ink-2:#3A4A4E; --ink-3:#6B7C80;
+    --rule:#CBD5D3; --grid:#D8DEDC;
+    --rota:#0F766E; --modulo:#1D4ED8; --servico:#6D28D9; --dados:#B45309; --infra:#BE123C;
+    --signal:#C2410C; --ok:#15803D;
+    --shadow: 0 1px 2px rgba(12,22,24,.06), 0 8px 24px -12px rgba(12,22,24,.18);
+  }
+  :root[data-theme="dark"] {
+    --paper:#0C1618; --paper-2:#0A1214; --card:#122024;
+    --ink:#E6EDEC; --ink-2:#A8B8BA; --ink-3:#71868A;
+    --rule:#22383D; --grid:#182B30;
+    --rota:#2DD4BF; --modulo:#7CA5FF; --servico:#B594FF; --dados:#F0AB55; --infra:#FF8098;
+    --signal:#FB923C; --ok:#4ADE80;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 28px -14px rgba(0,0,0,.8);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background:
+      linear-gradient(var(--grid) 1px, transparent 1px) 0 0 / 100% 28px,
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0 / 28px 100%,
+      var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 1560px; margin: 0 auto; padding: 28px 20px 64px; }
+
+  /* ---------- Cabeçalho ---------- */
+  header.head {
+    display: flex; flex-wrap: wrap; gap: 20px;
+    align-items: flex-end; justify-content: space-between;
+    padding-bottom: 18px; margin-bottom: 22px;
+    border-bottom: 2px solid var(--ink);
+  }
+  .eyebrow {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--ink-3); margin-bottom: 8px;
+  }
+  h1 {
+    margin: 0; font-size: clamp(26px, 4vw, 40px); line-height: 1.04;
+    letter-spacing: -.028em; font-weight: 700; text-wrap: balance;
+  }
+  .sub { margin: 10px 0 0; color: var(--ink-2); max-width: 62ch; font-size: 15px; }
+
+  .counts { display: flex; gap: 22px; flex-wrap: wrap; }
+  .count-n {
+    font-family: var(--mono); font-size: 24px; font-weight: 700;
+    font-variant-numeric: tabular-nums; line-height: 1;
+  }
+  .count-l {
+    font-family: var(--mono); font-size: 10px; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--ink-3); margin-top: 5px;
+  }
+
+  /* ---------- Controles ---------- */
+  .controls {
+    display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+    margin-bottom: 18px;
+  }
+  .search {
+    flex: 1 1 240px; max-width: 340px; position: relative;
+  }
+  .search input {
+    width: 100%; padding: 9px 12px 9px 32px;
+    background: var(--card); color: var(--ink);
+    border: 1px solid var(--rule); border-radius: 7px;
+    font-family: var(--mono); font-size: 13px;
+  }
+  .search::before {
+    content: "/"; position: absolute; left: 13px; top: 50%;
+    transform: translateY(-50%); font-family: var(--mono);
+    color: var(--ink-3); font-size: 13px; pointer-events: none;
+  }
+  .search input:focus-visible { outline: 2px solid var(--rota); outline-offset: 1px; }
+
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 11px; border-radius: 20px; cursor: pointer;
+    border: 1px solid var(--rule); background: var(--card);
+    color: var(--ink-2); font-size: 12px; font-weight: 600;
+    font-family: var(--mono); letter-spacing: .02em;
+  }
+  .chip:focus-visible { outline: 2px solid var(--rota); outline-offset: 2px; }
+  .chip .dot { width: 8px; height: 8px; border-radius: 2px; background: currentColor; }
+  .chip[data-layer="rota"]    { color: var(--rota); }
+  .chip[data-layer="modulo"]  { color: var(--modulo); }
+  .chip[data-layer="servico"] { color: var(--servico); }
+  .chip[data-layer="dados"]   { color: var(--dados); }
+  .chip[data-layer="infra"]   { color: var(--infra); }
+  .chip[aria-pressed="false"] { opacity: .38; }
+
+  /* ---------- Palco ---------- */
+  .stage {
+    display: grid; grid-template-columns: minmax(0,1fr) 372px;
+    gap: 20px; align-items: start;
+  }
+
+  .mapbox {
+    position: relative; background: var(--card);
+    border: 1px solid var(--rule); border-radius: 12px;
+    padding: 18px 16px 22px; overflow-x: auto; box-shadow: var(--shadow);
+  }
+
+  .layers {
+    position: relative; display: grid; gap: 26px;
+    grid-template-columns: repeat(5, minmax(178px, 1fr));
+    min-width: 980px;
+  }
+
+  svg.wires {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    pointer-events: none; overflow: visible; z-index: 0;
+  }
+  .wire { fill: none; stroke: var(--rule); stroke-width: 1.4; opacity: .85; }
+  .wire.lit { stroke-width: 2.2; opacity: 1; }
+  .wire.dim { opacity: .12; }
+
+  .col { position: relative; z-index: 1; display: flex; flex-direction: column; gap: 7px; }
+  .col-head {
+    font-family: var(--mono); font-size: 10px; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--ink-3);
+    padding-bottom: 7px; margin-bottom: 3px; border-bottom: 1px solid var(--rule);
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  }
+  .col-head b { color: var(--ink); font-weight: 700; }
+
+  .node {
+    position: relative; text-align: left; width: 100%;
+    background: var(--card); color: var(--ink);
+    border: 1px solid var(--rule);
+    border-radius: 7px; padding: 8px 10px 8px 14px; cursor: pointer;
+    overflow: hidden;
+    font-family: var(--sans); font-size: 13px; font-weight: 600;
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    transition: transform .12s ease, border-color .12s ease, background .12s ease;
+  }
+  .node:hover { transform: translateX(2px); }
+  .node:focus-visible { outline: 2px solid var(--nc); outline-offset: 2px; }
+  .node[aria-pressed="true"] { background-color: color-mix(in srgb, var(--nc) 12%, var(--card)); }
+  .node.dim { opacity: .2; }
+  .node.hidden { display: none; }
+  .node .meta {
+    font-family: var(--mono); font-size: 10px; color: var(--ink-3);
+    font-variant-numeric: tabular-nums; white-space: nowrap;
+  }
+  .node .nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* A faixa da camada é um elemento próprio, não a borda do botão.
+     Em teste, a cor de borda de um <button> não era recalculada ao voltar
+     para o tema do sistema — o cartão ficava com a cor do tema anterior
+     enquanto o restante da página já havia trocado. Um bloco pintado por
+     `background` atualiza de forma confiável nos dois sentidos. */
+  .node::before {
+    content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+    background: var(--rule);
+  }
+  .node[data-layer="rota"]::before    { background: var(--rota); }
+  .node[data-layer="modulo"]::before  { background: var(--modulo); }
+  .node[data-layer="servico"]::before { background: var(--servico); }
+  .node[data-layer="dados"]::before   { background: var(--dados); }
+  .node[data-layer="infra"]::before   { background: var(--infra); }
+
+  .node[data-layer="rota"]    { --nc: var(--rota); }
+  .node[data-layer="modulo"]  { --nc: var(--modulo); }
+  .node[data-layer="servico"] { --nc: var(--servico); }
+  .node[data-layer="dados"]   { --nc: var(--dados); }
+  .node[data-layer="infra"]   { --nc: var(--infra); }
+
+  .node .flag {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--signal); flex: none;
+  }
+
+  /* ---------- Painel de detalhe ---------- */
+  .rail {
+    position: sticky; top: 20px; background: var(--card);
+    border: 1px solid var(--rule); border-radius: 12px;
+    box-shadow: var(--shadow); overflow: hidden;
+  }
+  .rail-inner { padding: 18px; max-height: calc(100vh - 60px); overflow-y: auto; }
+
+  .d-layer {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: var(--mono); font-size: 10px; letter-spacing: .1em;
+    text-transform: uppercase; font-weight: 700; margin-bottom: 10px;
+  }
+  .d-layer .dot { width: 8px; height: 8px; border-radius: 2px; background: currentColor; }
+  .d-title { margin: 0 0 4px; font-size: 21px; letter-spacing: -.02em; line-height: 1.15; }
+  .d-file {
+    font-family: var(--mono); font-size: 11.5px; color: var(--ink-3);
+    word-break: break-all; margin-bottom: 14px;
+  }
+  .d-what { font-size: 14.5px; color: var(--ink); margin: 0 0 14px; }
+  .d-note {
+    font-size: 13px; color: var(--ink-2); margin: 0 0 14px; padding: 10px 12px;
+    background: var(--paper-2); border-radius: 7px;
+    border-left: 3px solid var(--signal);
+  }
+  .d-sec {
+    font-family: var(--mono); font-size: 10px; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--ink-3);
+    padding-top: 13px; margin-top: 13px; border-top: 1px solid var(--rule);
+    margin-bottom: 8px;
+  }
+  .tags { display: flex; flex-wrap: wrap; gap: 5px; }
+  .tag {
+    font-family: var(--mono); font-size: 11px; padding: 3px 8px;
+    border-radius: 5px; background: var(--paper-2); color: var(--ink-2);
+    border: 1px solid var(--rule);
+  }
+  .tag.k-dados { color: var(--dados); border-color: color-mix(in srgb, var(--dados) 35%, transparent); }
+  .tag.k-role  { color: var(--rota); border-color: color-mix(in srgb, var(--rota) 35%, transparent); }
+
+  .links { display: flex; flex-direction: column; gap: 4px; }
+  .linkbtn {
+    text-align: left; background: none; border: none; cursor: pointer;
+    padding: 6px 8px; border-radius: 6px; color: var(--ink);
+    font-family: var(--sans); font-size: 13px;
+    display: flex; align-items: center; gap: 8px; width: 100%;
+  }
+  .linkbtn:hover { background: var(--paper-2); }
+  .linkbtn:focus-visible { outline: 2px solid var(--rota); outline-offset: -1px; }
+  .linkbtn .sq { width: 8px; height: 8px; border-radius: 2px; flex: none; background: var(--rule); }
+  .linkbtn .sq[data-layer="rota"]    { background: var(--rota); }
+  .linkbtn .sq[data-layer="modulo"]  { background: var(--modulo); }
+  .linkbtn .sq[data-layer="servico"] { background: var(--servico); }
+  .linkbtn .sq[data-layer="dados"]   { background: var(--dados); }
+  .linkbtn .sq[data-layer="infra"]   { background: var(--infra); }
+  .arrow { font-family: var(--mono); color: var(--ink-3); font-size: 11px; }
+
+  .empty { color: var(--ink-3); font-size: 14px; }
+  .empty b { display: block; color: var(--ink); font-size: 15px; margin-bottom: 6px; }
+
+  .legend-note {
+    font-size: 12px; color: var(--ink-3); margin-top: 14px;
+    padding-top: 12px; border-top: 1px solid var(--rule);
+  }
+
+  /* ---------- Rodapé de camadas ---------- */
+  .flow {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    font-family: var(--mono); font-size: 11px; color: var(--ink-3);
+    margin-bottom: 14px;
+  }
+  .flow b { color: var(--ink-2); font-weight: 600; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .node { transition: none; }
+  }
+
+  @media (max-width: 1080px) {
+    .stage { grid-template-columns: 1fr; }
+    .rail { position: static; }
+    .rail-inner { max-height: none; }
+  }
+  @media (max-width: 640px) {
+    .wrap { padding: 18px 12px 48px; }
+    .counts { gap: 16px; }
+    .mapbox { padding: 12px 10px 16px; }
+  }
+</style>
+
+<div class="wrap">
+
+  <header class="head">
+    <div>
+      <div class="eyebrow">Ecossistema NEP · Delivery Control</div>
+      <h1>Mapa do sistema</h1>
+      <p class="sub">
+        Cada caixa é uma peça real do código. Clique para ver o que ela faz, em que arquivo
+        vive, quais dados toca e quem pode usá-la. As linhas mostram o caminho que uma
+        ação percorre: do clique até o banco.
+      </p>
+    </div>
+    <div class="counts">
+      <div><div class="count-n" id="c-rotas">17</div><div class="count-l">Rotas</div></div>
+      <div><div class="count-n" id="c-mod">17</div><div class="count-l">Módulos</div></div>
+      <div><div class="count-n" id="c-srv">11</div><div class="count-l">Serviços</div></div>
+      <div><div class="count-n" id="c-col">29</div><div class="count-l">Coleções</div></div>
+      <div><div class="count-n">41k</div><div class="count-l">Linhas JS</div></div>
+    </div>
+  </header>
+
+  <div class="flow">
+    <b>Você clica</b> <span class="arrow">→</span>
+    <b>rota</b> <span class="arrow">→</span>
+    <b>módulo desenha a tela</b> <span class="arrow">→</span>
+    <b>serviço aplica a regra</b> <span class="arrow">→</span>
+    <b>dado é lido/gravado</b>
+  </div>
+
+  <div class="controls">
+    <div class="search">
+      <label class="sr-only" for="q" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);">Buscar</label>
+      <input id="q" type="search" placeholder="buscar peça, arquivo ou coleção" autocomplete="off">
+    </div>
+    <div class="chips" id="chips"></div>
+  </div>
+
+  <div class="stage">
+    <div class="mapbox">
+      <svg class="wires" id="wires" aria-hidden="true"></svg>
+      <div class="layers" id="layers"></div>
+    </div>
+
+    <aside class="rail">
+      <div class="rail-inner" id="rail" tabindex="-1" aria-live="polite">
+        <div class="empty">
+          <b>Selecione uma peça</b>
+          Clique em qualquer caixa do mapa — ou use Tab e Enter — para ver a
+          explicação, o arquivo e as conexões dela.
+          <div class="legend-note">
+            O ponto laranja marca peças com ressalva conhecida: limitação aceita,
+            dependência externa ou dívida registrada.
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ===================================================================
+  // INVENTÁRIO REAL — extraído do código em 26/07/2026
+  // Rotas: index.html [data-page]. Módulos: switch de js/app.js.
+  // Coleções: ocorrências de collection('...') por arquivo.
+  // ===================================================================
+  var N = [
+    // ---------- ORIGEM ----------
+    { id:'user', layer:'infra', nome:'Pessoa logada', file:'—',
+      what:'Todo caminho começa aqui. O cargo da pessoa (de MONITOR a ADMIN) decide quais rotas aparecem no menu e o que cada tela deixa fazer.',
+      roles:['MONITOR','ANALISTA','COORDENADOR','CONSULTOR','GERENTE','SUPERINTENDENTE','DIRETOR','ADMIN'],
+      to:['router'] },
+
+    { id:'router', layer:'infra', nome:'Roteador', file:'js/app.js', linhas:683,
+      what:'Escuta o clique no menu, troca a URL (#rota) e chama o render do módulo correspondente. É o único ponto que sabe ligar rota a módulo.',
+      note:'Antes os itens do menu eram <div> sem foco: não dava para navegar por teclado. Corrigido com tabindex, role e Enter/Espaço.',
+      to:['auth','perm','r-dashboard','r-kanban','r-profile','r-admin','r-forum','r-tickets','r-vacation','r-ranking','r-tools','r-checklist','r-feriados','r-chat','r-paineis','r-analytics','r-announcements','r-testimonials','r-results'] },
+
+    { id:'auth', layer:'infra', nome:'Autenticação', file:'js/auth-firebase.js',
+      what:'Login por e-mail e senha no Firebase Auth, carrega o perfil em users/{uid} e guarda cargo e nível de acesso para a sessão.',
+      note:'O cargo fica em localStorage para a interface reagir rápido. Isso é conveniência visual: a decisão que vale é a das regras do Firestore, no servidor.',
+      to:['c-users'] },
+
+    { id:'perm', layer:'infra', nome:'Permissões de módulo', file:'js/module-permission-service.js',
+      what:'Liga ou desliga módulos por cargo. É o que faz um MONITOR não ver o painel Admin no menu.',
+      to:['c-users'] },
+
+    { id:'rules', layer:'infra', nome:'Regras do Firestore', file:'firestore.rules',
+      what:'A fronteira de segurança de verdade. Roda no servidor do Google, então vale mesmo que alguém edite o navegador. Define quem lê e grava cada coleção, e trava campos sensíveis como pontuação e validação.',
+      note:'Aprovação de tarefa exige ser o gestor direto do responsável (gestor_uid). Antes qualquer Coordenador+ aprovava qualquer tarefa, inclusive a própria.',
+      to:['c-users','c-tasks','c-points','c-ptx'] },
+
+    // ---------- ROTAS ----------
+    { id:'r-dashboard', layer:'rota', nome:'Dashboard', file:'#dashboard',
+      what:'Tela inicial: seus números do dia, gráficos e alertas do que está atrasado.', to:['m-dashboard'] },
+    { id:'r-kanban', layer:'rota', nome:'Kanban', file:'#kanban',
+      what:'O quadro de demandas — coração operacional do sistema.', to:['m-kanban'] },
+    { id:'r-profile', layer:'rota', nome:'Meu Perfil', file:'#profile',
+      what:'Seus dados, pontos, conquistas, hierarquia e desempenho.', to:['m-profile'] },
+    { id:'r-admin', layer:'rota', nome:'Admin', file:'#admin',
+      what:'Painel de gestão. Coordenador e acima entram, mas só veem Dashboard e Usuários.', to:['m-admin'] },
+    { id:'r-forum', layer:'rota', nome:'Fórum', file:'#forum',
+      what:'Perguntas e respostas entre as equipes.', to:['m-forum'] },
+    { id:'r-tickets', layer:'rota', nome:'Chamados', file:'#tickets',
+      what:'Abertura e acompanhamento de chamados internos.', to:['m-tickets'] },
+    { id:'r-vacation', layer:'rota', nome:'Férias', file:'#vacation',
+      what:'Programação de férias da equipe.', to:['m-vacation'] },
+    { id:'r-ranking', layer:'rota', nome:'Ranking', file:'#ranking',
+      what:'Classificação por pontos e níveis.', to:['m-ranking'] },
+    { id:'r-tools', layer:'rota', nome:'Ferramentas', file:'#tools',
+      what:'17 ferramentas da qualidade: Pareto, Ishikawa, GUT, PDCA, DMAIC, carta de controle e outras.', to:['m-tools'] },
+    { id:'r-checklist', layer:'rota', nome:'Rotina ADM', file:'#checklist',
+      what:'Checklist diário administrativo.', to:['m-checklist'] },
+    { id:'r-feriados', layer:'rota', nome:'Feriados', file:'#feriados',
+      what:'Calendário de feriados mantido pelos coordenadores.', to:['m-feriados'] },
+    { id:'r-chat', layer:'rota', nome:'Chat Geral', file:'#chat',
+      what:'Conversa aberta da empresa, com contador de quem está online.', to:['m-chat'] },
+    { id:'r-paineis', layer:'rota', nome:'Painéis', file:'#paineis',
+      what:'Portal de painéis HTML publicados pelas áreas.', to:['m-paineis'] },
+    { id:'r-analytics', layer:'rota', nome:'Analytics Studio', file:'#analytics',
+      what:'Laboratório de análise estatística sobre planilhas que você carrega.', to:['m-analytics'] },
+    { id:'r-announcements', layer:'rota', nome:'Avisos', file:'#announcements',
+      what:'Comunicados da liderança.', to:['m-announcements'] },
+    { id:'r-testimonials', layer:'rota', nome:'Depoimentos', file:'#testimonials',
+      what:'Elogios entre colegas — rendem pontos aos dois lados.', to:['m-testimonials'] },
+    { id:'r-results', layer:'rota', nome:'Resultados', file:'#results',
+      what:'Consolidação de resultados por área.', to:['m-results'] },
+
+    // ---------- MÓDULOS ----------
+    { id:'m-dashboard', layer:'modulo', nome:'NepDashboard', file:'js/dashboard.js', linhas:847,
+      what:'Monta KPIs, gráfico de status, carga de trabalho, mini-ranking e alertas de atraso. Escuta o Firestore em tempo real.',
+      note:'Corrigido: a taxa "no prazo" mostrava 100% para quem nunca entregou nada, e "Concluídas" contava tarefas que ainda aguardavam o gestor.',
+      to:['c-tasks','c-tickets','svc-points','svc-ach','svc-logo'] },
+
+    { id:'m-kanban', layer:'modulo', nome:'NexusKanban', file:'js/kanban.js', linhas:2804,
+      what:'O quadro completo: criar demanda, arrastar entre colunas, entregar com evidência, o gestor validar, arquivar e repetir semanalmente. É onde a pontuação nasce.',
+      note:'Tinha um erro que fazia TODA entrega falhar (variável não declarada). Também era possível aprovar a própria tarefa e inflar pontos trocando o tipo depois de criada.',
+      to:['c-tasks','c-users','svc-gam','svc-notif','svc-storage','svc-logo'] },
+
+    { id:'m-profile', layer:'modulo', nome:'NexusProfile', file:'js/profile.js', linhas:2390,
+      what:'Perfil completo: foto, banner, nível, conquistas, hierarquia real (seu gestor pelo nome), desempenho no Kanban, evolução de pontos, férias, chamados, fórum e últimos acessos.',
+      to:['c-users','c-points','c-ptx','c-tasks','c-vac','c-tickets','c-forum','c-analytics','svc-storage','svc-ach'] },
+
+    { id:'m-admin', layer:'modulo', nome:'NexusAdmin', file:'js/admin.js', linhas:3366,
+      what:'Dez abas de gestão. Coordenador e acima veem só Dashboard e Usuários; o resto é do ADMIN. Diretor e Superintendente ganham a Visão Estratégica por Logo.',
+      note:'Vários indicadores comparavam status que o Kanban nunca grava ("Concluído" em vez de "done"), então mediam sempre zero ou o número errado.',
+      to:['c-users','c-tasks','c-tickets','c-vac','c-points','c-ptx','c-audit','c-analytics','svc-audit','svc-analytics'] },
+
+    { id:'m-forum', layer:'modulo', nome:'NexusForum', file:'js/forum.js', linhas:1388,
+      what:'Tópicos, respostas e marcação de solução. Responder e ter a resposta aceita rende pontos.',
+      to:['c-forum','svc-gam'] },
+    { id:'m-tickets', layer:'modulo', nome:'TicketManagement', file:'js/ticket-management.js', linhas:571,
+      what:'Ciclo do chamado: abrir, atribuir, devolver e resolver.',
+      to:['c-tickets','svc-gam','svc-notif'] },
+    { id:'m-vacation', layer:'modulo', nome:'NexusVacation', file:'js/vacation-control.js', linhas:801,
+      what:'Programação de férias com cálculo de dias, venda de dias e adiantamento do 13º.',
+      note:'O colaborador agora é escolhido numa lista (grava o uid). Antes era texto livre, então o registro não tinha vínculo e homônimos se confundiam.',
+      to:['c-vac','c-users','svc-logo'] },
+    { id:'m-ranking', layer:'modulo', nome:'NexusScoring', file:'js/scoring.js', linhas:786,
+      what:'Classificação geral, pódio e histórico de pontos.',
+      to:['c-points','c-ptx','c-users'] },
+    { id:'m-tools', layer:'modulo', nome:'NexusTools', file:'js/tools.js', linhas:3569,
+      what:'Catálogo das 17 ferramentas. Cada uma roda inteira no navegador, com demonstração no primeiro uso.',
+      to:['t-pareto','t-ishikawa','t-gut','t-pdca','t-dmaic','t-cep','t-5w','t-grafo','svc-tools'] },
+    { id:'m-checklist', layer:'modulo', nome:'RotinaADM', file:'js/rotina-adm.js', linhas:1205,
+      what:'Checklist diário; completar o dia rende pontos.',
+      to:['c-rotinas','svc-gam'] },
+    { id:'m-feriados', layer:'modulo', nome:'NexusHolidays', file:'js/holidays.js',
+      what:'Calendário de feriados. Já vem com os nacionais, incluindo os móveis calculados a partir da Páscoa.',
+      to:['c-holidays'] },
+    { id:'m-chat', layer:'modulo', nome:'NexusChat', file:'js/chat-geral.js',
+      what:'Conversa em tempo real, sem anexos e sem histórico permanente, com contagem de pessoas online.',
+      note:'Usa o Realtime Database (não o Firestore) porque a presença online depende de onDisconnect, que só existe lá.',
+      to:['rtdb'] },
+    { id:'m-paineis', layer:'modulo', nome:'NexusPanels', file:'js/panels-portal.js', linhas:1143,
+      what:'Portal de painéis HTML com versionamento, favoritos e relatórios de erro.',
+      to:['c-panels','svc-storage','svc-logo'] },
+    { id:'m-analytics', layer:'modulo', nome:'NepAnalyticsStudio', file:'js/analytics-studio.js', linhas:860,
+      what:'Sete abas de análise sobre planilhas carregadas por você: correlação com teste de significância, controle estatístico, capacidade, previsão e simulação. Nada sai do navegador.',
+      to:['t-cep'] },
+    { id:'m-announcements', layer:'modulo', nome:'NexusAnnouncements', file:'js/announcements.js', linhas:748,
+      what:'Comunicados segmentados por cargo.',
+      to:['c-announce','svc-notif'] },
+    { id:'m-testimonials', layer:'modulo', nome:'NexusTestimonials', file:'js/testimonials.js', linhas:1135,
+      what:'Elogios entre colegas, com moderação. Quem envia ganha 10 pontos, quem recebe ganha 50.',
+      to:['c-testi','c-users','svc-gam','svc-notif'] },
+    { id:'m-results', layer:'modulo', nome:'NexusResults', file:'js/reports.js', linhas:968,
+      what:'Relatórios e consolidação de resultados por área.',
+      to:['c-reports','svc-gam'] },
+
+    // ---------- FERRAMENTAS ----------
+    { id:'t-pareto', layer:'servico', nome:'Diagrama de Pareto', file:'js/tools-pareto-pro.js', linhas:520,
+      what:'Ordena causas por frequência e marca onde 80% do efeito se acumula.', to:[] },
+    { id:'t-ishikawa', layer:'servico', nome:'Ishikawa', file:'js/tools-ishikawa-pro.js',
+      what:'Espinha de peixe para causa raiz, nos 6M.', to:[] },
+    { id:'t-gut', layer:'servico', nome:'Matriz GUT', file:'js/tools-gut-pro.js', linhas:586,
+      what:'Prioriza por Gravidade × Urgência × Tendência.', to:[] },
+    { id:'t-pdca', layer:'servico', nome:'PDCA', file:'js/tools-pdca-pro.js', linhas:541,
+      what:'Estrutura o ciclo Planejar, Fazer, Checar e Agir.', to:[] },
+    { id:'t-dmaic', layer:'servico', nome:'DMAIC', file:'js/tools-dmaic-pro.js',
+      what:'Roteiro Seis Sigma: Definir, Medir, Analisar, Melhorar e Controlar.', to:[] },
+    { id:'t-cep', layer:'servico', nome:'Carta de Controle', file:'js/tools-cep-pro.js', linhas:647,
+      what:'Controle estatístico de processo. Os limites saem da amplitude móvel (σ = MR/1,128), não do desvio geral — que é o cálculo correto para carta de valores individuais.', to:[] },
+    { id:'t-5w', layer:'servico', nome:'5 Porquês', file:'js/tools-cincoporques-pro.js',
+      what:'Encadeia perguntas até chegar na causa raiz.', to:[] },
+    { id:'t-grafo', layer:'servico', nome:'Grafo do NEP', file:'js/tools-grafo.js', linhas:741,
+      what:'Desenha o mapa do próprio sistema dentro da plataforma.',
+      note:'Ainda listava "Gemini AI" e "NEP Help" como componentes ativos depois de a IA ser removida. Nós corrigidos.', to:[] },
+
+    // ---------- SERVIÇOS ----------
+    { id:'svc-gam', layer:'servico', nome:'Gamificação', file:'js/gamification.js',
+      what:'Único escritor de pontos. Usa transação atômica para somar o saldo e registrar a movimentação no mesmo passo.',
+      note:'No plano gratuito não há Cloud Functions, e fluxos legítimos exigem que o próprio usuário grave os próprios pontos. Por isso a proteção é um teto de 200 por escrita mais o histórico auditável — mitigação, não eliminação.',
+      to:['c-points','c-ptx'] },
+    { id:'svc-points', layer:'servico', nome:'PointsService', file:'js/points-service.js',
+      what:'Leitura de saldo, nível e ranking. Delega toda escrita para a Gamificação.', to:['c-points','c-ptx'] },
+    { id:'svc-ach', layer:'servico', nome:'Conquistas', file:'js/achievements.js', linhas:799,
+      what:'Medalhas, sequência de dias ativos e estatísticas acumuladas.', to:['c-ach'] },
+    { id:'svc-notif', layer:'servico', nome:'Notificações', file:'js/notifications.js', linhas:623,
+      what:'Avisos internos e push. Cada pessoa só recebe o que é dela, do seu cargo ou de toda a empresa.',
+      note:'A consulta trazia notificações de todo mundo e filtrava no navegador. Hoje o filtro é feito na origem e reforçado pelas regras.',
+      to:['c-notif','c-push'] },
+    { id:'svc-analytics', layer:'servico', nome:'AnalyticsService', file:'js/analytics-service.js',
+      what:'Registra cada acesso a módulo e uso de ferramenta. É o que alimenta o painel de uso diário.',
+      to:['c-analytics'] },
+    { id:'svc-audit', layer:'servico', nome:'Auditoria', file:'js/audit-service.js',
+      what:'Trilha imutável de ações administrativas: quem fez, o quê e quando.', to:['c-audit'] },
+    { id:'svc-logo', layer:'servico', nome:'LogoService', file:'js/logo-service.js',
+      what:'Separação por cliente/produto (logo). Define quem enxerga o quê. Admin, Diretor e Superintendente veem todas.',
+      to:['c-users'] },
+    { id:'svc-storage', layer:'servico', nome:'Armazenamento', file:'js/storage-service.js',
+      what:'Anexos, fotos de perfil e banners.',
+      note:'É o único ponto que ainda usa Supabase — só para guardar arquivos. Todo o resto do sistema é Firebase.',
+      to:['supa'] },
+    { id:'svc-tools', layer:'servico', nome:'ToolsService', file:'js/tools-service.js', linhas:508,
+      what:'Base comum das ferramentas: salvar, exportar e permissão de uso.', to:['c-userdata'] },
+    { id:'svc-search', layer:'servico', nome:'Busca global', file:'js/global-search.js', linhas:784,
+      what:'Procura em tarefas, tópicos, painéis e pessoas de uma vez só.',
+      note:'Consultava a coleção "agendas" a cada busca — módulo que já tinha sido apagado. Removido.',
+      to:['c-tasks','c-forum','c-panels'] },
+    { id:'svc-report', layer:'servico', nome:'Relatório diário por e-mail', file:'scripts/send-usage-report.js',
+      what:'Todo dia às 9h envia o resumo de uso para Coordenador e acima.',
+      note:'Roda no GitHub Actions, não no Firebase: agendamento no Firebase exigiria plano pago.',
+      to:['c-analytics','c-users'] },
+
+    // ---------- DADOS ----------
+    { id:'c-users', layer:'dados', nome:'users', file:'Firestore',
+      what:'Cadastro de pessoas: nome, cargo, status, gestor direto (gestor_uid) e logos. É a base de toda a hierarquia e de todas as permissões.',
+      note:'A pessoa pode editar o próprio nome — por isso todo lugar que exibe nome precisa escapar HTML, senão vira porta de XSS.',
+      roles:['Leitura: qualquer ativo','Escrita: própria, ou gestor','Cargo/status: só ADMIN'] },
+    { id:'c-tasks', layer:'dados', nome:'tasks', file:'Firestore',
+      what:'As demandas do Kanban. Status real: backlog, doing, pending, done, archived. Só conta como entrega quando validated é verdadeiro.',
+      roles:['Leitura: qualquer ativo','Validar: só o gestor direto','Prazo e tipo: só o gestor'] },
+    { id:'c-points', layer:'dados', nome:'user_points', file:'Firestore',
+      what:'Saldo de pontos e nível de cada pessoa.',
+      note:'Gravável pelo cliente por necessidade do plano gratuito, com teto de 200 por escrita.',
+      roles:['Leitura: qualquer ativo','Escrita: limitada a 200/vez'] },
+    { id:'c-ptx', layer:'dados', nome:'points_transactions', file:'Firestore',
+      what:'Extrato de cada ponto ganho ou perdido. É o que permite auditar o placar.',
+      roles:['Só acrescenta','Alterar/apagar: só ADMIN'] },
+    { id:'c-tickets', layer:'dados', nome:'tickets', file:'Firestore',
+      what:'Chamados internos.', roles:['Só quem abriu ou é responsável'] },
+    { id:'c-vac', layer:'dados', nome:'vacations', file:'Firestore',
+      what:'Programação de férias, agora ligada ao uid do colaborador.' },
+    { id:'c-forum', layer:'dados', nome:'forum_topics · forum_replies', file:'Firestore',
+      what:'Tópicos e respostas, com marcação de solução aceita.' },
+    { id:'c-notif', layer:'dados', nome:'notifications', file:'Firestore',
+      what:'Avisos internos, endereçados por pessoa, cargo ou para todos.',
+      roles:['Cada um lê só o que é seu'] },
+    { id:'c-analytics', layer:'dados', nome:'user_analytics', file:'Firestore',
+      what:'Trilha de uso: quem abriu qual módulo e quando. Alimenta o painel de uso e o relatório por e-mail.' },
+    { id:'c-audit', layer:'dados', nome:'audit_logs', file:'Firestore',
+      what:'Registro imutável de ações administrativas.', roles:['Só ADMIN lê'] },
+    { id:'c-panels', layer:'dados', nome:'panels · versions · favorites', file:'Firestore',
+      what:'Painéis publicados, com histórico de versões e favoritos.' },
+    { id:'c-holidays', layer:'dados', nome:'holidays', file:'Firestore',
+      what:'Feriados cadastrados.', roles:['Coordenador+ cadastra'] },
+    { id:'c-rotinas', layer:'dados', nome:'rotinas_adm', file:'Firestore',
+      what:'Checklists diários preenchidos.' },
+    { id:'c-testi', layer:'dados', nome:'testimonials', file:'Firestore',
+      what:'Elogios entre colegas. Aceita envio anônimo pela página pública, sempre como não-aprovado.' },
+    { id:'c-announce', layer:'dados', nome:'announcements', file:'Firestore',
+      what:'Comunicados da liderança.' },
+    { id:'c-reports', layer:'dados', nome:'reports', file:'Firestore',
+      what:'Relatórios enviados.' },
+    { id:'c-ach', layer:'dados', nome:'user_achievements', file:'Firestore',
+      what:'Medalhas desbloqueadas e estatísticas de cada pessoa.' },
+    { id:'c-push', layer:'dados', nome:'push_subscriptions', file:'Firestore',
+      what:'Inscrições de notificação push do aplicativo instalado.' },
+    { id:'c-userdata', layer:'dados', nome:'user_data', file:'Firestore',
+      what:'Trabalhos salvos nas ferramentas da qualidade.' },
+    { id:'rtdb', layer:'dados', nome:'Realtime Database', file:'chat_geral · presence',
+      what:'Mensagens do chat e presença online. Separado do Firestore porque só ele desconecta a pessoa sozinho quando a aba fecha.' },
+    { id:'supa', layer:'dados', nome:'Supabase Storage', file:'Arquivos',
+      what:'Anexos, fotos e banners.',
+      note:'Único serviço fora do Firebase que continua em uso.' }
+  ];
+
+  var LAYERS = [
+    { id:'infra',   nome:'Origem e segurança' },
+    { id:'rota',    nome:'Rotas' },
+    { id:'modulo',  nome:'Módulos' },
+    { id:'servico', nome:'Serviços' },
+    { id:'dados',   nome:'Dados' }
+  ];
+
+  var byId = {};
+  N.forEach(function (n) { byId[n.id] = n; });
+
+  // Índice reverso: quem aponta para mim
+  var incoming = {};
+  N.forEach(function (n) {
+    (n.to || []).forEach(function (t) {
+      (incoming[t] = incoming[t] || []).push(n.id);
+    });
+  });
+
+  var layersEl = document.getElementById('layers');
+  var wiresEl  = document.getElementById('wires');
+  var railEl   = document.getElementById('rail');
+  var chipsEl  = document.getElementById('chips');
+  var qEl      = document.getElementById('q');
+
+  var selected = null;
+  var hiddenLayers = {};
+
+  // ---------- Contadores reais ----------
+  function countLayer(l) { return N.filter(function (n) { return n.layer === l; }).length; }
+  document.getElementById('c-rotas').textContent = countLayer('rota');
+  document.getElementById('c-mod').textContent   = countLayer('modulo');
+  document.getElementById('c-srv').textContent   = N.filter(function(n){ return n.layer==='servico' && n.id.indexOf('svc-')===0; }).length;
+  document.getElementById('c-col').textContent   = countLayer('dados');
+
+  // ---------- Filtros por camada ----------
+  LAYERS.forEach(function (L) {
+    var b = document.createElement('button');
+    b.className = 'chip';
+    b.dataset.layer = L.id;
+    b.setAttribute('aria-pressed', 'true');
+    b.innerHTML = '<span class="dot"></span>' + L.nome;
+    b.addEventListener('click', function () {
+      hiddenLayers[L.id] = !hiddenLayers[L.id];
+      b.setAttribute('aria-pressed', hiddenLayers[L.id] ? 'false' : 'true');
+      applyFilters();
+    });
+    chipsEl.appendChild(b);
+  });
+
+  // ---------- Desenha as colunas ----------
+  LAYERS.forEach(function (L) {
+    var col = document.createElement('div');
+    col.className = 'col';
+    col.dataset.layer = L.id;
+
+    var items = N.filter(function (n) { return n.layer === L.id; });
+
+    var head = document.createElement('div');
+    head.className = 'col-head';
+    head.innerHTML = '<b>' + L.nome + '</b><span>' + items.length + '</span>';
+    col.appendChild(head);
+
+    items.forEach(function (n) {
+      var b = document.createElement('button');
+      b.className = 'node';
+      b.id = 'node-' + n.id;
+      b.dataset.id = n.id;
+      b.dataset.layer = n.layer;
+      b.setAttribute('aria-pressed', 'false');
+
+      var right = n.linhas
+        ? '<span class="meta">' + n.linhas.toLocaleString('pt-BR') + '</span>'
+        : '';
+      if (n.note) right = '<span class="flag" title="Tem ressalva registrada"></span>' + right;
+
+      b.innerHTML = '<span class="nm">' + n.nome + '</span>' + right;
+      b.addEventListener('click', function () { select(n.id); });
+      col.appendChild(b);
+    });
+
+    layersEl.appendChild(col);
+  });
+
+  // ---------- Ligações ----------
+  function drawWires() {
+    var box = layersEl.getBoundingClientRect();
+    wiresEl.setAttribute('viewBox', '0 0 ' + box.width + ' ' + box.height);
+    var out = '';
+
+    N.forEach(function (n) {
+      (n.to || []).forEach(function (tid) {
+        var a = document.getElementById('node-' + n.id);
+        var b = document.getElementById('node-' + tid);
+        if (!a || !b) return;
+        if (a.classList.contains('hidden') || b.classList.contains('hidden')) return;
+
+        var ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect();
+        var x1 = ra.right - box.left, y1 = ra.top - box.top + ra.height / 2;
+        var x2 = rb.left  - box.left, y2 = rb.top - box.top + rb.height / 2;
+        var dx = Math.max(26, (x2 - x1) * 0.45);
+
+        var lit = selected && (selected === n.id || selected === tid);
+        var dim = selected && !lit;
+        var cls = 'wire' + (lit ? ' lit' : '') + (dim ? ' dim' : '');
+        var color = lit ? getComputedStyle(document.getElementById('node-' + selected)).getPropertyValue('--nc') : '';
+
+        out += '<path class="' + cls + '" d="M' + x1 + ',' + y1 +
+               ' C' + (x1 + dx) + ',' + y1 + ' ' + (x2 - dx) + ',' + y2 + ' ' + x2 + ',' + y2 + '"' +
+               (color ? ' style="stroke:' + color.trim() + '"' : '') + '/>';
+      });
+    });
+    wiresEl.innerHTML = out;
+  }
+
+  // ---------- Seleção ----------
+  function select(id) {
+    selected = (selected === id) ? null : id;
+
+    document.querySelectorAll('.node').forEach(function (el) {
+      el.setAttribute('aria-pressed', el.dataset.id === selected ? 'true' : 'false');
+      el.classList.remove('dim');
+    });
+
+    if (selected) {
+      var rel = {};
+      rel[selected] = 1;
+      (byId[selected].to || []).forEach(function (t) { rel[t] = 1; });
+      (incoming[selected] || []).forEach(function (s) { rel[s] = 1; });
+      document.querySelectorAll('.node').forEach(function (el) {
+        if (!rel[el.dataset.id]) el.classList.add('dim');
+      });
+    }
+
+    renderRail();
+    drawWires();
+  }
+
+  function layerName(l) {
+    for (var i = 0; i < LAYERS.length; i++) if (LAYERS[i].id === l) return LAYERS[i].nome;
+    return l;
+  }
+
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  function linkList(ids, titulo) {
+    if (!ids || !ids.length) return '';
+    var h = '<div class="d-sec">' + titulo + '</div><div class="links">';
+    ids.forEach(function (id) {
+      var n = byId[id];
+      if (!n) return;
+      h += '<button class="linkbtn" data-goto="' + esc(id) + '">' +
+           '<span class="sq" data-layer="' + esc(n.layer) + '"></span>' +
+           '<span>' + esc(n.nome) + '</span></button>';
+    });
+    return h + '</div>';
+  }
+
+  function renderRail() {
+    if (!selected) {
+      railEl.innerHTML =
+        '<div class="empty"><b>Selecione uma peça</b>' +
+        'Clique em qualquer caixa do mapa — ou use Tab e Enter — para ver a ' +
+        'explicação, o arquivo e as conexões dela.' +
+        '<div class="legend-note">O ponto laranja marca peças com ressalva conhecida: ' +
+        'limitação aceita, dependência externa ou dívida registrada.</div></div>';
+      return;
+    }
+
+    var n = byId[selected];
+    var h = '';
+
+    h += '<div class="d-layer" style="color:var(--' + n.layer + ')">' +
+         '<span class="dot"></span>' + esc(layerName(n.layer)) + '</div>';
+    h += '<h2 class="d-title">' + esc(n.nome) + '</h2>';
+    h += '<div class="d-file">' + esc(n.file) + (n.linhas ? ' · ' + n.linhas.toLocaleString('pt-BR') + ' linhas' : '') + '</div>';
+    h += '<p class="d-what">' + esc(n.what) + '</p>';
+
+    if (n.note) h += '<p class="d-note">' + esc(n.note) + '</p>';
+
+    if (n.roles && n.roles.length) {
+      h += '<div class="d-sec">Quem acessa</div><div class="tags">';
+      n.roles.forEach(function (r) { h += '<span class="tag k-role">' + esc(r) + '</span>'; });
+      h += '</div>';
+    }
+
+    var dados = (n.to || []).filter(function (t) { return byId[t] && byId[t].layer === 'dados'; });
+    if (dados.length) {
+      h += '<div class="d-sec">Dados que toca</div><div class="tags">';
+      dados.forEach(function (d) { h += '<span class="tag k-dados">' + esc(byId[d].nome) + '</span>'; });
+      h += '</div>';
+    }
+
+    var saida = (n.to || []).filter(function (t) { return byId[t] && byId[t].layer !== 'dados'; });
+    h += linkList(saida, 'Usa');
+    h += linkList(incoming[selected], 'É chamado por');
+
+    railEl.innerHTML = h;
+
+    railEl.querySelectorAll('[data-goto]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var alvo = b.dataset.goto;
+        selected = null;
+        select(alvo);
+        var el = document.getElementById('node-' + alvo);
+        if (el) el.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+      });
+    });
+  }
+
+  // ---------- Busca e filtro ----------
+  function applyFilters() {
+    var q = (qEl.value || '').trim().toLowerCase();
+
+    N.forEach(function (n) {
+      var el = document.getElementById('node-' + n.id);
+      if (!el) return;
+
+      var okLayer = !hiddenLayers[n.layer];
+      var okQuery = !q ||
+        n.nome.toLowerCase().indexOf(q) >= 0 ||
+        String(n.file).toLowerCase().indexOf(q) >= 0 ||
+        String(n.what).toLowerCase().indexOf(q) >= 0;
+
+      el.classList.toggle('hidden', !(okLayer && okQuery));
+    });
+
+    document.querySelectorAll('.col').forEach(function (col) {
+      var vis = col.querySelectorAll('.node:not(.hidden)').length;
+      var head = col.querySelector('.col-head span');
+      if (head) head.textContent = vis;
+    });
+
+    drawWires();
+  }
+
+  qEl.addEventListener('input', applyFilters);
+
+  // ---------- Ciclo de vida ----------
+  window.addEventListener('resize', drawWires);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(drawWires);
+  requestAnimationFrame(function () { requestAnimationFrame(drawWires); });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && selected) { select(selected); }
+  });
+})();
+</script>

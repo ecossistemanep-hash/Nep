@@ -11,9 +11,7 @@
             "**/*.cmd",
             "**/*.ps1",
             "**/*.dll",
-            "**/ENGENHARIA_BOAS_PRATICAS.md",
-            "**/CONFIGURACAO_DOMINIO.md",
-            "**/README.md"
+            "**/*.md"
         ],
         "headers": [
             {

@@ -15,7 +15,13 @@ const EXCLUDED_FROM_BUILD = [
     'recalcular-pontos.html',
     'seed-analytics.html',
     'debug-announcements.html',
-    'import-users.html'
+    'import-users.html',
+    // Mapa interativo do sistema: documenta rotas, papéis e limitações de
+    // segurança conhecidas (ex.: teto do cofre de pontos). Útil para quem
+    // desenvolve, mas não deve ficar público sem login num endereço
+    // adivinhável — daria a qualquer visitante um roteiro guiado dos pontos
+    // fracos do sistema.
+    'mapa-sistema.html'
 ];
 
 // Automatically find all HTML files in the root directory
