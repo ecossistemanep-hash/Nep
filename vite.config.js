@@ -50,7 +50,11 @@ export default defineConfig({
         viteStaticCopy({
             targets: [
                 {
-                    src: 'js/*',
+                    // setup-admin.js só existe para setup-admin.html, que está
+                    // em EXCLUDED_FROM_BUILD por não ter checagem de auth
+                    // nenhuma — sem esta negação o script continuava sendo
+                    // publicado mesmo com a página que o usa dando 404.
+                    src: ['js/*', '!js/setup-admin.js'],
                     dest: 'js'
                 },
                 {
