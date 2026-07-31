@@ -606,6 +606,89 @@ service cloud.firestore {
         || (isActive() && resource.data.createdBy == request.auth.uid);
     }
 
+    // "absences" — férias/ausências usadas pela aba Capacidade. Cadastro
+    // restrito a quem gerencia pessoas (mesmo corte de canManagePeople do
+    // Report); leitura liberada porque a aba de carga precisa dela pra todo
+    // mundo ver utilização de time.
+    match /absences/{absenceId} {
+      allow read: if isActive();
+      allow create, update, delete: if isAdmin()
+        || (isActive() && myProfile().cargo == 'SUPERINTENDENTE');
+    }
+
+    // "routines" e "routine_runs" — rotina de processo atribuída (aba
+    // Rotinas). Só gestão cria/edita a rotina em si; o responsável marca a
+    // própria execução.
+    match /routines/{routineId} {
+      allow read: if isActive();
+      allow create, update, delete: if isAdmin() || isManager();
+    }
+    match /routine_runs/{runId} {
+      allow read: if isActive();
+      allow create, update: if isActive() && !isReportExecutivoReadOnly();
+      allow delete: if isAdmin() || isManager();
+    }
+
+    // "personal_tasks" — lista pessoal do dia. Isolamento estrito: só o
+    // dono lê/escreve, SEM exceção para admin/diretor/superintendente
+    // (mesma decisão do Report Executivo — não é dado gerencial, é uma
+    // lista de afazeres auto-declarada).
+    match /personal_tasks/{taskId} {
+      allow read, update, delete: if isActive() && resource.data.userId == request.auth.uid;
+      allow create: if isActive() && request.resource.data.userId == request.auth.uid;
+    }
+
+    // "okr_objectives"/"okr_targets"/"okr_measurements" — ciclo de OKR
+    // completo (Decisão do usuário: portar OKR por inteiro). Dono do
+    // objetivo e gestão podem escrever; leitura liberada a todos os ativos
+    // (a aba já filtra "Meu OKR" vs visão de gestão no client).
+    match /okr_objectives/{objectiveId} {
+      allow read: if isActive();
+      allow create: if isActive() && !isReportExecutivoReadOnly()
+        && request.resource.data.ownerUid == request.auth.uid;
+      allow update, delete: if isAdmin() || isManager()
+        || (isActive() && resource.data.ownerUid == request.auth.uid);
+    }
+    match /okr_targets/{targetId} {
+      allow read: if isActive();
+      allow create, update, delete: if isAdmin() || isManager()
+        || (isActive() && !isReportExecutivoReadOnly());
+    }
+    match /okr_measurements/{measurementId} {
+      allow read: if isActive();
+      allow create: if isActive() && !isReportExecutivoReadOnly();
+      allow update, delete: if isAdmin() || isManager();
+    }
+
+    // "executive_decisions" — rastreio de decisões executivas (aba
+    // Executivo). Gestão cria/edita; leitura liberada (transparência).
+    match /executive_decisions/{decisionId} {
+      allow read: if isActive();
+      allow create, update, delete: if isAdmin() || isManager();
+    }
+
+    // "user_pdis" — plano de desenvolvimento individual, auto-administrado
+    // (aba Desenvolvimento). Só o dono edita o próprio; gestão só lê.
+    match /user_pdis/{pdiId} {
+      allow read: if isActive();
+      allow create, update: if isActive() && request.resource.data.userId == request.auth.uid;
+      allow delete: if isAdmin() || (isActive() && resource.data.userId == request.auth.uid);
+    }
+
+    // "one_on_ones" — atas de 1:1. Só gestor e colaborador envolvidos leem;
+    // só o gestor que fez a ata escreve (mesmo padrão do Report).
+    match /one_on_ones/{oneOnOneId} {
+      allow read: if isActive() && (
+        resource.data.managerUid == request.auth.uid
+        || resource.data.collaboratorUid == request.auth.uid
+        || isAdmin()
+      );
+      allow create: if isActive() && !isReportExecutivoReadOnly()
+        && request.resource.data.managerUid == request.auth.uid;
+      allow update, delete: if isAdmin()
+        || (isActive() && resource.data.managerUid == request.auth.uid);
+    }
+
     // ========================================================================
     // DEFAULT DENY
     // ========================================================================

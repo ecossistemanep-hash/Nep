@@ -117,6 +117,12 @@ const UserManagement = {
 
             await setDoc(doc(db, this.COLLECTION, newUser.uid), userData);
 
+            // Cadeia de gestores desnormalizada (ver js/manager-chain-service.js)
+            // — só precisa rodar se o usuário já nasceu com gestor definido.
+            if (userData.gestor_uid && window.ManagerChainService) {
+                await window.ManagerChainService.recomputeChain(newUser.uid);
+            }
+
             // Registrar na auditoria
             if (window.AuditService) {
                 await window.AuditService.log(

@@ -804,6 +804,14 @@ const NexusAdmin = {
           await db.collection('users').doc(user.uid).update(updates);
         }
 
+        // Gestor mudou: recalcula a cadeia de gestores desnormalizada deste
+        // usuário e, em cascata, de todos os seus subordinados (ver
+        // js/manager-chain-service.js — é o que dá visibilidade hierárquica
+        // multi-nível ao Report Executivo sem Cloud Function).
+        if ('gestor_uid' in updates && window.ManagerChainService) {
+          await window.ManagerChainService.recomputeChain(user.uid);
+        }
+
         if (typeof NexusApp !== 'undefined') NexusApp.showToast('Usuário atualizado!', 'success');
         modal.remove();
         await this.loadTabContent();
