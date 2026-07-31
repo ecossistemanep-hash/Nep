@@ -73,10 +73,17 @@ service cloud.firestore {
     // Executivo — Firestore não expressa recursão em regra sem Cloud
     // Function paga, então a cadeia é recalculada no cliente quando
     // gestor_uid muda e gravada como array plano de uids).
+    // Ainda não chamada por nenhum match (função morta até a Fase 3 usar
+    // ownerUid real nas coleções do Report Executivo) — o `firebase deploy`
+    // emite avisos de "Unused function"/nomes inválidos em cascata para
+    // corpos de função não referenciados; são só ruído do analisador
+    // estático, não erro (rules compilaram e publicaram normalmente).
     function isInManagerChain(ownerUid) {
+      let ownerDoc = get(/databases/$(database)/documents/users/$(ownerUid));
       return isActive()
         && exists(/databases/$(database)/documents/users/$(ownerUid))
-        && request.auth.uid in get(/databases/$(database)/documents/users/$(ownerUid)).data.get('cadeia_gestores', []);
+        && ('cadeia_gestores' in ownerDoc.data)
+        && request.auth.uid in ownerDoc.data.cadeia_gestores;
     }
 
     // ========================================================================
