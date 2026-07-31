@@ -36,9 +36,15 @@ const NexusAuthService = {
         'SUPERINTENDENTE': { level: 5, label: 'SUPERINTENDENTE', canManageUsers: false },
         'GERENTE': { level: 4, label: 'GERENTE', canManageUsers: false },
         'CONSULTOR': { level: 3, label: 'CONSULTOR', canManageUsers: false },
+        'LIDER': { level: 2.5, label: 'LÍDER', canManageUsers: false },
         'COORDENADOR': { level: 2, label: 'COORDENADOR', canManageUsers: false },
         'ANALISTA': { level: 1, label: 'ANALISTA', canManageUsers: false },
-        'MONITOR': { level: 0, label: 'MONITOR', canManageUsers: false }
+        'MONITOR': { level: 0, label: 'MONITOR', canManageUsers: false },
+        // Papéis portados do Report Executivo (ver docs/MODELO-DE-ACESSO.md
+        // do app irmão): só leitura, sem gestão de usuários nem de módulos
+        // restritos (aplicado nas telas do Report Executivo e no Firestore).
+        'VIEWER': { level: -1, label: 'VIEWER', canManageUsers: false },
+        'CONVIDADO': { level: -2, label: 'CONVIDADO', canManageUsers: false }
     },
 
     // =========================================

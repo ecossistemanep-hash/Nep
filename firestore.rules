@@ -52,9 +52,31 @@ service cloud.firestore {
         : cargo == 'GERENTE' ? 70
         : cargo == 'CONSULTOR' ? 60
         : cargo == 'COORDENADOR' ? 50
+        : cargo == 'LIDER' ? 40
         : cargo == 'ANALISTA' ? 30
         : cargo == 'MONITOR' ? 10
+        : cargo == 'VIEWER' ? 5
+        : cargo == 'CONVIDADO' ? 1
         : 0;
+    }
+
+    // Papéis somente-leitura portados do Report Executivo: nunca escrevem em
+    // coleções do módulo (viewer/convidado — ver docs/MODELO-DE-ACESSO.md do
+    // app irmão, MANAGEMENT_ONLY_VIEWS).
+    function isReportExecutivoReadOnly() {
+      return isActive() && myProfile().cargo in ['VIEWER', 'CONVIDADO'];
+    }
+
+    // Gestor direto (1 nível, mesmo padrão de isDirectManagerOfTaskOwner) OU
+    // gestor em qualquer nível acima na árvore, via cadeia_gestores
+    // desnormalizada no perfil do usuário (ver SISTEMA de porte do Report
+    // Executivo — Firestore não expressa recursão em regra sem Cloud
+    // Function paga, então a cadeia é recalculada no cliente quando
+    // gestor_uid muda e gravada como array plano de uids).
+    function isInManagerChain(ownerUid) {
+      return isActive()
+        && exists(/databases/$(database)/documents/users/$(ownerUid))
+        && request.auth.uid in get(/databases/$(database)/documents/users/$(ownerUid)).data.get('cadeia_gestores', []);
     }
 
     // ========================================================================
@@ -509,6 +531,60 @@ service cloud.firestore {
     match /achievements/{achievementId} {
       allow read: if isActive();
       allow write: if isAdmin();
+    }
+
+    // ========================================================================
+    // REPORT EXECUTIVO (módulo portado — ver plano de integração)
+    // ========================================================================
+
+    // "items" é a coleção central (equivalente a `items` do Report
+    // Executivo) usada pelas abas Arquivados/Board/Riscos e, nas próximas
+    // fases, Carteira/Dashboard/Capacidade. NOTA: nesta fase a atribuição de
+    // responsável é só texto livre (ownerName) — ainda não há um campo
+    // ownerUid confiável para acionar isInManagerChain()/isDirectManagerOf
+    // aqui. Enquanto isso, a escrita é liberada a qualquer usuário ativo
+    // não-somente-leitura, e a exclusão fica restrita a quem criou ou a
+    // gestão, para não travar o uso real do Board antes da Fase 2 introduzir
+    // atribuição por uid.
+    match /items/{itemId} {
+      allow read: if isActive();
+      allow create: if isActive() && !isReportExecutivoReadOnly()
+        && request.resource.data.createdBy == request.auth.uid;
+      allow update: if isActive() && !isReportExecutivoReadOnly();
+      allow delete: if isAdmin() || isManager()
+        || (isActive() && resource.data.createdBy == request.auth.uid);
+    }
+
+    // "events" — Agenda do Report Executivo (CRUD simples de compromissos).
+    match /events/{eventId} {
+      allow read: if isActive();
+      allow create: if isActive() && !isReportExecutivoReadOnly()
+        && request.resource.data.createdBy == request.auth.uid;
+      allow update, delete: if isAdmin() || isManager()
+        || (isActive() && resource.data.createdBy == request.auth.uid);
+    }
+
+    // "process_improvements" — funil de melhoria de processo (aba Melhorias).
+    match /process_improvements/{improvementId} {
+      allow read: if isActive();
+      allow create: if isActive() && !isReportExecutivoReadOnly()
+        && request.resource.data.requestedBy == request.auth.uid;
+      // Avançar de estágio é uma ação de gestão (equivale a canManageImprovementStatus
+      // no Report Executivo); quem solicitou só edita os próprios campos antes de
+      // sair do estágio inicial.
+      allow update: if isAdmin() || isManager()
+        || (isActive() && resource.data.requestedBy == request.auth.uid
+            && resource.data.stage == 'Solicitação');
+      allow delete: if isAdmin() || isManager();
+    }
+
+    // "improvement_movements" — histórico imutável de transição de estágio;
+    // só é criado pelo código no momento da transição, nunca editado/apagado.
+    match /improvement_movements/{movementId} {
+      allow read: if isActive();
+      allow create: if isActive() && !isReportExecutivoReadOnly()
+        && request.resource.data.movedBy == request.auth.uid;
+      allow update, delete: if false;
     }
 
     // ========================================================================

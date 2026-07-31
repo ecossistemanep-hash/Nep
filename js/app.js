@@ -199,7 +199,8 @@ const NepApp = {
       chat: 'Chat Geral',
       testimonials: 'NEP Depoimentos',
       vacation: 'Controle de Férias',
-      paineis: 'Painéis Corporativos'
+      paineis: 'Painéis Corporativos',
+      reportExecutivo: 'Report Executivo'
     };
 
     const headerTitle = document.getElementById('header-title');
@@ -318,6 +319,9 @@ const NepApp = {
         case 'tickets':
           if (window.TicketManagement) window.TicketManagement.render(content);
           else content.innerHTML = '<div class="loading-spinner"></div><p style="text-align:center">Carregando módulo...</p>';
+          break;
+        case 'reportExecutivo':
+          if (typeof NexusReportExecutivo !== 'undefined') NexusReportExecutivo.render(content);
           break;
         default:
           content.innerHTML = `

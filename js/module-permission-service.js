@@ -18,6 +18,7 @@ const ModulePermissionService = {
     MODULES: [
         { id: 'dashboard', name: 'Dashboard', icon: '🏠', category: 'core' },
         { id: 'kanban', name: 'Kanban (Rotinas)', icon: '📋', category: 'core' },
+        { id: 'reportExecutivo', name: 'Report Executivo', icon: '📊', category: 'core' },
         { id: 'checklist', name: 'Rotina ADM', icon: '✅', category: 'core' },
         { id: 'tools', name: 'Ferramentas', icon: '🧰', category: 'core' },
         { id: 'tickets', name: 'Chamados', icon: '🎫', category: 'core' },
@@ -39,7 +40,7 @@ const ModulePermissionService = {
     ],
 
     // Cargos disponíveis
-    ROLES: ['ADMIN', 'DIRETOR', 'SUPERINTENDENTE', 'GERENTE', 'CONSULTOR', 'COORDENADOR', 'ANALISTA', 'MONITOR'],
+    ROLES: ['ADMIN', 'DIRETOR', 'SUPERINTENDENTE', 'GERENTE', 'CONSULTOR', 'LIDER', 'COORDENADOR', 'ANALISTA', 'MONITOR', 'VIEWER', 'CONVIDADO'],
 
     // Helper para obter timestamp (compatível com módulos ES6)
     _getTimestamp() {

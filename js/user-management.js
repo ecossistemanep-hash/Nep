@@ -35,9 +35,12 @@ const UserManagement = {
         { key: 'SUPERINTENDENTE', label: 'Superintendente', level: 5 },
         { key: 'GERENTE', label: 'Gerente', level: 4 },
         { key: 'CONSULTOR', label: 'Consultor', level: 3 },
+        { key: 'LIDER', label: 'Líder', level: 2.5 },
         { key: 'COORDENADOR', label: 'Coordenador', level: 2 },
         { key: 'ANALISTA', label: 'Analista', level: 1 },
-        { key: 'MONITOR', label: 'Monitor', level: 0 }
+        { key: 'MONITOR', label: 'Monitor', level: 0 },
+        { key: 'VIEWER', label: 'Viewer (Report Executivo)', level: -1 },
+        { key: 'CONVIDADO', label: 'Convidado (Report Executivo)', level: -2 }
     ],
 
     /**
