@@ -74,10 +74,10 @@ const NexusReportExecutivo = {
       { id: 'board', icon: 'fa-table-columns', label: 'Board' },
       { id: 'risks', icon: 'fa-triangle-exclamation', label: 'Riscos' },
       { id: 'improvements', icon: 'fa-arrow-trend-up', label: 'Melhorias' },
-      { id: 'portfolio', icon: 'fa-layer-group', label: 'Carteira', soon: true },
-      { id: 'exec-dashboard', icon: 'fa-gauge-high', label: 'Dashboard', soon: true },
-      { id: 'scorecard', icon: 'fa-clipboard-check', label: 'Meu Scorecard', soon: true },
-      { id: 'materials', icon: 'fa-photo-film', label: 'Materiais', soon: true },
+      { id: 'portfolio', icon: 'fa-layer-group', label: 'Carteira' },
+      { id: 'exec-dashboard', icon: 'fa-gauge-high', label: 'Dashboard' },
+      { id: 'scorecard', icon: 'fa-clipboard-check', label: 'Meu Scorecard' },
+      { id: 'materials', icon: 'fa-photo-film', label: 'Materiais' },
       { id: 'capacity', icon: 'fa-users-gear', label: 'Capacidade', soon: true },
       { id: 'director-summary', icon: 'fa-sitemap', label: 'Resumo Estrutura', soon: true },
       { id: 'routines', icon: 'fa-list-check', label: 'Rotinas', soon: true },
@@ -135,6 +135,10 @@ const NexusReportExecutivo = {
         case 'board': await this.renderBoard(container); break;
         case 'risks': await this.renderRisks(container); break;
         case 'improvements': await this.renderImprovements(container); break;
+        case 'portfolio': await this.renderPortfolio(container); break;
+        case 'exec-dashboard': await this.renderExecDashboard(container); break;
+        case 'scorecard': await this.renderScorecard(container); break;
+        case 'materials': await this.renderMaterials(container); break;
         default: this.renderSoon(container);
       }
     } catch (error) {
@@ -600,6 +604,296 @@ const NexusReportExecutivo = {
       slot.innerHTML = '';
       await this.loadTabContent();
     });
+  },
+
+  // ============ 6. CARTEIRA (Portfolio) ============
+
+  portfolioSort: { key: 'updatedAt', dir: 'desc' },
+
+  async renderPortfolio(container) {
+    const canEdit = this.canEdit();
+    const active = this.items.filter(i => !i.archived);
+    const { key, dir } = this.portfolioSort;
+    const sorted = [...active].sort((a, b) => {
+      let av = a[key], bv = b[key];
+      if (av?.toDate) av = av.toDate();
+      if (bv?.toDate) bv = bv.toDate();
+      if (av == null) av = '';
+      if (bv == null) bv = '';
+      const cmp = av > bv ? 1 : av < bv ? -1 : 0;
+      return dir === 'asc' ? cmp : -cmp;
+    });
+
+    // Agrupa por tag (equivalente simplificado ao rollup por subitem do
+    // Report — sem uma hierarquia de subitens própria ainda, o agrupamento
+    // usado aqui é por tag/categoria).
+    const groups = {};
+    sorted.forEach(i => {
+      const g = i.tag || 'Sem categoria';
+      (groups[g] = groups[g] || []).push(i);
+    });
+
+    const cols = [
+      { key: 'title', label: 'Título' },
+      { key: 'ownerName', label: 'Responsável' },
+      { key: 'status', label: 'Status' },
+      { key: 'priority', label: 'Prioridade' },
+      { key: 'deadline', label: 'Prazo' },
+      { key: 'updatedAt', label: 'Atualizado' }
+    ];
+
+    container.innerHTML = `
+      <div class="admin-section">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+          <p class="page-description">${active.length} frente(s) ativa(s), agrupadas por categoria.</p>
+          <button class="btn btn-sm btn-secondary" id="btn-export-csv"><i class="fa-solid fa-file-csv"></i> Exportar CSV</button>
+        </div>
+        ${Object.entries(groups).map(([group, rows]) => `
+          <div style="margin-bottom:20px;">
+            <div style="font-weight:600;margin-bottom:6px;">${this.escapeHtml(group)} <span style="opacity:.6;font-weight:400;">(${rows.length})</span></div>
+            <div class="table-wrapper">
+              <table class="data-table">
+                <thead><tr>${cols.map(c => `<th data-sort="${c.key}" style="cursor:pointer;">${c.label} ${key === c.key ? (dir === 'asc' ? '▲' : '▼') : ''}</th>`).join('')}</tr></thead>
+                <tbody>
+                  ${rows.map(i => `
+                    <tr>
+                      <td>${this.escapeHtml(i.title || '(sem título)')}</td>
+                      <td>${this.escapeHtml(i.ownerName || '—')}</td>
+                      <td>${this.escapeHtml(i.status || 'Backlog')}</td>
+                      <td>${this.escapeHtml(i.priority || 'Normal')}</td>
+                      <td>${this.fmtDate(i.deadline)}</td>
+                      <td>${this.fmtDate(i.updatedAt)}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        `).join('') || `<p style="text-align:center;color:var(--text-secondary);padding:24px;">Nenhuma frente ativa.</p>`}
+      </div>`;
+
+    container.querySelectorAll('[data-sort]').forEach(th => {
+      th.addEventListener('click', async () => {
+        const k = th.dataset.sort;
+        this.portfolioSort = { key: k, dir: this.portfolioSort.key === k && this.portfolioSort.dir === 'asc' ? 'desc' : 'asc' };
+        await this.loadTabContent();
+      });
+    });
+    document.getElementById('btn-export-csv')?.addEventListener('click', () => this.exportPortfolioCsv(active));
+  },
+
+  exportPortfolioCsv(rows) {
+    const header = ['Título', 'Responsável', 'Status', 'Prioridade', 'Prazo', 'Categoria'];
+    const escapeCsv = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const lines = [header.join(',')];
+    rows.forEach(i => {
+      lines.push([i.title, i.ownerName, i.status, i.priority, this.fmtDate(i.deadline), i.tag].map(escapeCsv).join(','));
+    });
+    const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'carteira-nep.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  },
+
+  // ============ 7. DASHBOARD ============
+
+  async renderExecDashboard(container) {
+    const active = this.items.filter(i => !i.archived);
+    const now = new Date();
+
+    const atrasados = active.filter(i => i.deadline && new Date(i.deadline) < now && (i.status || '') !== 'Concluído');
+    const quaseVencendo = active.filter(i => {
+      if (!i.deadline || (i.status || '') === 'Concluído') return false;
+      const days = (new Date(i.deadline) - now) / 86400000;
+      return days >= 0 && days <= 3;
+    });
+    const gapsDado = active.filter(i => !i.title || !i.status || !i.ownerName);
+    const concluidos = active.filter(i => (i.status || '') === 'Concluído');
+
+    const byOwner = {};
+    active.forEach(i => {
+      const o = i.ownerName || 'Sem responsável';
+      byOwner[o] = (byOwner[o] || 0) + 1;
+    });
+    const ownerLoadSorted = Object.entries(byOwner).sort((a, b) => b[1] - a[1]).slice(0, 8);
+    const maxLoad = Math.max(1, ...ownerLoadSorted.map(([, n]) => n));
+
+    container.innerHTML = `
+      <div class="admin-section">
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:24px;">
+          ${[
+            { label: 'Ativos', value: active.length, color: 'var(--primary-500)' },
+            { label: 'Atrasados', value: atrasados.length, color: '#ef4444' },
+            { label: 'Quase vencendo', value: quaseVencendo.length, color: '#f59e0b' },
+            { label: 'Gaps de dado', value: gapsDado.length, color: '#eab308' },
+            { label: 'Concluídos', value: concluidos.length, color: '#22c55e' }
+          ].map(k => `
+            <div class="card" style="padding:16px;text-align:center;">
+              <div style="font-size:28px;font-weight:700;color:${k.color};">${k.value}</div>
+              <div style="color:var(--text-secondary);font-size:13px;">${k.label}</div>
+            </div>`).join('')}
+        </div>
+        <div class="card" style="padding:16px;">
+          <div style="font-weight:600;margin-bottom:12px;">Carga por responsável</div>
+          ${ownerLoadSorted.length === 0 ? `<p style="color:var(--text-secondary);">Sem dados.</p>` : ownerLoadSorted.map(([owner, n]) => `
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+              <div style="width:140px;font-size:13px;">${this.escapeHtml(owner)}</div>
+              <div style="flex:1;background:var(--bg-secondary);border-radius:6px;overflow:hidden;height:16px;">
+                <div style="width:${(n / maxLoad) * 100}%;background:var(--primary-500);height:100%;"></div>
+              </div>
+              <div style="width:24px;text-align:right;font-size:13px;">${n}</div>
+            </div>`).join('')}
+        </div>
+      </div>`;
+  },
+
+  // ============ 8. MATERIAIS ============
+  // Sem avaliação por IA (fallback determinístico): a nota composta é
+  // calculada por uma média simples dos critérios da rubrica preenchidos
+  // manualmente por quem avalia — mesmo cálculo 0-100 do Report, só sem
+  // chamada a OpenAI/Ollama por trás.
+
+  MATERIAL_CRITERIA: ['clareza', 'profundidade', 'aplicabilidade', 'atualidade'],
+
+  async loadMaterials() {
+    try {
+      const snap = await this.db.collection('materials').orderBy('createdAt', 'desc').limit(300).get();
+      this.materials = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    } catch (e) {
+      console.warn('[ReportExecutivo] materials ainda vazio/sem acesso:', e.message);
+      this.materials = [];
+    }
+  },
+
+  materialComposite(m) {
+    const vals = this.MATERIAL_CRITERIA.map(c => Number(m[c]) || 0).filter(v => v > 0);
+    if (vals.length === 0) return null;
+    return Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 20); // escala 1-5 -> 0-100
+  },
+
+  async renderMaterials(container) {
+    await this.loadMaterials();
+    const canManage = ['admin', 'diretor', 'superintendente', 'gerente', 'coordenador'].includes(this.myRoleKey);
+
+    container.innerHTML = `
+      <div class="admin-section">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+          <p class="page-description">Repositório de materiais com avaliação por rubrica (sem IA — nota calculada por critério manual).</p>
+          ${canManage ? `<button class="btn btn-sm btn-primary" id="btn-new-material"><i class="fa-solid fa-plus"></i> Novo Material</button>` : ''}
+        </div>
+        <div id="material-form-slot"></div>
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead><tr><th>Título</th><th>Link</th><th>Nota composta</th><th>Avaliado em</th></tr></thead>
+            <tbody>
+              ${this.materials.length === 0 ? `<tr><td colspan="4" style="text-align:center;color:var(--text-secondary);padding:24px;">Nenhum material cadastrado.</td></tr>` : this.materials.map(m => {
+                const score = this.materialComposite(m);
+                return `
+                <tr>
+                  <td>${this.escapeHtml(m.title || '(sem título)')}</td>
+                  <td>${m.url ? `<a href="${this.escapeHtml(m.url)}" target="_blank" rel="noopener noreferrer">abrir</a>` : '—'}</td>
+                  <td>${score === null ? '<span style="opacity:.6;">sem avaliação</span>' : `<strong>${score}</strong>/100`}</td>
+                  <td>${this.fmtDate(m.createdAt)}</td>
+                </tr>`;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>`;
+
+    document.getElementById('btn-new-material')?.addEventListener('click', () => this.showMaterialForm());
+  },
+
+  showMaterialForm() {
+    const slot = document.getElementById('material-form-slot');
+    if (!slot) return;
+    slot.innerHTML = `
+      <div class="card" style="padding:16px;margin-bottom:16px;">
+        <div style="display:grid;grid-template-columns:2fr 2fr;gap:12px;margin-bottom:12px;">
+          <input type="text" class="form-input" id="mat-title" placeholder="Título do material">
+          <input type="url" class="form-input" id="mat-url" placeholder="Link (opcional)">
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:12px;">
+          ${this.MATERIAL_CRITERIA.map(c => `
+            <label style="font-size:12px;">${c[0].toUpperCase() + c.slice(1)} (1-5)
+              <input type="number" class="form-input" id="mat-${c}" min="1" max="5" value="3">
+            </label>`).join('')}
+        </div>
+        <button class="btn btn-primary btn-sm" id="mat-save">Salvar</button>
+        <button class="btn btn-ghost btn-sm" id="mat-cancel">Cancelar</button>
+      </div>`;
+    document.getElementById('mat-cancel').addEventListener('click', () => { slot.innerHTML = ''; });
+    document.getElementById('mat-save').addEventListener('click', async () => {
+      const title = document.getElementById('mat-title').value.trim();
+      if (!title) {
+        window.NexusApp?.showToast('Dê um título ao material.', 'warning');
+        return;
+      }
+      const data = { title, url: document.getElementById('mat-url').value.trim(), createdBy: this.myUid, createdAt: firebase.firestore.FieldValue.serverTimestamp() };
+      this.MATERIAL_CRITERIA.forEach(c => { data[c] = Number(document.getElementById(`mat-${c}`).value) || 0; });
+      await this.db.collection('materials').add(data);
+      window.NexusApp?.showToast('Material cadastrado.', 'success');
+      slot.innerHTML = '';
+      await this.loadTabContent();
+    });
+  },
+
+  // ============ 9. MEU SCORECARD ============
+  // Mediana do composto de materiais avaliados por mim + % de atingimento
+  // da meta semanal de melhorias (equivalente simplificado ao Report, sem
+  // scorecard_snapshots semanal ainda — calculado ao vivo sobre os dados
+  // já carregados).
+
+  IMPROVEMENT_WEEKLY_GOAL: 1,
+
+  median(nums) {
+    if (nums.length === 0) return null;
+    const sorted = [...nums].sort((a, b) => a - b);
+    const mid = Math.floor(sorted.length / 2);
+    return sorted.length % 2 !== 0 ? sorted[mid] : Math.round((sorted[mid - 1] + sorted[mid]) / 2);
+  },
+
+  async renderScorecard(container) {
+    await this.loadMaterials();
+    await this.loadImprovements();
+
+    const myMaterials = this.materials.filter(m => m.createdBy === this.myUid);
+    const scores = myMaterials.map(m => this.materialComposite(m)).filter(s => s !== null);
+    const medianScore = this.median(scores);
+
+    const now = new Date();
+    const weekAgo = new Date(now - 7 * 86400000);
+    const myImprovementsThisWeek = this.improvements.filter(m => {
+      if (m.requestedBy !== this.myUid) return false;
+      const created = m.createdAt?.toDate ? m.createdAt.toDate() : new Date(m.createdAt);
+      return created >= weekAgo && (m.stage || '') === 'Implementado';
+    });
+    const goalPct = Math.min(100, Math.round((myImprovementsThisWeek.length / this.IMPROVEMENT_WEEKLY_GOAL) * 100));
+
+    container.innerHTML = `
+      <div class="admin-section">
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;">
+          <div class="card" style="padding:16px;text-align:center;">
+            <div style="font-size:28px;font-weight:700;">${medianScore === null ? '—' : medianScore}</div>
+            <div style="color:var(--text-secondary);font-size:13px;">Mediana de avaliação de materiais</div>
+          </div>
+          <div class="card" style="padding:16px;text-align:center;">
+            <div style="font-size:28px;font-weight:700;">${goalPct}%</div>
+            <div style="color:var(--text-secondary);font-size:13px;">Meta semanal de melhorias implementadas</div>
+          </div>
+          <div class="card" style="padding:16px;text-align:center;">
+            <div style="font-size:28px;font-weight:700;">${myMaterials.length}</div>
+            <div style="color:var(--text-secondary);font-size:13px;">Materiais cadastrados por mim</div>
+          </div>
+        </div>
+        <p style="color:var(--text-secondary);font-size:13px;">
+          Rollup de equipe (piso N≥5 contra reidentificação) chega na Fase 3, junto com a
+          cadeia de gestores desnormalizada — hoje este scorecard mostra só o seu recorte individual.
+        </p>
+      </div>`;
   }
 };
 

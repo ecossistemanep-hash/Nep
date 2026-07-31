@@ -594,6 +594,18 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    // "materials" — repositório de materiais com avaliação por rubrica (aba
+    // Materiais). Nesta fase a nota é um cálculo determinístico local (sem
+    // IA), então o critério de escrita é simples: qualquer usuário ativo
+    // não-somente-leitura cadastra; gestão edita/reavalia.
+    match /materials/{materialId} {
+      allow read: if isActive();
+      allow create: if isActive() && !isReportExecutivoReadOnly()
+        && request.resource.data.createdBy == request.auth.uid;
+      allow update, delete: if isAdmin() || isManager()
+        || (isActive() && resource.data.createdBy == request.auth.uid);
+    }
+
     // ========================================================================
     // DEFAULT DENY
     // ========================================================================
