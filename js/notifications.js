@@ -9,16 +9,21 @@ const NexusNotifications = {
   unsubscribe: null, // array de funções de unsubscribe (uma por query)
   isInitialLoad: true,
 
-  // Hierarquia de cargos (level maior = mais permissões)
+  // Hierarquia de cargos (level maior = mais permissões).
+  // Espelha cargoLevel() em firestore.rules — que é a fonte da verdade. Se os
+  // dois discordarem, o usuário vê na lista um aviso que a regra depois nega.
   ROLE_HIERARCHY: {
     'ADMIN': 100,
     'DIRETOR': 95,
     'SUPERINTENDENTE': 90,
     'GERENTE': 70,
-    'CONSULTOR': 60,
-    'COORDENADOR': 50,
+    'COORDENADOR': 60,
+    'CONSULTOR': 50,
+    'LIDER': 40,
     'ANALISTA': 30,
-    'MONITOR': 10
+    'MONITOR': 10,
+    'VIEWER': 5,
+    'CONVIDADO': 1
   },
 
   /**

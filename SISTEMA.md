@@ -98,16 +98,33 @@ presence              → quem está online agora (onDisconnect)
 
 ## 4. Hierarquia de cargos
 
+Escala oficial (definida pelo dono do produto em 31/07/2026):
+
 ```
-ADMIN (nível 99)
-DIRETOR (95)             ← "topo": sem gestor acima, entrega auto-validada
-SUPERINTENDENTE (5)      ← idem
-GERENTE (4)
-CONSULTOR (3)
-COORDENADOR (2)          ← menor cargo que pode ser "gestor direto"
-ANALISTA (1)
-MONITOR (0)
+ADMIN                    ← cargo técnico da plataforma, fora da hierarquia de negócio
+DIRETOR                  ← "topo": sem gestor acima, entrega auto-validada
+SUPERINTENDENTE          ← idem
+GERENTE
+COORDENADOR              ← menor cargo que pode ser "gestor direto"
+CONSULTOR
+ANALISTA
+MONITOR
 ```
+
+Cargos adicionais vindos do Report Executivo: **LÍDER** (entre consultor e
+analista), **VIEWER** e **CONVIDADO** (acessos externos somente-leitura).
+
+> ⚠️ A escala vive **copiada em 5 lugares** e todos precisam concordar, senão a
+> UI libera o que o banco nega:
+> `firestore.rules` (`cargoLevel()` — **fonte da verdade**), `js/auth-firebase.js`
+> (`ROLE_CONFIG`), `js/user-management.js` (`ROLES`), `js/notifications.js`
+> (`ROLE_HIERARCHY`) e `js/report-executivo-domain.js` (`RED.ROLE_LEVEL`).
+>
+> Até 31/07/2026 **coordenador estava abaixo de consultor** em todas elas —
+> invertido. Isso fazia o cadastro oferecer consultor como gestor de
+> coordenador e invertia quem lê notificação dirigida a cargo. Também
+> explicava a anomalia de `isManager()`, que inclui coordenador e não
+> consultor: o gestor "mandava menos" que o não-gestor.
 
 - **Painel Admin restrito**: Coordenador e acima entram no Admin, mas só veem
   as abas Dashboard e Usuários (e em Usuários não conseguem alterar

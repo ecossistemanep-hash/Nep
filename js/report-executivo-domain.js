@@ -49,8 +49,8 @@ RED.NO_PRODUCT = 'Sem produto';
  *  regra: se o front achar que um cargo manda mais do que a regra acha, ele
  *  libera botão que o banco nega. */
 RED.ROLE_LEVEL = {
-  admin: 100, diretor: 95, superintendente: 90, gerente: 70, consultor: 60,
-  coordenador: 50, lider: 40, analista: 30, monitor: 10, viewer: 5, convidado: 1
+  admin: 100, diretor: 95, superintendente: 90, gerente: 70, coordenador: 60,
+  consultor: 50, lider: 40, analista: 30, monitor: 10, viewer: 5, convidado: 1
 };
 RED.roleLevel = r => RED.ROLE_LEVEL[String(r || '').toLowerCase()] ?? 0;
 

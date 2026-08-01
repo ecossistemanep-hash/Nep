@@ -34,9 +34,10 @@ const UserManagement = {
         { key: 'DIRETOR', label: 'Diretor', level: 95 },
         { key: 'SUPERINTENDENTE', label: 'Superintendente', level: 5 },
         { key: 'GERENTE', label: 'Gerente', level: 4 },
-        { key: 'CONSULTOR', label: 'Consultor', level: 3 },
-        { key: 'COORDENADOR', label: 'Coordenador', level: 2 },
-        // Abaixo de coordenador — espelha cargoLevel() em firestore.rules.
+        // Escala oficial: coordenador ACIMA de consultor. Espelha cargoLevel()
+        // em firestore.rules, que é a fonte da verdade.
+        { key: 'COORDENADOR', label: 'Coordenador', level: 3 },
+        { key: 'CONSULTOR', label: 'Consultor', level: 2 },
         { key: 'LIDER', label: 'Líder', level: 1.5 },
         { key: 'ANALISTA', label: 'Analista', level: 1 },
         { key: 'MONITOR', label: 'Monitor', level: 0 },

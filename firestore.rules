@@ -44,14 +44,28 @@ service cloud.firestore {
         && myProfile().cargo in ['ADMIN', 'DIRETOR', 'SUPERINTENDENTE', 'GERENTE', 'COORDENADOR'];
     }
 
-    // Nível hierárquico de um cargo (espelha ROLE_HIERARCHY em notifications.js)
+    // Nível hierárquico de um cargo. FONTE DA VERDADE da escala — espelhada em
+    // auth-firebase.js (ROLE_CONFIG), user-management.js (ROLES) e no motor do
+    // Report Executivo (RED.ROLE_LEVEL). Mudou aqui, muda nos três.
+    //
+    // Escala oficial (do dono do produto, 31/07/2026):
+    //   DIRETOR > SUPERINTENDENTE > GERENTE > COORDENADOR > CONSULTOR
+    //   > ANALISTA > MONITOR
+    // ADMIN fica acima de tudo por ser cargo técnico da plataforma, não de
+    // negócio.
+    //
+    // COORDENADOR estava ABAIXO de consultor até aqui, invertido — e isso
+    // deixava o cadastro de usuário oferecendo consultor como gestor de
+    // coordenador, além de inverter quem lê notificação dirigida a cargo.
+    // Também explicava a anomalia de isManager(): coordenador é gestor e
+    // consultor não, mas consultor "mandava mais" na escala.
     function cargoLevel(cargo) {
       return cargo == 'ADMIN' ? 100
         : cargo == 'DIRETOR' ? 95
         : cargo == 'SUPERINTENDENTE' ? 90
         : cargo == 'GERENTE' ? 70
-        : cargo == 'CONSULTOR' ? 60
-        : cargo == 'COORDENADOR' ? 50
+        : cargo == 'COORDENADOR' ? 60
+        : cargo == 'CONSULTOR' ? 50
         : cargo == 'LIDER' ? 40
         : cargo == 'ANALISTA' ? 30
         : cargo == 'MONITOR' ? 10
