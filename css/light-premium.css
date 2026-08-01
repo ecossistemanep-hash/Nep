@@ -780,3 +780,142 @@ body.sidebar-collapsed[data-theme="light"] .nav-item.active::before {
     border: 1px solid rgba(0, 0, 0, 0.2) !important;
   }
 }
+
+/* =========================================
+   19. MARCA — RESPIRO E HIERARQUIA
+   Estavam empilhados logo (96×30), "NEP" (12px) e "DELIVERY CONTROL"
+   (9px) dentro de 57px de altura útil: três pesos disputando o mesmo
+   espaço, sem a área de proteção que o manual da marca exige (metade da
+   altura do "a" em todos os lados).
+
+   Agora: cabeçalho mais alto, logo isolado com folga, e o nome do
+   produto numa única linha discreta abaixo — o logo é a marca, o texto
+   é legenda, não concorrente.
+   ========================================= */
+[data-theme="light"] .sidebar-header {
+  min-height: 84px;
+  padding: 16px 18px;
+  align-items: center;
+}
+
+[data-theme="light"] .sidebar-logo.brand-logo {
+  gap: 7px;
+}
+
+[data-theme="light"] .sidebar-logo.brand-logo::before {
+  width: 76px;
+  height: 26px;
+  /* Área de proteção: o logo não encosta em nada. */
+  margin-bottom: 1px;
+}
+
+/* "NEP · DELIVERY CONTROL" vira uma linha só, em caixa alta discreta.
+   O NEP deixa de ser um segundo título competindo com o logo. */
+[data-theme="light"] .brand-logo-text {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  color: var(--ink-3);
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+[data-theme="light"] .brand-logo-sub {
+  font-size: 8.5px;
+  font-weight: 400;
+  letter-spacing: 0.1em;
+  color: var(--tinta-4);
+  line-height: 1;
+  margin-top: -2px;
+}
+
+/* Recolhida: só a marca reduzida, centralizada, com folga. */
+[data-theme="light"] body.sidebar-collapsed .sidebar-header,
+body.sidebar-collapsed[data-theme="light"] .sidebar-header {
+  min-height: 74px;
+  padding: 14px 8px;
+}
+
+[data-theme="light"] body.sidebar-collapsed .sidebar-logo.brand-logo::before,
+body.sidebar-collapsed[data-theme="light"] .sidebar-logo.brand-logo::before {
+  width: 38px;
+  height: 26px;
+  margin-bottom: 0;
+}
+
+/* =========================================
+   20. FIM DAS "CAIXAS DENTRO DE CAIXAS"
+   Reforço além da correção em design-system.css: nenhum RÓTULO ou VALOR
+   dentro de um card ganha superfície própria. Card é a caixa; o texto
+   dentro dele é texto.
+   ========================================= */
+[data-theme="light"] .quick-card-label,
+[data-theme="light"] .quick-card-value,
+[data-theme="light"] .quick-card-icon,
+[data-theme="light"] .achievement-name,
+[data-theme="light"] .achievement-desc,
+[data-theme="light"] .achievement-icon,
+[data-theme="light"] .achievement-points,
+[data-theme="light"] .achievement-meta,
+[data-theme="light"] .achievement-rarity,
+[data-theme="light"] .achievement-info,
+[data-theme="light"] .level-name,
+[data-theme="light"] .level-number {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+/* O card em si mantém a superfície. */
+[data-theme="light"] .quick-card {
+  background: var(--bg-surface-solid);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-medium);
+  box-shadow: var(--shadow-raised);
+}
+
+[data-theme="light"] .quick-card-value {
+  color: var(--ink-1);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+[data-theme="light"] .quick-card-label {
+  color: var(--ink-2);
+  font-weight: 400;
+}
+
+/* =========================================
+   21. CONTRASTE — VARREDURA DE 18 PÁGINAS
+   Regra aplicada: quem decide a cor do texto/ícone é a cor REAL do fundo
+   composto onde ele está. Texto normal ≥4,5:1; grande ≥3:1; ícone ≥3:1.
+   Só a COR muda — tamanho, estrutura e função ficam como estão.
+   ========================================= */
+[data-theme="light"] .tkt-stat-icon,
+[data-theme="light"] .kpi-icon {
+  color: var(--acento) !important;
+}
+
+[data-theme="light"] .vac-module-tag,
+[data-theme="light"] .kpi-meta,
+[data-theme="light"] .filter-tab-enterprise {
+  color: var(--ink-2) !important;
+}
+
+[data-theme="light"] .filter-tab-enterprise.active {
+  color: var(--acento) !important;
+  font-weight: 600;
+}
+
+/* Texto de apoio solto (sem classe) em cards claros. */
+[data-theme="light"] .empty-state,
+[data-theme="light"] .empty-state p,
+[data-theme="light"] .empty-state span,
+[data-theme="light"] .empty-state div,
+[data-theme="light"] .upload-hint,
+[data-theme="light"] .file-hint,
+[data-theme="light"] .holiday-desc,
+[data-theme="light"] .analytics-hint {
+  color: var(--ink-2) !important;
+}

@@ -163,6 +163,7 @@ JS do módulo dentro de `index.html` — não são páginas HTML separadas.
 | `announcements` | `NexusAnnouncements` (`js/announcements.js`) | Comunicados segmentados por cargo |
 | `testimonials` | `NexusTestimonials` (`js/testimonials.js`) | Elogios entre colegas (+10 pts a quem envia, +50 a quem recebe) |
 | `results` | `NexusResults` (`js/reports.js`) | Relatórios e consolidação por área |
+| `reportExecutivo` | `NexusReportExecutivo` (`js/report-executivo.js`) | Carteira de frentes, risco, capacidade, OKR — 15 abas, ver seção 12 |
 
 ### Serviços transversais
 
@@ -301,3 +302,88 @@ vazamento de listener do Firestore, custo de leitura no Spark, furos de
 regra de negócio). Módulos ainda não auditados nesta rodada: Fórum,
 Chamados, Fórum, Painéis, Analytics Studio, Ferramentas de qualidade,
 Chat Geral, Testemonials, Announcements, Reports.
+
+---
+
+## 12. Report Executivo (módulo portado do app irmão)
+
+Porte do sistema `Report-Executivo` (Next.js/Supabase, mantido por Samuel)
+para dentro da arquitetura nativa do NEP. Roda sobre Firebase Auth +
+Firestore, com o login, a hierarquia e os papéis do próprio NEP.
+
+### Separação motor / tela
+
+| Arquivo | Papel |
+|---|---|
+| `js/report-executivo-domain.js` | Porte fiel de `shared/domain/index.ts` (2.912 linhas). Funções **puras**: sem DOM, sem Firestore. É onde vivem risco, capacidade, entrega, OKR, dia útil, canonicalização de nome. |
+| `js/report-executivo.js` | As 15 abas. Só busca dado e formata — mesma separação do original, e é o que permite conferir número por número. |
+| `js/manager-chain-service.js` | Mantém `cadeia_gestores` (array de todos os gestores acima de cada usuário) recalculada quando um `gestor_uid` muda, em cascata para os subordinados. |
+
+### Por que a cadeia de gestores existe
+
+O Report enxerga hierarquia **recursiva** (diretor vê toda a árvore abaixo).
+Regra de Firestore não expressa recursão sem Cloud Function, que é plano
+pago. A saída sem custo é desnormalizar: cada usuário guarda a lista já
+resolvida de ancestrais, e a regra vira `hasAny([...])`.
+
+### As 15 abas
+
+Carteira · Board · Riscos · Dashboard · Capacidade · Rotinas ·
+Desenvolvimento · Executivo · OKRs · Resumo Estrutura (só direção) ·
+Agenda · Melhorias · Materiais · Meu Scorecard · Arquivados
+
+### Fonte única com o Kanban
+
+A tarefa do Kanban é a **execução** da frente, via `task.itemId`. Não foi
+criada coleção `activities` própria (como no original) porque isso seria um
+terceiro silo. Com o vínculo:
+
+- o progresso da frente vira **apurado** (tarefas fechadas ÷ total) em vez
+  de declarado — em teste, uma frente marcada como 80% tinha 40% real;
+- a Capacidade soma frentes **e** tarefas, incluindo tarefa avulsa;
+- a validação por gestor que o Kanban já tem passa a valer para as frentes.
+
+### O que NÃO foi portado (declarado, não escondido)
+
+| Falta | Por quê |
+|---|---|
+| **Atividades/subitens** (986 linhas) | Substituído pelo vínculo com o Kanban. As funções `assigneeActivityLoad` e `checklistProgress` seguem no motor, sem tela. |
+| **Ganhos (Gains)** | `GAIN_TYPES` está no motor; falta a tela de registro de ganho financeiro/KPI. |
+| **Anexos / evidências** | Bucket e FCA com comprovação. |
+| **Filtros salvos, busca global, Gantt, reconciliação de responsáveis** | Produtividade; a Carteira funciona sem, mas com volume real fazem falta. |
+| **Adoção, automações, relatórios corporativos, tour guiado** | Painéis específicos do original. |
+| **Perfil Vértice** (108 questões) | **Bloqueado**: o banco de perguntas não está no Supabase do app irmão. Reproduzir de memória daria um instrumento diferente com o mesmo nome. |
+
+Fórum, Gamificação, Ferramentas da Qualidade e Admin **não** foram portados
+porque já existem no NEP.
+
+### IA
+
+As 4 funcionalidades que no original chamam OpenAI/Ollama (laudo do Perfil
+Vértice, resumo de ata, sugestão de FCA, avaliação de material) usam o
+**fallback determinístico** que o próprio Report já tem: texto por regra, sem
+custo de API. A estrutura está pronta para plugar uma chave depois.
+
+---
+
+## 13. Camada visual (identidade AeC)
+
+| Arquivo | Escopo |
+|---|---|
+| `css/aec-identity.css` | Identidade institucional nos **dois** temas. Remapeia os tokens que o sistema já usa (~290 usos de `--surface-border`, 217 de `--text-primary`) — nenhum componente foi reescrito. |
+| `css/light-premium.css` | Refinamento premium **exclusivo do modo claro**. Os 192 seletores começam todos com `[data-theme="light"]`. |
+
+**Regra de contraste vigente**: quem decide a cor do texto e do ícone é a cor
+REAL do fundo composto onde ele está — não o hábito do componente. Texto
+normal ≥4,5:1, grande ≥3:1, ícone ≥3:1.
+
+**Teste de isolamento do escuro** (repetível): com o sistema em modo escuro,
+desativar e reativar `light-premium.css` e comparar o snapshot computado de
+600 elementos × 17 propriedades. Tem que dar idêntico em todas as páginas.
+
+> ⚠️ **Armadilha de seletor por substring.** `[class*="k-card"]` casava
+> `quick-card-label` (quic**k-card**-label), e `[class*="achievement"]` casava
+> `achievement-name`, `achievement-icon` e todo o resto. Cada rótulo recebia
+> fundo branco + borda + sombra com `!important`, desenhando caixas dentro
+> das caixas. Corrigido com limite de palavra (`[class^=…]` / `[class*=" …"]`).
+> Ao criar seletor por atributo, sempre usar limite de palavra.

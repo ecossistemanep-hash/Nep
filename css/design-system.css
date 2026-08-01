@@ -1226,9 +1226,16 @@ a:hover {
    ============================================== */
 
 /* ── Kanban Cards ── */
+/* ATENÇÃO ao seletor: [class*="k-card"] casa por SUBSTRING e pegava
+   "quick-card-label", "quick-card-value" e afins — quic[k-card]-label
+   contém "k-card". O resultado era fundo branco + borda + sombra com
+   !important em cada rótulo do perfil, desenhando caixas dentro das
+   caixas. Trocado por limite de palavra: início da classe ou precedido
+   de espaço. */
 [data-theme="light"] .k-card,
 [data-theme="light"] .kanban-card,
-[data-theme="light"] [class*="k-card"] {
+[data-theme="light"] [class^="k-card"],
+[data-theme="light"] [class*=" k-card"] {
   background: #ffffff !important;
   border-color: #e2e8f0 !important;
   color: #0f172a !important;
@@ -1263,9 +1270,11 @@ a:hover {
 }
 
 /* ── Conquistas (Achievements) ── */
+/* Mesmo caso do k-card: [class*="achievement"] casava achievement-name,
+   achievement-icon, achievement-desc e todo o resto, dando fundo branco e
+   sombra a cada pedaço de texto. Limitado ao card e ao item. */
 [data-theme="light"] .achievement-card,
-[data-theme="light"] .achievement-item,
-[data-theme="light"] [class*="achievement"] {
+[data-theme="light"] .achievement-item {
   background: #ffffff !important;
   border-color: #e2e8f0 !important;
   color: #0f172a !important;
@@ -1273,8 +1282,7 @@ a:hover {
 }
 /* Conquistas bloqueadas — texto legível no claro */
 [data-theme="light"] .achievement-card.locked,
-[data-theme="light"] .achievement-item.locked,
-[data-theme="light"] [class*="achievement"].locked {
+[data-theme="light"] .achievement-item.locked {
   background: #f8fafc !important;
   border-color: #e2e8f0 !important;
 }
@@ -1282,14 +1290,14 @@ a:hover {
 [data-theme="light"] .achievement-card.locked h4,
 [data-theme="light"] .achievement-card.locked p,
 [data-theme="light"] .achievement-card.locked span,
-[data-theme="light"] [class*="achievement"].locked h3,
-[data-theme="light"] [class*="achievement"].locked h4,
-[data-theme="light"] [class*="achievement"].locked p,
-[data-theme="light"] [class*="achievement"].locked span {
+[data-theme="light"] .achievement-item.locked h3,
+[data-theme="light"] .achievement-item.locked h4,
+[data-theme="light"] .achievement-item.locked p,
+[data-theme="light"] .achievement-item.locked span {
   color: #64748b !important;
 }
 [data-theme="light"] .achievement-card .badge,
-[data-theme="light"] [class*="achievement"] .badge {
+[data-theme="light"] .achievement-item .badge {
   background: rgba(99,102,241,0.1) !important;
   color: #4338ca !important;
 }
@@ -1366,8 +1374,10 @@ a:hover {
 /* ── Cards de Ranking / Scoring ── */
 [data-theme="light"] .ranking-card,
 [data-theme="light"] .score-card,
-[data-theme="light"] [class*="rank-item"],
-[data-theme="light"] [class*="score-item"] {
+[data-theme="light"] [class^="rank-item"],
+[data-theme="light"] [class*=" rank-item"],
+[data-theme="light"] [class^="score-item"],
+[data-theme="light"] [class*=" score-item"] {
   background: #ffffff !important;
   border-color: #e2e8f0 !important;
   color: #0f172a !important;

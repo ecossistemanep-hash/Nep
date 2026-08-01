@@ -1080,3 +1080,9 @@ body[data-theme="light"] .alert-link {
   color: var(--acento) !important;
   font-weight: var(--peso-forte);
 }
+
+/* Última falha de contraste do tema escuro (3,59:1 em texto pequeno).
+   Só a cor muda; tamanho e função ficam como estão. */
+body[data-theme="dark"] .rotina-count {
+  color: var(--tinta-2);
+}
