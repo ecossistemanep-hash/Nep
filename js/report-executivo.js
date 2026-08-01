@@ -1,1535 +1,1675 @@
 /* =========================================
-   NEP REPORT EXECUTIVO
-   Módulo integrado (portado do app irmão Report-Executivo) que roda
-   sobre a arquitetura nativa do NEP: Firebase Auth + Firestore, papéis
-   e gestor_uid do próprio NEP. Nenhuma dependência de Supabase/Next.js.
+   NEP REPORT EXECUTIVO — TELAS
+   Porte do app irmão Report-Executivo (Next.js/Supabase) para a
+   arquitetura nativa do NEP (Firebase Auth + Firestore, vanilla JS).
 
-   Coleção central: "items" (equivalente a `items` do Report Executivo).
-   Cada aba abaixo é uma visão diferente sobre a mesma coleção + coleções
-   satélite (events, process_improvements, ...).
+   TODA regra de negócio vive em js/report-executivo-domain.js (window.RED),
+   porte fiel de shared/domain/index.ts. Este arquivo só busca dados e
+   formata — mesma separação do original, e é o que permite conferir
+   número por número contra o Report.
+
+   Coleção central: "items" — mesmo shape do Item do original (22 campos).
    ========================================= */
 
 const NexusReportExecutivo = {
   db: null,
-  activeTab: 'archived',
+  activeTab: 'portfolio',
   items: [],
-  events: [],
-  improvements: [],
-  unsubItems: null,
-  unsubEvents: null,
-  unsubImprovements: null,
+  activeUsers: [],
+  filters: null,
+  tagVocabulary: [],
+  _scopeApplied: false,
 
-  ROLE_LABEL: {
-    admin: 'ADMIN',
-    diretor: 'DIRETOR',
-    superintendente: 'SUPERINTENDENTE',
-    gerente: 'GERENTE',
-    consultor: 'CONSULTOR',
-    coordenador: 'COORDENADOR',
-    lider: 'LÍDER',
-    analista: 'ANALISTA',
-    monitor: 'MONITOR',
-    viewer: 'VIEWER',
-    convidado: 'CONVIDADO'
-  },
-
-  // Papéis que não editam, só consultam (equivalente ao "viewer"/"convidado"
-  // do Report Executivo — MANAGEMENT_ONLY_VIEWS e afins).
-  READ_ONLY_ROLES: ['viewer', 'convidado'],
+  // ── Sessão ────────────────────────────────────────────────────────────────
 
   getMyRoleKey() {
     const stored = localStorage.getItem('nep_user_role_key');
     if (stored) return stored.toLowerCase();
-    const legacy = (localStorage.getItem('nep_cargo') || 'monitor').toLowerCase();
-    return legacy;
+    return (localStorage.getItem('nep_cargo') || 'monitor').toLowerCase();
   },
 
-  canEdit() {
-    return !this.READ_ONLY_ROLES.includes(this.getMyRoleKey());
-  },
+  canEdit() { return RED.canEdit(this.myRoleKey); },
+  canDelete() { return RED.canDelete(this.myRoleKey); },
 
   init() {
-    if (window.db) {
-      this.db = window.db;
-    } else if (typeof firebase !== 'undefined' && firebase.firestore) {
-      this.db = firebase.firestore();
-    }
+    if (window.db) this.db = window.db;
+    else if (typeof firebase !== 'undefined' && firebase.firestore) this.db = firebase.firestore();
     this.myUid = localStorage.getItem('nep_user_uid') || '';
     this.myName = (localStorage.getItem('nep_user_name') || '').trim();
     this.myRoleKey = this.getMyRoleKey();
+    if (!this.filters) this.filters = Object.assign({}, RED.EMPTY_FILTERS);
   },
 
-  async render(container) {
-    this.init();
-    this.container = container;
-
-    if (!this.db) {
-      container.innerHTML = `<div class="p-4 text-red-500">Erro: Firestore não disponível.</div>`;
-      return;
-    }
-
-    const allTabs = [
-      { id: 'archived', icon: 'fa-box-archive', label: 'Arquivados' },
-      { id: 'agenda', icon: 'fa-calendar-days', label: 'Agenda' },
-      { id: 'board', icon: 'fa-table-columns', label: 'Board' },
-      { id: 'risks', icon: 'fa-triangle-exclamation', label: 'Riscos' },
-      { id: 'improvements', icon: 'fa-arrow-trend-up', label: 'Melhorias' },
-      { id: 'portfolio', icon: 'fa-layer-group', label: 'Carteira' },
-      { id: 'exec-dashboard', icon: 'fa-gauge-high', label: 'Dashboard' },
-      { id: 'scorecard', icon: 'fa-clipboard-check', label: 'Meu Scorecard' },
-      { id: 'materials', icon: 'fa-photo-film', label: 'Materiais' },
-      { id: 'capacity', icon: 'fa-users-gear', label: 'Capacidade' },
-      { id: 'director-summary', icon: 'fa-sitemap', label: 'Resumo Estrutura', restricted: true },
-      { id: 'routines', icon: 'fa-list-check', label: 'Rotinas' },
-      { id: 'okrs', icon: 'fa-bullseye', label: 'OKRs Gerentes' },
-      { id: 'executive', icon: 'fa-briefcase', label: 'Executivo' },
-      { id: 'development', icon: 'fa-seedling', label: 'Desenvolvimento' }
-    ].filter(t => !t.restricted || ['admin', 'diretor', 'superintendente'].includes(this.getMyRoleKey()));
-
-    container.innerHTML = `
-      <div class="admin-page animate-fade-in">
-        <div class="admin-header">
-          <div>
-            <h1 class="page-title">Report Executivo</h1>
-            <p class="page-description">Gestão de carteira, riscos, melhorias e agenda — integrado ao NEP.</p>
-          </div>
-        </div>
-        <div class="admin-tabs">
-          ${allTabs.map(t => `
-            <button class="admin-tab ${this.activeTab === t.id ? 'active' : ''}" data-tab="${t.id}">
-              <i class="fa-solid ${t.icon}"></i> ${t.label}${t.soon ? ' <span style="opacity:.55;font-size:11px;">(em breve)</span>' : ''}
-            </button>
-          `).join('')}
-        </div>
-        <div class="admin-content" id="report-executivo-tab-content">
-          <div class="loading-spinner"><i class="fa-solid fa-circle-notch fa-spin"></i> Carregando...</div>
-        </div>
-      </div>`;
-
-    this.attachTabEvents();
-    await this.loadItems();
-    await this.loadTabContent();
-  },
-
-  attachTabEvents() {
-    document.querySelectorAll('#report-executivo-tab-content, .admin-tabs .admin-tab').forEach(() => {});
-    document.querySelectorAll('.admin-tabs .admin-tab').forEach(tab => {
-      tab.addEventListener('click', async () => {
-        this.activeTab = tab.dataset.tab;
-        document.querySelectorAll('.admin-tabs .admin-tab').forEach(t => t.classList.remove('active'));
-        tab.classList.add('active');
-        await this.loadTabContent();
-      });
-    });
-  },
-
-  async loadTabContent() {
-    const container = document.getElementById('report-executivo-tab-content');
-    if (!container) return;
-    container.innerHTML = '<div class="loading-spinner"><i class="fa-solid fa-circle-notch fa-spin"></i> Carregando...</div>';
-
-    try {
-      switch (this.activeTab) {
-        case 'archived': await this.renderArchived(container); break;
-        case 'agenda': await this.renderAgenda(container); break;
-        case 'board': await this.renderBoard(container); break;
-        case 'risks': await this.renderRisks(container); break;
-        case 'improvements': await this.renderImprovements(container); break;
-        case 'portfolio': await this.renderPortfolio(container); break;
-        case 'exec-dashboard': await this.renderExecDashboard(container); break;
-        case 'scorecard': await this.renderScorecard(container); break;
-        case 'materials': await this.renderMaterials(container); break;
-        case 'capacity': await this.renderCapacity(container); break;
-        case 'director-summary': await this.renderDirectorSummary(container); break;
-        case 'routines': await this.renderRoutines(container); break;
-        case 'okrs': await this.renderOkrs(container); break;
-        case 'executive': await this.renderExecutive(container); break;
-        case 'development': await this.renderDevelopment(container); break;
-        default: this.renderSoon(container);
-      }
-    } catch (error) {
-      console.error('[ReportExecutivo] Erro ao carregar aba:', error);
-      container.innerHTML = `<div class="alert alert-error" style="padding:20px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:12px;color:#ef4444;"><strong>Erro ao carregar:</strong> ${error.message}</div>`;
-    }
-  },
-
-  renderSoon(container) {
-    container.innerHTML = `
-      <div class="empty-state" style="text-align:center;padding:60px;">
-        <div style="font-size:64px;margin-bottom:16px;">🚧</div>
-        <h3 style="margin-bottom:8px;">Em construção</h3>
-        <p style="color:var(--text-secondary);">Esta aba faz parte da próxima fase do porte do Report Executivo.</p>
-      </div>`;
-  },
-
-  // ============ DADOS (coleção "items") ============
+  // ── Dados ─────────────────────────────────────────────────────────────────
 
   async loadItems() {
     try {
-      const snap = await this.db.collection('items').orderBy('updatedAt', 'desc').limit(500).get();
-      this.items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const snap = await this.db.collection('items').limit(1000).get();
+      this.items = snap.docs.map(d => RED.normalizeItem(Object.assign({ id: d.id }, d.data())));
     } catch (e) {
-      console.warn('[ReportExecutivo] items ainda vazio/sem índice:', e.message);
+      console.warn('[ReportExecutivo] items indisponível:', e.message);
       this.items = [];
     }
-  },
-
-  async saveItem(data, id = null) {
-    const payload = {
-      ...data,
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-    };
-    if (id) {
-      await this.db.collection('items').doc(id).update(payload);
-    } else {
-      payload.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-      payload.createdBy = this.myUid;
-      payload.archived = false;
-      await this.db.collection('items').add(payload);
-    }
-    await this.loadItems();
-  },
-
-  fmtDate(v) {
-    if (!v) return '—';
-    const d = v.toDate ? v.toDate() : new Date(v);
-    if (isNaN(d)) return '—';
-    return d.toLocaleDateString('pt-BR');
-  },
-
-  escapeHtml(s) {
-    return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  },
-
-  // ============ 1. ARQUIVADOS ============
-
-  async renderArchived(container) {
-    const archived = this.items.filter(i => i.archived === true);
-    const canEdit = this.canEdit();
-
-    container.innerHTML = `
-      <div class="admin-section">
-        <p class="page-description" style="margin-bottom:16px;">${archived.length} frente(s) arquivada(s).</p>
-        <div class="table-wrapper">
-          <table class="data-table">
-            <thead><tr><th>Título</th><th>Responsável</th><th>Status</th><th>Atualizado</th><th></th></tr></thead>
-            <tbody>
-              ${archived.length === 0 ? `<tr><td colspan="5" style="text-align:center;color:var(--text-secondary);padding:24px;">Nenhum item arquivado.</td></tr>` : archived.map(i => `
-                <tr>
-                  <td>${this.escapeHtml(i.title || '(sem título)')}</td>
-                  <td>${this.escapeHtml(i.ownerName || '—')}</td>
-                  <td>${this.escapeHtml(i.status || '—')}</td>
-                  <td>${this.fmtDate(i.updatedAt)}</td>
-                  <td>${canEdit ? `<button class="btn btn-sm btn-secondary" data-restore="${i.id}"><i class="fa-solid fa-rotate-left"></i> Restaurar</button>` : ''}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        </div>
-      </div>`;
-
-    container.querySelectorAll('[data-restore]').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        await this.saveItem({ archived: false }, btn.dataset.restore);
-        window.NexusApp?.showToast('Item restaurado.', 'success');
-        await this.loadTabContent();
-      });
-    });
-  },
-
-  // ============ 2. AGENDA ============
-
-  async loadEvents() {
-    try {
-      const snap = await this.db.collection('events').orderBy('date', 'asc').limit(500).get();
-      this.events = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    } catch (e) {
-      console.warn('[ReportExecutivo] events ainda vazio/sem acesso:', e.message);
-      this.events = [];
-    }
-  },
-
-  EVENT_TYPES: {
-    okr_abertura: 'Abertura de OKR',
-    okr_fechamento: 'Fechamento de OKR',
-    okr_revisao: 'Revisão de OKR',
-    one_on_one: '1:1',
-    reuniao: 'Reunião',
-    outro: 'Outro'
-  },
-
-  async renderAgenda(container) {
-    await this.loadEvents();
-    const canEdit = this.canEdit();
-    const upcoming = this.events.filter(e => !e.date || new Date(e.date) >= new Date(new Date().toDateString()));
-
-    container.innerHTML = `
-      <div class="admin-section">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-          <p class="page-description">${upcoming.length} evento(s) futuro(s) de ${this.events.length} total.</p>
-          <div style="display:flex;gap:8px;">
-            <button class="btn btn-sm btn-secondary" id="btn-export-ics"><i class="fa-solid fa-file-export"></i> Exportar ICS</button>
-            ${canEdit ? `<button class="btn btn-sm btn-primary" id="btn-new-event"><i class="fa-solid fa-plus"></i> Novo Evento</button>` : ''}
-          </div>
-        </div>
-        <div id="event-form-slot"></div>
-        <div class="table-wrapper">
-          <table class="data-table">
-            <thead><tr><th>Data</th><th>Título</th><th>Tipo</th><th>Vínculo</th><th></th></tr></thead>
-            <tbody>
-              ${this.events.length === 0 ? `<tr><td colspan="5" style="text-align:center;color:var(--text-secondary);padding:24px;">Nenhum evento cadastrado.</td></tr>` : this.events.map(e => `
-                <tr>
-                  <td>${this.fmtDate(e.date)}</td>
-                  <td>${this.escapeHtml(e.title || '(sem título)')}</td>
-                  <td>${this.escapeHtml(this.EVENT_TYPES[e.type] || e.type || '—')}</td>
-                  <td>${this.escapeHtml(e.linkedName || '—')}</td>
-                  <td>${canEdit ? `<button class="btn btn-sm btn-ghost" data-del-event="${e.id}"><i class="fa-solid fa-trash"></i></button>` : ''}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        </div>
-      </div>`;
-
-    document.getElementById('btn-export-ics')?.addEventListener('click', () => this.exportEventsIcs());
-    document.getElementById('btn-new-event')?.addEventListener('click', () => this.showEventForm());
-    container.querySelectorAll('[data-del-event]').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        if (!confirm('Excluir este evento?')) return;
-        await this.db.collection('events').doc(btn.dataset.delEvent).delete();
-        window.NexusApp?.showToast('Evento excluído.', 'success');
-        await this.loadTabContent();
-      });
-    });
-  },
-
-  showEventForm() {
-    const slot = document.getElementById('event-form-slot');
-    if (!slot) return;
-    slot.innerHTML = `
-      <div class="card" style="padding:16px;margin-bottom:16px;">
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px;">
-          <input type="text" class="form-input" id="ev-title" placeholder="Título do evento">
-          <input type="date" class="form-input" id="ev-date">
-          <select class="form-input" id="ev-type">
-            ${Object.entries(this.EVENT_TYPES).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}
-          </select>
-        </div>
-        <button class="btn btn-primary btn-sm" id="ev-save">Salvar</button>
-        <button class="btn btn-ghost btn-sm" id="ev-cancel">Cancelar</button>
-      </div>`;
-    document.getElementById('ev-cancel').addEventListener('click', () => { slot.innerHTML = ''; });
-    document.getElementById('ev-save').addEventListener('click', async () => {
-      const title = document.getElementById('ev-title').value.trim();
-      const date = document.getElementById('ev-date').value;
-      const type = document.getElementById('ev-type').value;
-      if (!title || !date) {
-        window.NexusApp?.showToast('Preencha título e data.', 'warning');
-        return;
-      }
-      await this.db.collection('events').add({
-        title, date, type,
-        createdBy: this.myUid,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-      window.NexusApp?.showToast('Evento criado.', 'success');
-      slot.innerHTML = '';
-      await this.loadTabContent();
-    });
-  },
-
-  exportEventsIcs() {
-    const pad = n => String(n).padStart(2, '0');
-    const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//NEP//Report Executivo//PT-BR'];
-    this.events.forEach(e => {
-      if (!e.date) return;
-      const d = new Date(e.date);
-      const dt = `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}`;
-      lines.push('BEGIN:VEVENT');
-      lines.push(`UID:${e.id}@nep`);
-      lines.push(`DTSTART;VALUE=DATE:${dt}`);
-      lines.push(`SUMMARY:${(e.title || '').replace(/\n/g, ' ')}`);
-      lines.push('END:VEVENT');
-    });
-    lines.push('END:VCALENDAR');
-    const blob = new Blob([lines.join('\r\n')], { type: 'text/calendar' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'agenda-nep.ics';
-    a.click();
-    URL.revokeObjectURL(url);
-  },
-
-  // ============ 3. BOARD (Kanban sobre "items") ============
-
-  BOARD_STATUSES: ['Backlog', 'Em andamento', 'Em revisão', 'Concluído'],
-
-  async renderBoard(container) {
-    const canEdit = this.canEdit();
-    const active = this.items.filter(i => !i.archived);
-
-    container.innerHTML = `
-      <div class="admin-section">
-        <div class="report-board" style="display:grid;grid-template-columns:repeat(${this.BOARD_STATUSES.length},1fr);gap:16px;">
-          ${this.BOARD_STATUSES.map(status => {
-            const cards = active.filter(i => (i.status || 'Backlog') === status);
-            return `
-              <div class="report-board-col" data-status="${this.escapeHtml(status)}" style="background:var(--bg-secondary);border-radius:12px;padding:12px;min-height:200px;">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-                  <strong>${status}</strong><span style="opacity:.6;">${cards.length}</span>
-                </div>
-                <div class="report-board-cards" style="display:flex;flex-direction:column;gap:8px;">
-                  ${cards.map(i => `
-                    <div class="card report-board-card" draggable="${canEdit}" data-item-id="${i.id}" style="padding:10px;cursor:${canEdit ? 'grab' : 'default'};">
-                      <div style="font-weight:600;font-size:13px;">${this.escapeHtml(i.title || '(sem título)')}</div>
-                      <div style="font-size:12px;color:var(--text-secondary);margin-top:4px;">${this.escapeHtml(i.ownerName || 'Sem responsável')} · ${this.escapeHtml(i.priority || 'Normal')}</div>
-                      ${i.deadline ? `<div style="font-size:11px;color:var(--text-secondary);margin-top:2px;"><i class="fa-solid fa-calendar"></i> ${this.fmtDate(i.deadline)}</div>` : ''}
-                    </div>
-                  `).join('')}
-                  ${canEdit ? `<button class="btn btn-sm btn-ghost" data-add-card="${this.escapeHtml(status)}" style="margin-top:4px;">+ Adicionar cartão</button>` : ''}
-                </div>
-              </div>`;
-          }).join('')}
-        </div>
-      </div>`;
-
-    if (canEdit) this.attachBoardDnd(container);
-
-    container.querySelectorAll('[data-add-card]').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const title = prompt('Título do novo cartão:');
-        if (!title) return;
-        await this.saveItem({ title, status: btn.dataset.addCard, ownerName: this.myName, priority: 'Normal' });
-        window.NexusApp?.showToast('Cartão criado.', 'success');
-        await this.loadTabContent();
-      });
-    });
-  },
-
-  attachBoardDnd(container) {
-    let draggedId = null;
-    container.querySelectorAll('.report-board-card').forEach(card => {
-      card.addEventListener('dragstart', () => { draggedId = card.dataset.itemId; card.style.opacity = '0.5'; });
-      card.addEventListener('dragend', () => { card.style.opacity = '1'; });
-    });
-    container.querySelectorAll('.report-board-col').forEach(col => {
-      col.addEventListener('dragover', e => e.preventDefault());
-      col.addEventListener('drop', async e => {
-        e.preventDefault();
-        if (!draggedId) return;
-        await this.saveItem({ status: col.dataset.status }, draggedId);
-        await this.loadTabContent();
-      });
-    });
-  },
-
-  // ============ 4. RISCOS ============
-
-  // Espelha o riskScore do Report Executivo: composto ponderado de 5 fatores,
-  // cada um normalizado 0-1. Sem dado suficiente, o fator conta como 0 (não
-  // penaliza nem beneficia) — mesma convenção usada lá para "gap de dado".
-  computeRiskScore(item) {
-    const now = new Date();
-    const deadline = item.deadline ? new Date(item.deadline) : null;
-    const daysLeft = deadline ? (deadline - now) / 86400000 : null;
-
-    const overdueFactor = daysLeft !== null && daysLeft < 0 ? 1 : (daysLeft !== null && daysLeft < 3 ? 0.6 : 0);
-    const priorityFactor = { alta: 1, média: 0.5, media: 0.5, baixa: 0.1 }[(item.priority || '').toLowerCase()] || 0.3;
-    const noOwnerFactor = item.ownerName ? 0 : 0.7;
-    const stalledFactor = (item.status || 'Backlog') === 'Backlog' && daysLeft !== null && daysLeft < 7 ? 0.5 : 0;
-    const dataGapFactor = item.title && item.status ? 0 : 0.4;
-
-    const weights = { overdueFactor: 0.35, priorityFactor: 0.2, noOwnerFactor: 0.2, stalledFactor: 0.15, dataGapFactor: 0.1 };
-    const factors = { overdueFactor, priorityFactor, noOwnerFactor, stalledFactor, dataGapFactor };
-    const score = Object.keys(weights).reduce((acc, k) => acc + factors[k] * weights[k], 0);
-
-    let mainFactor = 'priorityFactor';
-    let mainVal = -1;
-    Object.entries(factors).forEach(([k, v]) => { const w = v * weights[k]; if (w > mainVal) { mainVal = w; mainFactor = k; } });
-
-    return { score: Math.round(score * 100), mainFactor };
-  },
-
-  RISK_LABELS: {
-    overdueFactor: 'Atraso',
-    priorityFactor: 'Prioridade',
-    noOwnerFactor: 'Sem responsável',
-    stalledFactor: 'Parado',
-    dataGapFactor: 'Dado incompleto'
-  },
-
-  riskBand(score) {
-    if (score >= 70) return { label: 'Crítico', color: '#ef4444' };
-    if (score >= 45) return { label: 'Alto', color: '#f59e0b' };
-    if (score >= 20) return { label: 'Médio', color: '#eab308' };
-    return { label: 'Baixo', color: '#22c55e' };
-  },
-
-  async renderRisks(container) {
-    const active = this.items.filter(i => !i.archived);
-    const scored = active
-      .map(i => ({ ...i, risk: this.computeRiskScore(i) }))
-      .sort((a, b) => b.risk.score - a.risk.score);
-
-    container.innerHTML = `
-      <div class="admin-section">
-        <p class="page-description" style="margin-bottom:16px;">Fila ordenada por risco composto (atraso, prioridade, responsável, estagnação, dado incompleto).</p>
-        <div class="table-wrapper">
-          <table class="data-table">
-            <thead><tr><th>Score</th><th>Banda</th><th>Título</th><th>Fator principal</th><th>Responsável</th></tr></thead>
-            <tbody>
-              ${scored.length === 0 ? `<tr><td colspan="5" style="text-align:center;color:var(--text-secondary);padding:24px;">Nenhuma frente ativa para avaliar.</td></tr>` : scored.map(i => {
-                const band = this.riskBand(i.risk.score);
-                return `
-                <tr>
-                  <td><strong>${i.risk.score}</strong></td>
-                  <td><span style="color:${band.color};font-weight:600;">${band.label}</span></td>
-                  <td>${this.escapeHtml(i.title || '(sem título)')}</td>
-                  <td>${this.RISK_LABELS[i.risk.mainFactor]}</td>
-                  <td>${this.escapeHtml(i.ownerName || '—')}</td>
-                </tr>`;
-              }).join('')}
-            </tbody>
-          </table>
-        </div>
-      </div>`;
-  },
-
-  // ============ 5. MELHORIAS ============
-
-  IMPROVEMENT_STAGES: ['Solicitação', 'Triagem', 'Em execução', 'Implementado'],
-
-  async loadImprovements() {
-    try {
-      const snap = await this.db.collection('process_improvements').orderBy('createdAt', 'desc').limit(300).get();
-      this.improvements = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    } catch (e) {
-      console.warn('[ReportExecutivo] process_improvements ainda vazio/sem acesso:', e.message);
-      this.improvements = [];
-    }
-  },
-
-  async renderImprovements(container) {
-    await this.loadImprovements();
-    const canEdit = this.canEdit();
-    const funnel = this.IMPROVEMENT_STAGES.map(stage => ({
-      stage,
-      count: this.improvements.filter(m => (m.stage || 'Solicitação') === stage).length
-    }));
-
-    container.innerHTML = `
-      <div class="admin-section">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-          <p class="page-description">Funil de melhoria de processo.</p>
-          ${canEdit ? `<button class="btn btn-sm btn-primary" id="btn-new-improvement"><i class="fa-solid fa-plus"></i> Nova solicitação</button>` : ''}
-        </div>
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;">
-          ${funnel.map(f => `
-            <div class="card" style="padding:16px;text-align:center;">
-              <div style="font-size:28px;font-weight:700;">${f.count}</div>
-              <div style="color:var(--text-secondary);font-size:13px;">${f.stage}</div>
-            </div>`).join('')}
-        </div>
-        <div id="improvement-form-slot"></div>
-        <div class="table-wrapper">
-          <table class="data-table">
-            <thead><tr><th>Título</th><th>Estágio</th><th>Criticidade</th><th>Criado em</th>${canEdit ? '<th></th>' : ''}</tr></thead>
-            <tbody>
-              ${this.improvements.length === 0 ? `<tr><td colspan="5" style="text-align:center;color:var(--text-secondary);padding:24px;">Nenhuma melhoria registrada.</td></tr>` : this.improvements.map(m => `
-                <tr>
-                  <td>${this.escapeHtml(m.title || '(sem título)')}</td>
-                  <td>${this.escapeHtml(m.stage || 'Solicitação')}</td>
-                  <td>${this.escapeHtml(m.criticality || '—')}</td>
-                  <td>${this.fmtDate(m.createdAt)}</td>
-                  ${canEdit ? `<td>
-                    <select class="form-input" style="padding:4px;font-size:12px;" data-advance="${m.id}">
-                      ${this.IMPROVEMENT_STAGES.map(s => `<option value="${s}" ${s === (m.stage || 'Solicitação') ? 'selected' : ''}>${s}</option>`).join('')}
-                    </select>
-                  </td>` : ''}
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        </div>
-      </div>`;
-
-    document.getElementById('btn-new-improvement')?.addEventListener('click', () => this.showImprovementForm());
-    container.querySelectorAll('[data-advance]').forEach(sel => {
-      sel.addEventListener('change', async () => {
-        const id = sel.dataset.advance;
-        const newStage = sel.value;
-        const before = this.improvements.find(m => m.id === id);
-        await this.db.collection('process_improvements').doc(id).update({
-          stage: newStage,
-          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-        await this.db.collection('improvement_movements').add({
-          improvementId: id,
-          fromStage: before?.stage || 'Solicitação',
-          toStage: newStage,
-          movedBy: this.myUid,
-          movedAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-        window.NexusApp?.showToast('Estágio atualizado.', 'success');
-        await this.loadTabContent();
-      });
-    });
-  },
-
-  showImprovementForm() {
-    const slot = document.getElementById('improvement-form-slot');
-    if (!slot) return;
-    slot.innerHTML = `
-      <div class="card" style="padding:16px;margin-bottom:16px;">
-        <div style="display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:12px;">
-          <input type="text" class="form-input" id="imp-title" placeholder="Descrição da melhoria">
-          <select class="form-input" id="imp-criticality">
-            <option value="Baixa">Baixa</option>
-            <option value="Média">Média</option>
-            <option value="Alta">Alta</option>
-          </select>
-        </div>
-        <button class="btn btn-primary btn-sm" id="imp-save">Salvar</button>
-        <button class="btn btn-ghost btn-sm" id="imp-cancel">Cancelar</button>
-      </div>`;
-    document.getElementById('imp-cancel').addEventListener('click', () => { slot.innerHTML = ''; });
-    document.getElementById('imp-save').addEventListener('click', async () => {
-      const title = document.getElementById('imp-title').value.trim();
-      const criticality = document.getElementById('imp-criticality').value;
-      if (!title) {
-        window.NexusApp?.showToast('Descreva a melhoria.', 'warning');
-        return;
-      }
-      await this.db.collection('process_improvements').add({
-        title, criticality, stage: 'Solicitação',
-        requestedBy: this.myUid,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-      window.NexusApp?.showToast('Solicitação registrada.', 'success');
-      slot.innerHTML = '';
-      await this.loadTabContent();
-    });
-  },
-
-  // ============ 6. CARTEIRA (Portfolio) ============
-
-  portfolioSort: { key: 'updatedAt', dir: 'desc' },
-
-  async renderPortfolio(container) {
-    const canEdit = this.canEdit();
-    const active = this.items.filter(i => !i.archived);
-    const { key, dir } = this.portfolioSort;
-    const sorted = [...active].sort((a, b) => {
-      let av = a[key], bv = b[key];
-      if (av?.toDate) av = av.toDate();
-      if (bv?.toDate) bv = bv.toDate();
-      if (av == null) av = '';
-      if (bv == null) bv = '';
-      const cmp = av > bv ? 1 : av < bv ? -1 : 0;
-      return dir === 'asc' ? cmp : -cmp;
-    });
-
-    // Agrupa por tag (equivalente simplificado ao rollup por subitem do
-    // Report — sem uma hierarquia de subitens própria ainda, o agrupamento
-    // usado aqui é por tag/categoria).
-    const groups = {};
-    sorted.forEach(i => {
-      const g = i.tag || 'Sem categoria';
-      (groups[g] = groups[g] || []).push(i);
-    });
-
-    const cols = [
-      { key: 'title', label: 'Título' },
-      { key: 'ownerName', label: 'Responsável' },
-      { key: 'status', label: 'Status' },
-      { key: 'priority', label: 'Prioridade' },
-      { key: 'deadline', label: 'Prazo' },
-      { key: 'updatedAt', label: 'Atualizado' }
-    ];
-
-    container.innerHTML = `
-      <div class="admin-section">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-          <p class="page-description">${active.length} frente(s) ativa(s), agrupadas por categoria.</p>
-          <button class="btn btn-sm btn-secondary" id="btn-export-csv"><i class="fa-solid fa-file-csv"></i> Exportar CSV</button>
-        </div>
-        ${Object.entries(groups).map(([group, rows]) => `
-          <div style="margin-bottom:20px;">
-            <div style="font-weight:600;margin-bottom:6px;">${this.escapeHtml(group)} <span style="opacity:.6;font-weight:400;">(${rows.length})</span></div>
-            <div class="table-wrapper">
-              <table class="data-table">
-                <thead><tr>${cols.map(c => `<th data-sort="${c.key}" style="cursor:pointer;">${c.label} ${key === c.key ? (dir === 'asc' ? '▲' : '▼') : ''}</th>`).join('')}</tr></thead>
-                <tbody>
-                  ${rows.map(i => `
-                    <tr>
-                      <td>${this.escapeHtml(i.title || '(sem título)')}</td>
-                      <td>${this.escapeHtml(i.ownerName || '—')}</td>
-                      <td>${this.escapeHtml(i.status || 'Backlog')}</td>
-                      <td>${this.escapeHtml(i.priority || 'Normal')}</td>
-                      <td>${this.fmtDate(i.deadline)}</td>
-                      <td>${this.fmtDate(i.updatedAt)}</td>
-                    </tr>
-                  `).join('')}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        `).join('') || `<p style="text-align:center;color:var(--text-secondary);padding:24px;">Nenhuma frente ativa.</p>`}
-      </div>`;
-
-    container.querySelectorAll('[data-sort]').forEach(th => {
-      th.addEventListener('click', async () => {
-        const k = th.dataset.sort;
-        this.portfolioSort = { key: k, dir: this.portfolioSort.key === k && this.portfolioSort.dir === 'asc' ? 'desc' : 'asc' };
-        await this.loadTabContent();
-      });
-    });
-    document.getElementById('btn-export-csv')?.addEventListener('click', () => this.exportPortfolioCsv(active));
-  },
-
-  exportPortfolioCsv(rows) {
-    const header = ['Título', 'Responsável', 'Status', 'Prioridade', 'Prazo', 'Categoria'];
-    const escapeCsv = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
-    const lines = [header.join(',')];
-    rows.forEach(i => {
-      lines.push([i.title, i.ownerName, i.status, i.priority, this.fmtDate(i.deadline), i.tag].map(escapeCsv).join(','));
-    });
-    const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'carteira-nep.csv';
-    a.click();
-    URL.revokeObjectURL(url);
-  },
-
-  // ============ 7. DASHBOARD ============
-
-  async renderExecDashboard(container) {
-    const active = this.items.filter(i => !i.archived);
-    const now = new Date();
-
-    const atrasados = active.filter(i => i.deadline && new Date(i.deadline) < now && (i.status || '') !== 'Concluído');
-    const quaseVencendo = active.filter(i => {
-      if (!i.deadline || (i.status || '') === 'Concluído') return false;
-      const days = (new Date(i.deadline) - now) / 86400000;
-      return days >= 0 && days <= 3;
-    });
-    const gapsDado = active.filter(i => !i.title || !i.status || !i.ownerName);
-    const concluidos = active.filter(i => (i.status || '') === 'Concluído');
-
-    const byOwner = {};
-    active.forEach(i => {
-      const o = i.ownerName || 'Sem responsável';
-      byOwner[o] = (byOwner[o] || 0) + 1;
-    });
-    const ownerLoadSorted = Object.entries(byOwner).sort((a, b) => b[1] - a[1]).slice(0, 8);
-    const maxLoad = Math.max(1, ...ownerLoadSorted.map(([, n]) => n));
-
-    container.innerHTML = `
-      <div class="admin-section">
-        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:24px;">
-          ${[
-            { label: 'Ativos', value: active.length, color: 'var(--primary-500)' },
-            { label: 'Atrasados', value: atrasados.length, color: '#ef4444' },
-            { label: 'Quase vencendo', value: quaseVencendo.length, color: '#f59e0b' },
-            { label: 'Gaps de dado', value: gapsDado.length, color: '#eab308' },
-            { label: 'Concluídos', value: concluidos.length, color: '#22c55e' }
-          ].map(k => `
-            <div class="card" style="padding:16px;text-align:center;">
-              <div style="font-size:28px;font-weight:700;color:${k.color};">${k.value}</div>
-              <div style="color:var(--text-secondary);font-size:13px;">${k.label}</div>
-            </div>`).join('')}
-        </div>
-        <div class="card" style="padding:16px;">
-          <div style="font-weight:600;margin-bottom:12px;">Carga por responsável</div>
-          ${ownerLoadSorted.length === 0 ? `<p style="color:var(--text-secondary);">Sem dados.</p>` : ownerLoadSorted.map(([owner, n]) => `
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-              <div style="width:140px;font-size:13px;">${this.escapeHtml(owner)}</div>
-              <div style="flex:1;background:var(--bg-secondary);border-radius:6px;overflow:hidden;height:16px;">
-                <div style="width:${(n / maxLoad) * 100}%;background:var(--primary-500);height:100%;"></div>
-              </div>
-              <div style="width:24px;text-align:right;font-size:13px;">${n}</div>
-            </div>`).join('')}
-        </div>
-      </div>`;
-  },
-
-  // ============ 8. MATERIAIS ============
-  // Sem avaliação por IA (fallback determinístico): a nota composta é
-  // calculada por uma média simples dos critérios da rubrica preenchidos
-  // manualmente por quem avalia — mesmo cálculo 0-100 do Report, só sem
-  // chamada a OpenAI/Ollama por trás.
-
-  MATERIAL_CRITERIA: ['clareza', 'profundidade', 'aplicabilidade', 'atualidade'],
-
-  async loadMaterials() {
-    try {
-      const snap = await this.db.collection('materials').orderBy('createdAt', 'desc').limit(300).get();
-      this.materials = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    } catch (e) {
-      console.warn('[ReportExecutivo] materials ainda vazio/sem acesso:', e.message);
-      this.materials = [];
-    }
-  },
-
-  materialComposite(m) {
-    const vals = this.MATERIAL_CRITERIA.map(c => Number(m[c]) || 0).filter(v => v > 0);
-    if (vals.length === 0) return null;
-    return Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 20); // escala 1-5 -> 0-100
-  },
-
-  async renderMaterials(container) {
-    await this.loadMaterials();
-    const canManage = ['admin', 'diretor', 'superintendente', 'gerente', 'coordenador'].includes(this.myRoleKey);
-
-    container.innerHTML = `
-      <div class="admin-section">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-          <p class="page-description">Repositório de materiais com avaliação por rubrica (sem IA — nota calculada por critério manual).</p>
-          ${canManage ? `<button class="btn btn-sm btn-primary" id="btn-new-material"><i class="fa-solid fa-plus"></i> Novo Material</button>` : ''}
-        </div>
-        <div id="material-form-slot"></div>
-        <div class="table-wrapper">
-          <table class="data-table">
-            <thead><tr><th>Título</th><th>Link</th><th>Nota composta</th><th>Avaliado em</th></tr></thead>
-            <tbody>
-              ${this.materials.length === 0 ? `<tr><td colspan="4" style="text-align:center;color:var(--text-secondary);padding:24px;">Nenhum material cadastrado.</td></tr>` : this.materials.map(m => {
-                const score = this.materialComposite(m);
-                return `
-                <tr>
-                  <td>${this.escapeHtml(m.title || '(sem título)')}</td>
-                  <td>${m.url ? `<a href="${this.escapeHtml(m.url)}" target="_blank" rel="noopener noreferrer">abrir</a>` : '—'}</td>
-                  <td>${score === null ? '<span style="opacity:.6;">sem avaliação</span>' : `<strong>${score}</strong>/100`}</td>
-                  <td>${this.fmtDate(m.createdAt)}</td>
-                </tr>`;
-              }).join('')}
-            </tbody>
-          </table>
-        </div>
-      </div>`;
-
-    document.getElementById('btn-new-material')?.addEventListener('click', () => this.showMaterialForm());
-  },
-
-  showMaterialForm() {
-    const slot = document.getElementById('material-form-slot');
-    if (!slot) return;
-    slot.innerHTML = `
-      <div class="card" style="padding:16px;margin-bottom:16px;">
-        <div style="display:grid;grid-template-columns:2fr 2fr;gap:12px;margin-bottom:12px;">
-          <input type="text" class="form-input" id="mat-title" placeholder="Título do material">
-          <input type="url" class="form-input" id="mat-url" placeholder="Link (opcional)">
-        </div>
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:12px;">
-          ${this.MATERIAL_CRITERIA.map(c => `
-            <label style="font-size:12px;">${c[0].toUpperCase() + c.slice(1)} (1-5)
-              <input type="number" class="form-input" id="mat-${c}" min="1" max="5" value="3">
-            </label>`).join('')}
-        </div>
-        <button class="btn btn-primary btn-sm" id="mat-save">Salvar</button>
-        <button class="btn btn-ghost btn-sm" id="mat-cancel">Cancelar</button>
-      </div>`;
-    document.getElementById('mat-cancel').addEventListener('click', () => { slot.innerHTML = ''; });
-    document.getElementById('mat-save').addEventListener('click', async () => {
-      const title = document.getElementById('mat-title').value.trim();
-      if (!title) {
-        window.NexusApp?.showToast('Dê um título ao material.', 'warning');
-        return;
-      }
-      const data = { title, url: document.getElementById('mat-url').value.trim(), createdBy: this.myUid, createdAt: firebase.firestore.FieldValue.serverTimestamp() };
-      this.MATERIAL_CRITERIA.forEach(c => { data[c] = Number(document.getElementById(`mat-${c}`).value) || 0; });
-      await this.db.collection('materials').add(data);
-      window.NexusApp?.showToast('Material cadastrado.', 'success');
-      slot.innerHTML = '';
-      await this.loadTabContent();
-    });
-  },
-
-  // ============ 9. MEU SCORECARD ============
-  // Mediana do composto de materiais avaliados por mim + % de atingimento
-  // da meta semanal de melhorias (equivalente simplificado ao Report, sem
-  // scorecard_snapshots semanal ainda — calculado ao vivo sobre os dados
-  // já carregados).
-
-  IMPROVEMENT_WEEKLY_GOAL: 1,
-
-  median(nums) {
-    if (nums.length === 0) return null;
-    const sorted = [...nums].sort((a, b) => a - b);
-    const mid = Math.floor(sorted.length / 2);
-    return sorted.length % 2 !== 0 ? sorted[mid] : Math.round((sorted[mid - 1] + sorted[mid]) / 2);
-  },
-
-  async renderScorecard(container) {
-    await this.loadMaterials();
-    await this.loadImprovements();
-
-    const myMaterials = this.materials.filter(m => m.createdBy === this.myUid);
-    const scores = myMaterials.map(m => this.materialComposite(m)).filter(s => s !== null);
-    const medianScore = this.median(scores);
-
-    const now = new Date();
-    const weekAgo = new Date(now - 7 * 86400000);
-    const myImprovementsThisWeek = this.improvements.filter(m => {
-      if (m.requestedBy !== this.myUid) return false;
-      const created = m.createdAt?.toDate ? m.createdAt.toDate() : new Date(m.createdAt);
-      return created >= weekAgo && (m.stage || '') === 'Implementado';
-    });
-    const goalPct = Math.min(100, Math.round((myImprovementsThisWeek.length / this.IMPROVEMENT_WEEKLY_GOAL) * 100));
-
-    container.innerHTML = `
-      <div class="admin-section">
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;">
-          <div class="card" style="padding:16px;text-align:center;">
-            <div style="font-size:28px;font-weight:700;">${medianScore === null ? '—' : medianScore}</div>
-            <div style="color:var(--text-secondary);font-size:13px;">Mediana de avaliação de materiais</div>
-          </div>
-          <div class="card" style="padding:16px;text-align:center;">
-            <div style="font-size:28px;font-weight:700;">${goalPct}%</div>
-            <div style="color:var(--text-secondary);font-size:13px;">Meta semanal de melhorias implementadas</div>
-          </div>
-          <div class="card" style="padding:16px;text-align:center;">
-            <div style="font-size:28px;font-weight:700;">${myMaterials.length}</div>
-            <div style="color:var(--text-secondary);font-size:13px;">Materiais cadastrados por mim</div>
-          </div>
-        </div>
-        <p style="color:var(--text-secondary);font-size:13px;">
-          Rollup de equipe (piso N≥5 contra reidentificação) chega na Fase 3, junto com a
-          cadeia de gestores desnormalizada — hoje este scorecard mostra só o seu recorte individual.
-        </p>
-      </div>`;
-  },
-
-  // ============ 10. CAPACIDADE ============
-  // Carga real por pessoa: soma horas de items ativos atribuídos + desconta
-  // ausências da capacidade semanal cadastrada. Sem rotinas com horas/semana
-  // ainda migradas para cá (o Rotina ADM do NEP é um módulo à parte), a
-  // carga de rotina entra quando a aba Rotinas (abaixo) tiver adoção real.
-
-  DEFAULT_WEEKLY_CAPACITY: 40,
-
-  async loadAbsences() {
-    try {
-      const snap = await this.db.collection('absences').orderBy('startDate', 'desc').limit(200).get();
-      this.absences = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    } catch (e) {
-      console.warn('[ReportExecutivo] absences ainda vazio/sem acesso:', e.message);
-      this.absences = [];
-    }
+    this.tagVocabulary = RED.buildTagVocabulary(this.items);
   },
 
   async loadActiveUsers() {
     try {
       const snap = await this.db.collection('users').where('status', '==', 'ATIVO').get();
-      this.activeUsers = snap.docs.map(d => ({ uid: d.id, ...d.data() }));
+      this.activeUsers = snap.docs.map(d => Object.assign({ uid: d.id, id: d.id }, d.data()));
     } catch (e) {
-      console.warn('[ReportExecutivo] users ainda sem acesso:', e.message);
+      console.warn('[ReportExecutivo] users indisponível:', e.message);
       this.activeUsers = [];
     }
+    // Chokepoint de responsáveis: sem isto "Pedro" e "Pedro Almeida Santos"
+    // viram duas pessoas em toda agregação por dono.
+    RED.setCanonicalOwners(this.activeUsers.map(u => u.nome || u.full_name));
   },
 
-  isOnAbsenceToday(uid) {
-    const today = new Date().toDateString();
-    return (this.absences || []).some(a => a.personUid === uid
-      && new Date(a.startDate) <= new Date(today)
-      && new Date(a.endDate) >= new Date(today));
+  /** Recorte-padrão por papel. Só depois de activeUsers carregar — aplicar
+   *  antes gera a corrida que prende o gestor vendo só as próprias frentes. */
+  applyDefaultScope() {
+    if (this._scopeApplied) return;
+    const me = this.activeUsers.find(u => u.uid === this.myUid);
+    const team = me ? RED.subordinateIds(this.activeUsers, this.myUid) : new Set();
+    const teamNames = this.activeUsers.filter(u => team.has(u.uid) && u.uid !== this.myUid)
+      .map(u => u.nome).filter(Boolean);
+    const isManagerWithTeam = teamNames.length > 0;
+    const own = me ? me.nome : this.myName;
+    this.filters.teamOwners = RED.defaultOwnerScope(this.myRoleKey, isManagerWithTeam,
+      isManagerWithTeam ? [own, ...teamNames].filter(Boolean) : [], own);
+    this._scopeApplied = true;
   },
 
-  async renderCapacity(container) {
-    await this.loadAbsences();
-    await this.loadActiveUsers();
-    const canManage = ['admin', 'superintendente'].includes(this.myRoleKey);
-    const active = this.items.filter(i => !i.archived && (i.status || '') !== 'Concluído');
+  /** Itens após escopo + filtros — fonte única de todas as abas. */
+  visibleItems() {
+    return RED.filteredItems(this.items, this.filters);
+  },
 
-    const byOwner = {};
-    active.forEach(i => {
-      const o = i.ownerName || 'Sem responsável';
-      byOwner[o] = (byOwner[o] || 0) + (Number(i.effortHours) || 4); // 4h é o "custo" padrão de uma frente sem estimativa própria
+  async saveItem(patch, id) {
+    const payload = Object.assign({}, patch, {
+      lastUpdate: new Date().toISOString(),
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     });
+    if (id) {
+      await this.db.collection('items').doc(id).update(payload);
+    } else {
+      payload.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+      payload.createdBy = this.myUid;
+      if (payload.archived === undefined) payload.archived = false;
+      await this.db.collection('items').add(payload);
+    }
+    await this.loadItems();
+  },
 
-    const rows = (this.activeUsers.length ? this.activeUsers.map(u => u.nome) : Object.keys(byOwner))
-      .filter((v, i, arr) => arr.indexOf(v) === i)
-      .map(name => {
-        const user = this.activeUsers.find(u => u.nome === name);
-        const capacity = user?.capacidade_semanal_horas || this.DEFAULT_WEEKLY_CAPACITY;
-        const load = byOwner[name] || 0;
-        const onLeave = user && this.isOnAbsenceToday(user.uid);
-        const utilization = onLeave ? null : Math.round((load / capacity) * 100);
-        return { name, load, capacity, utilization, onLeave };
-      })
-      .sort((a, b) => (b.utilization ?? -1) - (a.utilization ?? -1));
+  // ── Helpers de render ─────────────────────────────────────────────────────
 
-    const classify = u => u === null ? { label: 'Ausente', color: '#94a3b8' }
-      : u >= 100 ? { label: 'Sobrecarregado', color: '#ef4444' }
-      : u >= 70 ? { label: 'Saudável', color: '#22c55e' }
-      : { label: 'Ocioso', color: '#eab308' };
+  esc(s) { return RED.esc(s); },
+
+  badge(text, tone) {
+    return `<span class="re-badge ${tone || 'tone-gray'}">${RED.esc(text)}</span>`;
+  },
+
+  bar(pct, tone) {
+    const p = Math.max(0, Math.min(100, pct || 0));
+    return `<div class="re-bar"><div class="re-bar-fill ${tone || ''}" style="width:${p}%"></div></div>`;
+  },
+
+  // ── Shell ─────────────────────────────────────────────────────────────────
+
+  async render(container) {
+    this.init();
+    this.container = container;
+    if (!this.db) {
+      container.innerHTML = `<div class="re-empty">Firestore indisponível.</div>`;
+      return;
+    }
+
+    const role = this.myRoleKey;
+    const tabs = [
+      { id: 'portfolio', icon: 'fa-layer-group', label: 'Carteira' },
+      { id: 'board', icon: 'fa-table-columns', label: 'Board' },
+      { id: 'risks', icon: 'fa-triangle-exclamation', label: 'Riscos' },
+      { id: 'dashboard', icon: 'fa-gauge-high', label: 'Dashboard' },
+      { id: 'capacity', icon: 'fa-users-gear', label: 'Capacidade' },
+      { id: 'routines', icon: 'fa-list-check', label: 'Rotinas' },
+      { id: 'development', icon: 'fa-seedling', label: 'Desenvolvimento' },
+      { id: 'executive', icon: 'fa-briefcase', label: 'Executivo' },
+      { id: 'okrs', icon: 'fa-bullseye', label: RED.canViewStructure(role) || role === 'gerente' ? 'OKRs' : 'Meu OKR' },
+      { id: 'director-summary', icon: 'fa-sitemap', label: 'Resumo Estrutura', restricted: true },
+      { id: 'agenda', icon: 'fa-calendar-days', label: 'Agenda' },
+      { id: 'improvements', icon: 'fa-arrow-trend-up', label: 'Melhorias' },
+      { id: 'materials', icon: 'fa-photo-film', label: 'Materiais' },
+      { id: 'scorecard', icon: 'fa-clipboard-check', label: 'Meu Scorecard' },
+      { id: 'archived', icon: 'fa-box-archive', label: 'Arquivados' }
+    ].filter(t => RED.isViewVisible(t.id, !!t.restricted, role));
+
+    if (!tabs.some(t => t.id === this.activeTab)) this.activeTab = tabs[0].id;
 
     container.innerHTML = `
-      <div class="admin-section">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-          <p class="page-description">Utilização real por pessoa (horas de frentes ativas ÷ capacidade semanal).</p>
-          ${canManage ? `<button class="btn btn-sm btn-secondary" id="btn-new-absence"><i class="fa-solid fa-umbrella-beach"></i> Registrar ausência</button>` : ''}
+      <div class="re-page animate-fade-in">
+        <div class="re-head">
+          <div>
+            <h1 class="page-title">Report Executivo</h1>
+            <p class="page-description">Carteira, riscos, capacidade e OKR — integrado ao NEP.</p>
+          </div>
+          <div class="re-head-actions">
+            ${this.canEdit() ? `<button class="btn btn-primary btn-sm" id="re-new-item"><i class="fa-solid fa-plus"></i> Nova frente</button>` : ''}
+          </div>
         </div>
-        <div id="absence-form-slot"></div>
-        <div class="table-wrapper">
-          <table class="data-table">
-            <thead><tr><th>Pessoa</th><th>Carga (h/sem)</th><th>Capacidade</th><th>Utilização</th><th>Status</th></tr></thead>
-            <tbody>
-              ${rows.length === 0 ? `<tr><td colspan="5" style="text-align:center;color:var(--text-secondary);padding:24px;">Sem dados de carga ainda.</td></tr>` : rows.map(r => {
-                const band = classify(r.utilization);
-                return `
-                <tr>
-                  <td>${this.escapeHtml(r.name)}</td>
-                  <td>${r.load}h</td>
-                  <td>${r.capacity}h</td>
-                  <td>${r.utilization === null ? '—' : r.utilization + '%'}</td>
-                  <td><span style="color:${band.color};font-weight:600;">${band.label}</span></td>
-                </tr>`;
-              }).join('')}
-            </tbody>
-          </table>
+        <div class="re-tabs">
+          ${tabs.map(t => `<button class="re-tab ${this.activeTab === t.id ? 'active' : ''}" data-tab="${t.id}"><i class="fa-solid ${t.icon}"></i> ${t.label}</button>`).join('')}
+        </div>
+        <div id="re-filterbar"></div>
+        <div class="re-content" id="re-content">
+          <div class="re-loading"><i class="fa-solid fa-circle-notch fa-spin"></i> Carregando…</div>
         </div>
       </div>`;
 
-    document.getElementById('btn-new-absence')?.addEventListener('click', () => this.showAbsenceForm());
+    container.querySelectorAll('.re-tab').forEach(tab => {
+      tab.addEventListener('click', async () => {
+        this.activeTab = tab.dataset.tab;
+        container.querySelectorAll('.re-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        await this.loadTab();
+      });
+    });
+    document.getElementById('re-new-item')?.addEventListener('click', () => this.openItemModal(null));
+
+    await this.loadActiveUsers();
+    await this.loadItems();
+    this.applyDefaultScope();
+    await this.loadTab();
   },
 
-  showAbsenceForm() {
-    const slot = document.getElementById('absence-form-slot');
-    if (!slot) return;
-    slot.innerHTML = `
-      <div class="card" style="padding:16px;margin-bottom:16px;">
-        <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px;margin-bottom:12px;">
-          <select class="form-input" id="abs-person">
-            ${(this.activeUsers || []).map(u => `<option value="${u.uid}" data-nome="${this.escapeHtml(u.nome)}">${this.escapeHtml(u.nome)}</option>`).join('')}
-          </select>
-          <input type="date" class="form-input" id="abs-start">
-          <input type="date" class="form-input" id="abs-end">
-        </div>
-        <button class="btn btn-primary btn-sm" id="abs-save">Salvar</button>
-        <button class="btn btn-ghost btn-sm" id="abs-cancel">Cancelar</button>
-      </div>`;
-    document.getElementById('abs-cancel').addEventListener('click', () => { slot.innerHTML = ''; });
-    document.getElementById('abs-save').addEventListener('click', async () => {
-      const sel = document.getElementById('abs-person');
-      const personUid = sel.value;
-      const personName = sel.selectedOptions[0]?.dataset.nome || '';
-      const startDate = document.getElementById('abs-start').value;
-      const endDate = document.getElementById('abs-end').value;
-      if (!personUid || !startDate || !endDate) {
-        window.NexusApp?.showToast('Preencha pessoa, início e fim.', 'warning');
-        return;
+  /** Abas que operam sobre a carteira mostram a barra de filtros; as demais não. */
+  FILTERED_TABS: ['portfolio', 'board', 'risks', 'dashboard', 'executive'],
+
+  async loadTab() {
+    const el = document.getElementById('re-content');
+    if (!el) return;
+    el.innerHTML = `<div class="re-loading"><i class="fa-solid fa-circle-notch fa-spin"></i> Carregando…</div>`;
+    this.renderFilterBar();
+    try {
+      switch (this.activeTab) {
+        case 'portfolio': this.renderPortfolio(el); break;
+        case 'board': this.renderBoard(el); break;
+        case 'risks': this.renderRisks(el); break;
+        case 'dashboard': this.renderDashboard(el); break;
+        case 'capacity': await this.renderCapacity(el); break;
+        case 'routines': await this.renderRoutines(el); break;
+        case 'development': await this.renderDevelopment(el); break;
+        case 'executive': await this.renderExecutive(el); break;
+        case 'okrs': await this.renderOkrs(el); break;
+        case 'director-summary': this.renderDirectorSummary(el); break;
+        case 'agenda': await this.renderAgenda(el); break;
+        case 'improvements': await this.renderImprovements(el); break;
+        case 'materials': await this.renderMaterials(el); break;
+        case 'scorecard': await this.renderScorecard(el); break;
+        case 'archived': this.renderArchived(el); break;
       }
-      await this.db.collection('absences').add({
-        personUid, personName, startDate, endDate,
-        createdBy: this.myUid,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    } catch (err) {
+      console.error('[ReportExecutivo] erro na aba', this.activeTab, err);
+      el.innerHTML = `<div class="re-error"><strong>Erro ao carregar:</strong> ${RED.esc(err.message)}</div>`;
+    }
+  },
+
+  // ── Barra de filtros (compartilhada) ──────────────────────────────────────
+
+  renderFilterBar() {
+    const slot = document.getElementById('re-filterbar');
+    if (!slot) return;
+    if (!this.FILTERED_TABS.includes(this.activeTab)) { slot.innerHTML = ''; return; }
+
+    const f = this.filters;
+    const all = this.items.filter(i => !i.archived);
+    const uniq = arr => [...new Set(arr.filter(Boolean))].sort();
+    const products = uniq(all.map(i => i.product || RED.NO_PRODUCT));
+    const owners = uniq(all.flatMap(i => RED.ownersOf(i.owner)));
+    const statuses = uniq(all.map(i => RED.effectiveStatus(i)));
+
+    const multi = (key, label, options) => `
+      <div class="re-filter">
+        <label>${label}</label>
+        <select multiple size="1" data-filter="${key}" class="re-select">
+          ${options.map(o => `<option value="${RED.esc(o)}" ${f[key].includes(o) ? 'selected' : ''}>${RED.esc(o)}</option>`).join('')}
+        </select>
+      </div>`;
+
+    slot.innerHTML = `
+      <div class="re-filterbar">
+        <div class="re-filter re-filter-grow">
+          <label>Buscar</label>
+          <input type="text" class="form-input" id="re-q" placeholder="projeto, escopo, responsável, tag…" value="${RED.esc(f.query)}">
+        </div>
+        ${multi('product', 'Produto', products)}
+        ${multi('owner', 'Responsável', owners)}
+        ${multi('status', 'Status', statuses)}
+        <div class="re-filter">
+          <label>Ordenar</label>
+          <select class="re-select" id="re-sort">
+            ${[['dueAsc', 'Prazo ↑'], ['dueDesc', 'Prazo ↓'], ['riskDesc', 'Risco'], ['scoreAsc', 'Governança ↑'],
+               ['progressAsc', 'Progresso ↑'], ['effortDesc', 'Esforço ↓']]
+              .map(([v, l]) => `<option value="${v}" ${f.sort === v ? 'selected' : ''}>${l}</option>`).join('')}
+          </select>
+        </div>
+        <label class="re-check"><input type="checkbox" id="re-critical" ${f.criticalOnly ? 'checked' : ''}> Só críticas</label>
+        <label class="re-check"><input type="checkbox" id="re-gaps" ${f.gapsOnly ? 'checked' : ''}> Só com lacuna</label>
+        ${f.teamOwners ? `<span class="re-scope" title="Recorte automático pelo seu papel">Recorte: meu time (${f.teamOwners.length})</span>` : ''}
+        ${RED.hasActiveFilters(f) ? `<button class="btn btn-ghost btn-sm" id="re-clear">Limpar</button>` : ''}
+      </div>`;
+
+    const q = document.getElementById('re-q');
+    let t = null;
+    q?.addEventListener('input', () => {
+      clearTimeout(t);
+      t = setTimeout(async () => { this.filters.query = q.value; await this.loadTab(); }, 250);
+    });
+    slot.querySelectorAll('[data-filter]').forEach(sel => {
+      sel.addEventListener('change', async () => {
+        this.filters[sel.dataset.filter] = [...sel.selectedOptions].map(o => o.value);
+        await this.loadTab();
       });
-      window.NexusApp?.showToast('Ausência registrada.', 'success');
-      slot.innerHTML = '';
-      await this.loadTabContent();
+    });
+    document.getElementById('re-sort')?.addEventListener('change', async e => {
+      this.filters.sort = e.target.value; await this.loadTab();
+    });
+    document.getElementById('re-critical')?.addEventListener('change', async e => {
+      this.filters.criticalOnly = e.target.checked; await this.loadTab();
+    });
+    document.getElementById('re-gaps')?.addEventListener('change', async e => {
+      this.filters.gapsOnly = e.target.checked; await this.loadTab();
+    });
+    document.getElementById('re-clear')?.addEventListener('click', async () => {
+      const scope = this.filters.teamOwners;
+      this.filters = Object.assign({}, RED.EMPTY_FILTERS, { teamOwners: scope });
+      await this.loadTab();
     });
   },
 
-  // ============ 11. RESUMO ESTRUTURA (admin/diretor/superintendente) ============
-  // Rollup por unidade organizacional (gestor direto), usando gestor_uid —
-  // cadeia_gestores permite estender para "toda a árvore" quando necessário,
-  // mas o corte por unidade (gestor + subtime direto) já cobre o caso de uso
-  // principal do Resumo Estrutura do Report.
+  // ── Modal de frente (editor completo — 22 campos) ─────────────────────────
 
-  async renderDirectorSummary(container) {
-    await this.loadActiveUsers();
-    const active = this.items.filter(i => !i.archived);
-    const now = new Date();
+  openItemModal(item) {
+    const isNew = !item;
+    const it = item || RED.normalizeItem({}, this.items.length);
+    document.getElementById('re-modal')?.remove();
 
-    const managers = this.activeUsers.filter(u => this.activeUsers.some(sub => sub.gestor_uid === u.uid));
-    const units = managers.map(mgr => {
-      const subNames = this.activeUsers.filter(u => u.gestor_uid === mgr.uid).map(u => u.nome);
-      const unitItems = active.filter(i => subNames.includes(i.ownerName));
-      const atrasados = unitItems.filter(i => i.deadline && new Date(i.deadline) < now && (i.status || '') !== 'Concluído');
-      const emRisco = unitItems.filter(i => this.computeRiskScore(i).score >= 45);
-      const critico = unitItems.filter(i => (i.priority || '').toLowerCase() === 'alta');
-      return {
-        gestor: mgr.nome, total: unitItems.length,
-        abertos: unitItems.filter(i => (i.status || '') !== 'Concluído').length,
-        atrasados: atrasados.length, emRisco: emRisco.length, critico: critico.length
+    const opts = (list, sel) => list.map(v => `<option value="${RED.esc(v)}" ${v === sel ? 'selected' : ''}>${RED.esc(v)}</option>`).join('');
+    const preds = this.items.filter(x => x.id !== it.id && !x.archived);
+
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.id = 're-modal';
+    modal.innerHTML = `
+      <div class="modal-container re-modal">
+        <div class="modal-header">
+          <h3><i class="fa-solid fa-diagram-project"></i> ${isNew ? 'Nova frente' : RED.esc(RED.frontLabel(it))}</h3>
+          <button class="modal-close" id="re-modal-x"><i class="fa-solid fa-times"></i></button>
+        </div>
+        <div class="modal-body re-modal-body">
+          <div class="re-grid-2">
+            <div class="form-group"><label class="form-label">Projeto</label>
+              <input type="text" class="form-input" id="f-project" value="${RED.esc(it.project)}"></div>
+            <div class="form-group"><label class="form-label">Escopo / demanda</label>
+              <input type="text" class="form-input" id="f-demand" value="${RED.esc(it.demand)}"></div>
+          </div>
+          <div class="form-group"><label class="form-label">Definição</label>
+            <textarea class="form-input" id="f-definition" rows="3">${RED.esc(it.definition)}</textarea></div>
+          <div class="re-grid-3">
+            <div class="form-group"><label class="form-label">Responsável(is)</label>
+              <input type="text" class="form-input" id="f-owner" list="re-owners" value="${RED.esc(it.owner)}"
+                placeholder="Nome, ou vários separados por vírgula">
+              <datalist id="re-owners">${this.activeUsers.map(u => `<option value="${RED.esc(u.nome)}">`).join('')}</datalist></div>
+            <div class="form-group"><label class="form-label">Produto</label>
+              <input type="text" class="form-input" id="f-product" list="re-products" value="${RED.esc(it.product === RED.NO_PRODUCT ? '' : it.product)}">
+              <datalist id="re-products">${RED.PRODUCT_SUGGESTIONS.map(p => `<option value="${p}">`).join('')}</datalist></div>
+            <div class="form-group"><label class="form-label">Tags (vírgula)</label>
+              <input type="text" class="form-input" id="f-tags" value="${RED.esc((it.tags || []).join(', '))}"></div>
+          </div>
+          <div class="re-grid-4">
+            <div class="form-group"><label class="form-label">Status</label>
+              <select class="form-input" id="f-status">${opts(RED.STATUSES, it.status)}</select></div>
+            <div class="form-group"><label class="form-label">Prioridade</label>
+              <select class="form-input" id="f-priority">${opts(RED.PRIORITIES, it.priority)}</select></div>
+            <div class="form-group"><label class="form-label">Início</label>
+              <input type="date" class="form-input" id="f-start" value="${RED.esc(it.startDate)}"></div>
+            <div class="form-group"><label class="form-label">Prazo</label>
+              <input type="date" class="form-input" id="f-due" value="${RED.esc(it.dueDate)}"></div>
+          </div>
+          <div class="re-grid-3">
+            <div class="form-group"><label class="form-label">Progresso: <span id="f-prog-out">${it.progress}</span>%</label>
+              <input type="range" min="0" max="100" step="5" id="f-progress" value="${it.progress}" style="width:100%"></div>
+            <div class="form-group"><label class="form-label">Esforço (h)</label>
+              <input type="number" class="form-input" id="f-effort" min="0" max="9999" value="${it.effortHours ?? ''}"
+                placeholder="vazio = estimado"></div>
+            <div class="form-group"><label class="form-label">Tamanho do time</label>
+              <input type="number" class="form-input" id="f-team" min="1" max="50" value="${it.teamSize ?? ''}"></div>
+          </div>
+          <div class="form-group"><label class="form-label">Próxima ação</label>
+            <input type="text" class="form-input" id="f-next" value="${RED.esc(it.nextAction)}"></div>
+          <div class="re-grid-2">
+            <div class="form-group"><label class="form-label">Depende de</label>
+              <select class="form-input" id="f-pred">
+                <option value="">— nenhuma —</option>
+                ${preds.map(p => `<option value="${p.id}" ${p.id === it.predecessorId ? 'selected' : ''}>${RED.esc(RED.frontLabel(p))}</option>`).join('')}
+              </select></div>
+            <div class="form-group"><label class="form-label">Nota de dependência</label>
+              <input type="text" class="form-input" id="f-depnote" value="${RED.esc(it.dependencyNote)}"></div>
+          </div>
+          <div class="form-group"><label class="form-label">Comentário executivo</label>
+            <textarea class="form-input" id="f-exec" rows="2">${RED.esc(it.executiveComment)}</textarea></div>
+          <div id="re-modal-diag"></div>
+        </div>
+        <div class="modal-footer">
+          ${!isNew && this.canDelete() ? `<button class="btn btn-ghost" id="re-archive">${it.archived ? 'Restaurar' : 'Arquivar'}</button>` : ''}
+          <button class="btn btn-secondary" id="re-modal-cancel">Cancelar</button>
+          <button class="btn btn-primary" id="re-modal-save"><i class="fa-solid fa-save"></i> Salvar</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+
+    const close = () => modal.remove();
+    document.getElementById('re-modal-x').addEventListener('click', close);
+    document.getElementById('re-modal-cancel').addEventListener('click', close);
+    document.getElementById('f-progress').addEventListener('input', e => {
+      document.getElementById('f-prog-out').textContent = e.target.value;
+    });
+
+    // Diagnóstico ao vivo: mostra o que o motor vai dizer deste item ANTES de
+    // salvar — lacunas de governança e score de risco. É o que transforma o
+    // formulário em ferramenta em vez de cadastro cego.
+    const refreshDiag = () => {
+      const draft = this.readItemForm(it);
+      const gaps = RED.dataGaps(draft);
+      const rs = RED.riskScore(draft, this.items);
+      document.getElementById('re-modal-diag').innerHTML = `
+        <div class="re-diag">
+          <div><strong>Governança:</strong> ${RED.scoreOf(draft)}/100
+            ${gaps.length ? `— falta: ${gaps.map(g => RED.esc(g)).join(', ')}` : '— cadastro completo'}</div>
+          ${rs ? `<div><strong>Risco:</strong> ${rs.score} (${rs.band}) — ${RED.esc(RED.riskRecommendedAction(draft, rs))}</div>` : ''}
+        </div>`;
+    };
+    modal.querySelectorAll('input,select,textarea').forEach(el => {
+      el.addEventListener('change', refreshDiag);
+    });
+    refreshDiag();
+
+    document.getElementById('re-archive')?.addEventListener('click', async () => {
+      await this.saveItem({ archived: !it.archived }, it.id);
+      close(); await this.loadTab();
+      window.NexusApp?.showToast(it.archived ? 'Frente restaurada.' : 'Frente arquivada.', 'success');
+    });
+
+    document.getElementById('re-modal-save').addEventListener('click', async () => {
+      const data = this.readItemForm(it);
+      if (!data.project && !data.demand) {
+        window.NexusApp?.showToast('Informe ao menos projeto ou escopo.', 'warning');
+        return;
+      }
+      const payload = {
+        project: data.project, demand: data.demand, definition: data.definition,
+        owner: data.owner, product: data.product, tags: data.tags,
+        status: data.status, priority: data.priority, progress: data.progress,
+        startDate: data.startDate, dueDate: data.dueDate,
+        nextAction: data.nextAction, executiveComment: data.executiveComment,
+        predecessorId: data.predecessorId, dependencyNote: data.dependencyNote
       };
-    }).sort((a, b) => b.atrasados - a.atrasados);
-
-    container.innerHTML = `
-      <div class="admin-section">
-        <p class="page-description" style="margin-bottom:16px;">Foco por unidade organizacional, ranqueado por atenção necessária.</p>
-        <div class="table-wrapper">
-          <table class="data-table">
-            <thead><tr><th>Gestor</th><th>Total</th><th>Abertos</th><th>Atrasados</th><th>Em risco</th><th>Prioridade crítica</th></tr></thead>
-            <tbody>
-              ${units.length === 0 ? `<tr><td colspan="6" style="text-align:center;color:var(--text-secondary);padding:24px;">Nenhuma unidade com subordinados diretos e frentes atribuídas.</td></tr>` : units.map(u => `
-                <tr>
-                  <td>${this.escapeHtml(u.gestor)}</td>
-                  <td>${u.total}</td>
-                  <td>${u.abertos}</td>
-                  <td style="${u.atrasados > 0 ? 'color:#ef4444;font-weight:600;' : ''}">${u.atrasados}</td>
-                  <td style="${u.emRisco > 0 ? 'color:#f59e0b;font-weight:600;' : ''}">${u.emRisco}</td>
-                  <td>${u.critico}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        </div>
-      </div>`;
+      if (data.effortHours !== undefined) payload.effortHours = data.effortHours;
+      if (data.teamSize !== undefined) payload.teamSize = data.teamSize;
+      await this.saveItem(payload, isNew ? null : it.id);
+      close(); await this.loadTab();
+      window.NexusApp?.showToast(isNew ? 'Frente criada.' : 'Frente atualizada.', 'success');
+    });
   },
 
-  // ============ 12. ROTINAS + LISTA PESSOAL ============
+  readItemForm(base) {
+    const val = id => (document.getElementById(id)?.value ?? '').trim();
+    const num = id => {
+      const v = document.getElementById(id)?.value;
+      return v === '' || v === undefined ? undefined : Number(v);
+    };
+    const rawTags = val('f-tags').split(',').map(s => s.trim()).filter(Boolean);
+    return RED.normalizeItem({
+      id: base.id,
+      project: val('f-project'), demand: val('f-demand'), definition: val('f-definition'),
+      owner: val('f-owner'), product: val('f-product'),
+      tags: RED.canonicalizeTags(rawTags, this.tagVocabulary),
+      status: val('f-status'), priority: val('f-priority'),
+      progress: Number(document.getElementById('f-progress')?.value ?? 0),
+      startDate: val('f-start'), dueDate: val('f-due'),
+      effortHours: num('f-effort'), teamSize: num('f-team'),
+      nextAction: val('f-next'), executiveComment: val('f-exec'),
+      predecessorId: val('f-pred'), dependencyNote: val('f-depnote'),
+      lastUpdate: base.lastUpdate, archived: base.archived
+    });
+  },
 
-  async loadRoutines() {
-    try {
-      const snap = await this.db.collection('routines').where('active', '==', true).get();
-      this.routines = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    } catch (e) {
-      console.warn('[ReportExecutivo] routines ainda vazio/sem acesso:', e.message);
-      this.routines = [];
+  // ── 1. CARTEIRA ───────────────────────────────────────────────────────────
+
+  renderPortfolio(el) {
+    const list = RED.sortItems(this.visibleItems(), this.filters.sort);
+    const groups = new Map();
+    for (const it of list) {
+      const g = it.product || RED.NO_PRODUCT;
+      if (!groups.has(g)) groups.set(g, []);
+      groups.get(g).push(it);
     }
-  },
 
-  async loadPersonalTasks() {
-    try {
-      // Sem orderBy composto de propósito (evita depender de um índice
-      // composto userId+order só pra isso) — ordena no cliente, a lista é
-      // sempre pequena (afazeres de um dia).
-      const snap = await this.db.collection('personal_tasks')
-        .where('userId', '==', this.myUid).limit(50).get();
-      this.personalTasks = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.order || 0) - (b.order || 0));
-    } catch (e) {
-      console.warn('[ReportExecutivo] personal_tasks ainda vazio/sem acesso:', e.message);
-      this.personalTasks = [];
-    }
-  },
-
-  async renderRoutines(container) {
-    await this.loadRoutines();
-    await this.loadPersonalTasks();
-    const canManage = ['admin', 'diretor', 'superintendente', 'gerente', 'coordenador'].includes(this.myRoleKey);
-    const mine = this.routines.filter(r => r.assigneeUid === this.myUid);
-
-    container.innerHTML = `
-      <div class="admin-section" style="display:grid;grid-template-columns:1.4fr 1fr;gap:20px;">
-        <div>
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-            <p class="page-description">Rotinas de processo atribuídas por gestão (${canManage ? 'todas' : 'suas'}).</p>
-            ${canManage ? `<button class="btn btn-sm btn-primary" id="btn-new-routine"><i class="fa-solid fa-plus"></i> Nova Rotina</button>` : ''}
+    el.innerHTML = `
+      <div class="re-toolbar">
+        <span>${list.length} frente(s)</span>
+        <button class="btn btn-sm btn-secondary" id="re-csv"><i class="fa-solid fa-file-csv"></i> Exportar CSV</button>
+      </div>
+      ${list.length === 0 ? `<div class="re-empty">Nenhuma frente no recorte atual.</div>` : ''}
+      ${[...groups.entries()].map(([group, rows]) => {
+        const del = RED.portfolioDeliveryIndex(rows);
+        return `
+        <div class="re-group">
+          <div class="re-group-head">
+            <strong>${RED.esc(group)}</strong>
+            <span class="re-muted">${rows.length} frente(s)</span>
+            ${del.index !== null ? `<span class="re-muted">entrega ${del.index}%</span>` : ''}
+            ${del.lateCount ? `<span class="re-flag">${del.lateCount} atrasada(s)</span>` : ''}
           </div>
-          <div id="routine-form-slot"></div>
           <div class="table-wrapper">
-            <table class="data-table">
-              <thead><tr><th>Rotina</th><th>Responsável</th><th>Recorrência</th></tr></thead>
+            <table class="data-table re-table">
+              <thead><tr>
+                <th>Frente</th><th>Responsável</th><th>Status</th><th>Prioridade</th>
+                <th>Prazo</th><th>Progresso</th><th>Risco</th><th>Gov.</th>
+              </tr></thead>
               <tbody>
-                ${(canManage ? this.routines : mine).length === 0 ? `<tr><td colspan="3" style="text-align:center;color:var(--text-secondary);padding:24px;">Nenhuma rotina cadastrada.</td></tr>` : (canManage ? this.routines : mine).map(r => `
-                  <tr><td>${this.escapeHtml(r.title)}</td><td>${this.escapeHtml(r.assigneeName || '—')}</td><td>${this.escapeHtml(r.recurrence || '—')}</td></tr>
-                `).join('')}
+                ${rows.map(it => {
+                  const rs = RED.riskScore(it, this.items);
+                  const gaps = RED.dataGaps(it);
+                  return `
+                  <tr data-open="${it.id}" class="re-row">
+                    <td>
+                      <div class="re-front">${RED.esc(RED.frontLabel(it))}</div>
+                      <div class="re-tags">${(it.tags || []).map(t => `<span class="re-chip ${RED.tagTone(t)}">${RED.esc(t)}</span>`).join('')}</div>
+                    </td>
+                    <td>${RED.esc(RED.joinOwners(RED.ownersOf(it.owner))) || '<span class="re-muted">—</span>'}</td>
+                    <td>${this.badge(RED.effectiveStatus(it), RED.statusTone(RED.effectiveStatus(it)))}</td>
+                    <td>${this.badge(it.priority, RED.priorityTone(it.priority))}</td>
+                    <td>${RED.dateFmt(it.dueDate)}<div class="re-muted re-sm">${RED.dueTextFor(it)}</div></td>
+                    <td style="min-width:110px">${this.bar(it.progress)}<span class="re-sm">${it.progress}%</span></td>
+                    <td>${rs ? this.badge(`${rs.score} ${rs.band}`, RED.riskBandTone(rs.band)) : '<span class="re-muted">—</span>'}</td>
+                    <td>${gaps.length ? `<span class="re-flag" title="${RED.esc(gaps.join(', '))}">${gaps.length}</span>` : `<span class="re-ok">✓</span>`}</td>
+                  </tr>`;
+                }).join('')}
               </tbody>
             </table>
           </div>
-        </div>
-        <div>
-          <p class="page-description" style="margin-bottom:16px;">
-            Minha lista pessoal do dia — <strong>estritamente privada</strong>: nem gestor, nem diretor,
-            nem admin veem esta lista (mesma regra do Report Executivo).
-          </p>
-          <div id="personal-list">
-            ${this.personalTasks.length === 0 ? `<p style="color:var(--text-secondary);">Sem itens hoje.</p>` : this.personalTasks.map(t => `
-              <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border-color);">
-                <input type="checkbox" data-toggle-task="${t.id}" ${t.done ? 'checked' : ''}>
-                <span style="${t.done ? 'text-decoration:line-through;opacity:.6;' : ''}">${this.escapeHtml(t.text)}</span>
-              </div>
-            `).join('')}
-          </div>
-          <div style="display:flex;gap:8px;margin-top:12px;">
-            <input type="text" class="form-input" id="new-personal-task" placeholder="Novo item da lista de hoje">
-            <button class="btn btn-sm btn-primary" id="btn-add-personal-task">+</button>
-          </div>
-        </div>
-      </div>`;
+        </div>`;
+      }).join('')}`;
 
-    if (canManage) document.getElementById('btn-new-routine')?.addEventListener('click', () => this.showRoutineForm());
-    container.querySelectorAll('[data-toggle-task]').forEach(cb => {
-      cb.addEventListener('change', async () => {
-        await this.db.collection('personal_tasks').doc(cb.dataset.toggleTask).update({
-          done: cb.checked,
-          concluida_em: cb.checked ? firebase.firestore.FieldValue.serverTimestamp() : null
-        });
-        await this.loadTabContent();
+    el.querySelectorAll('[data-open]').forEach(row => {
+      row.addEventListener('click', () => {
+        const it = this.items.find(x => x.id === row.dataset.open);
+        if (it) this.openItemModal(it);
       });
     });
-    document.getElementById('btn-add-personal-task')?.addEventListener('click', async () => {
-      const input = document.getElementById('new-personal-task');
-      const text = input.value.trim();
-      if (!text) return;
-      await this.db.collection('personal_tasks').add({
-        userId: this.myUid, text, done: false,
-        order: this.personalTasks.length,
-        dia: new Date().toISOString().slice(0, 10),
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-      await this.loadTabContent();
-    });
-  },
-
-  showRoutineForm() {
-    const slot = document.getElementById('routine-form-slot');
-    if (!slot) return;
-    slot.innerHTML = `
-      <div class="card" style="padding:16px;margin-bottom:16px;">
-        <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px;margin-bottom:12px;">
-          <input type="text" class="form-input" id="rt-title" placeholder="Título da rotina">
-          <select class="form-input" id="rt-assignee">
-            ${(this.activeUsers || []).map(u => `<option value="${u.uid}" data-nome="${this.escapeHtml(u.nome)}">${this.escapeHtml(u.nome)}</option>`).join('')}
-          </select>
-          <select class="form-input" id="rt-recurrence">
-            <option value="Diário">Diário</option>
-            <option value="Semanal">Semanal</option>
-            <option value="Quinzenal">Quinzenal</option>
-            <option value="Mensal">Mensal</option>
-          </select>
-        </div>
-        <button class="btn btn-primary btn-sm" id="rt-save">Salvar</button>
-        <button class="btn btn-ghost btn-sm" id="rt-cancel">Cancelar</button>
-      </div>`;
-    document.getElementById('rt-cancel').addEventListener('click', () => { slot.innerHTML = ''; });
-    document.getElementById('rt-save').addEventListener('click', async () => {
-      const title = document.getElementById('rt-title').value.trim();
-      const sel = document.getElementById('rt-assignee');
-      if (!title || !sel.value) {
-        window.NexusApp?.showToast('Preencha título e responsável.', 'warning');
-        return;
-      }
-      await this.db.collection('routines').add({
-        title, assigneeUid: sel.value, assigneeName: sel.selectedOptions[0]?.dataset.nome || '',
-        recurrence: document.getElementById('rt-recurrence').value,
-        active: true, createdBy: this.myUid,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-      window.NexusApp?.showToast('Rotina criada.', 'success');
-      slot.innerHTML = '';
-      await this.loadTabContent();
-    });
-  },
-
-  // ============ 13. OKRs GERENTES ============
-  // Sem IA (sugestão de FCA é fallback determinístico: texto-modelo a
-  // partir do maior gap entre meta e realizado, sem chamar OpenAI/Ollama).
-
-  OKR_CYCLE_FCA_THRESHOLD: 0.85,
-
-  async loadOkrs() {
-    try {
-      const [obj, tgt, meas] = await Promise.all([
-        this.db.collection('okr_objectives').get(),
-        this.db.collection('okr_targets').get(),
-        this.db.collection('okr_measurements').orderBy('date', 'desc').limit(500).get()
+    document.getElementById('re-csv')?.addEventListener('click', () => {
+      RED.downloadCSV('carteira-nep.csv', list.map(it => ({
+        id: it.id, projeto: it.project, escopo: it.demand, responsavel: it.owner,
+        produto: it.product, status: RED.effectiveStatus(it), prioridade: it.priority,
+        prazo: it.dueDate, progresso: it.progress, esforco: RED.itemEffort(it),
+        risco: (RED.riskScore(it, this.items) || {}).score ?? '',
+        governanca: RED.scoreOf(it), lacunas: RED.dataGaps(it).join(' | ')
+      })), [
+        { key: 'id', label: 'ID' }, { key: 'projeto', label: 'Projeto' }, { key: 'escopo', label: 'Escopo' },
+        { key: 'responsavel', label: 'Responsável' }, { key: 'produto', label: 'Produto' },
+        { key: 'status', label: 'Status' }, { key: 'prioridade', label: 'Prioridade' },
+        { key: 'prazo', label: 'Prazo' }, { key: 'progresso', label: 'Progresso %' },
+        { key: 'esforco', label: 'Esforço (h)' }, { key: 'risco', label: 'Risco' },
+        { key: 'governanca', label: 'Governança' }, { key: 'lacunas', label: 'Lacunas' }
       ]);
-      this.okrObjectives = obj.docs.map(d => ({ id: d.id, ...d.data() }));
-      this.okrTargets = tgt.docs.map(d => ({ id: d.id, ...d.data() }));
-      this.okrMeasurements = meas.docs.map(d => ({ id: d.id, ...d.data() }));
-    } catch (e) {
-      console.warn('[ReportExecutivo] okr_* ainda vazio/sem acesso:', e.message);
-      this.okrObjectives = []; this.okrTargets = []; this.okrMeasurements = [];
-    }
+    });
   },
 
-  okrAchievement(target) {
-    const measurements = this.okrMeasurements.filter(m => m.targetId === target.id);
-    if (measurements.length === 0 || !target.targetValue) return null;
-    const latest = measurements[0].value;
-    return Math.round((latest / target.targetValue) * 100);
-  },
+  // ── 2. BOARD ──────────────────────────────────────────────────────────────
 
-  fcaSuggestion(objective, targets) {
-    // Fallback determinístico: aponta o KR com maior gap e sugere uma ação
-    // genérica orientada ao tipo de gap — sem IA por trás.
-    const withAch = targets.map(t => ({ t, ach: this.okrAchievement(t) })).filter(x => x.ach !== null);
-    if (withAch.length === 0) return 'Sem medições suficientes para sugerir causa/ação.';
-    const worst = withAch.sort((a, b) => a.ach - b.ach)[0];
-    return `Maior gap: "${worst.t.title}" em ${worst.ach}% da meta. Causa provável: ritmo de execução abaixo do necessário para o trimestre. Ação sugerida: revisar em 1:1 semanal até recuperar ≥85%.`;
-  },
+  renderBoard(el) {
+    const list = this.visibleItems();
+    // Colunas pelo status EFETIVO — "Atrasado" é derivado do prazo, senão a
+    // coluna fica vazia enquanto a carteira tem frentes vencidas paradas.
+    const cols = ['A iniciar', 'Em andamento', 'Em validação', 'Bloqueado', 'Atrasado', 'Pausado', 'Concluído'];
+    const canEdit = this.canEdit();
 
-  async renderOkrs(container) {
-    await this.loadOkrs();
-    const canManage = ['admin', 'diretor', 'superintendente', 'gerente'].includes(this.myRoleKey);
-    const label = canManage ? 'OKRs Gerentes' : 'Meu OKR';
-    const myObjectives = canManage ? this.okrObjectives : this.okrObjectives.filter(o => o.ownerUid === this.myUid);
-
-    container.innerHTML = `
-      <div class="admin-section">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-          <p class="page-description">${label} — ciclo de objetivos e resultados-chave.</p>
-          ${canManage ? `<button class="btn btn-sm btn-primary" id="btn-new-objective"><i class="fa-solid fa-plus"></i> Novo Objetivo</button>` : ''}
-        </div>
-        <div id="okr-form-slot"></div>
-        ${myObjectives.length === 0 ? `<p style="text-align:center;color:var(--text-secondary);padding:24px;">Nenhum objetivo cadastrado.</p>` : myObjectives.map(o => {
-          const targets = this.okrTargets.filter(t => t.objectiveId === o.id);
-          const achievements = targets.map(t => this.okrAchievement(t)).filter(a => a !== null);
-          const avgAch = achievements.length ? Math.round(achievements.reduce((a, b) => a + b, 0) / achievements.length) : null;
-          const needsFca = avgAch !== null && avgAch / 100 < this.OKR_CYCLE_FCA_THRESHOLD;
+    el.innerHTML = `
+      <div class="re-board">
+        ${cols.map(status => {
+          const cards = list.filter(i => RED.effectiveStatus(i) === status);
+          const horas = cards.reduce((s, i) => s + RED.itemRemainingEffort(i), 0);
           return `
-          <div class="card" style="padding:16px;margin-bottom:16px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;">
-              <strong>${this.escapeHtml(o.title)}</strong>
-              <span style="color:${avgAch === null ? 'var(--text-secondary)' : avgAch >= 85 ? '#22c55e' : avgAch >= 60 ? '#f59e0b' : '#ef4444'};font-weight:700;">${avgAch === null ? '—' : avgAch + '%'}</span>
+          <div class="re-col" data-status="${RED.esc(status)}">
+            <div class="re-col-head">
+              <span>${this.badge(status, RED.statusTone(status))}</span>
+              <span class="re-muted">${cards.length}${horas ? ` · ${horas}h` : ''}</span>
             </div>
-            <div style="font-size:12px;color:var(--text-secondary);margin:4px 0 10px;">${this.escapeHtml(o.ownerName || '')} · ${this.escapeHtml(o.quarter || '')}</div>
-            <table class="data-table" style="margin-bottom:8px;">
-              <thead><tr><th>Resultado-chave</th><th>Meta</th><th>Atingimento</th></tr></thead>
-              <tbody>
-                ${targets.map(t => `<tr><td>${this.escapeHtml(t.title)}</td><td>${t.targetValue ?? '—'} ${this.escapeHtml(t.unit || '')}</td><td>${this.okrAchievement(t) ?? '—'}${this.okrAchievement(t) !== null ? '%' : ''}</td></tr>`).join('') || '<tr><td colspan="3" style="color:var(--text-secondary);">Sem resultados-chave.</td></tr>'}
-              </tbody>
-            </table>
-            ${needsFca ? `<div class="alert" style="padding:10px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);border-radius:8px;font-size:13px;"><strong>FCA sugerido (sem IA):</strong> ${this.fcaSuggestion(o, targets)}</div>` : ''}
+            <div class="re-col-body">
+              ${cards.map(it => {
+                const rs = RED.riskScore(it, this.items);
+                const owners = RED.ownersOf(it.owner);
+                return `
+                <div class="re-card ${rs && rs.band === 'Crítico' ? 're-card-crit' : ''}"
+                     draggable="${canEdit}" data-id="${it.id}">
+                  <div class="re-card-title">${RED.esc(RED.frontLabel(it))}</div>
+                  <div class="re-tags">${(it.tags || []).slice(0, 3).map(t => `<span class="re-chip ${RED.tagTone(t)}">${RED.esc(t)}</span>`).join('')}</div>
+                  ${this.bar(it.progress)}
+                  <div class="re-card-meta">
+                    <span>${owners.length ? RED.esc(owners[0]) + (owners.length > 1 ? ` +${owners.length - 1}` : '') : '<em>sem dono</em>'}</span>
+                    ${this.badge(it.priority, RED.priorityTone(it.priority))}
+                  </div>
+                  <div class="re-card-meta re-sm">
+                    <span title="${RED.esc(RED.dateFmt(it.dueDate))}">${RED.dueTextFor(it)}</span>
+                    ${rs ? `<span class="re-risk ${RED.riskBandTone(rs.band)}">${rs.score}</span>` : ''}
+                  </div>
+                </div>`;
+              }).join('') || '<div class="re-col-empty">—</div>'}
+            </div>
           </div>`;
         }).join('')}
       </div>`;
 
-    document.getElementById('btn-new-objective')?.addEventListener('click', () => this.showObjectiveForm());
-  },
-
-  showObjectiveForm() {
-    const slot = document.getElementById('okr-form-slot');
-    if (!slot) return;
-    slot.innerHTML = `
-      <div class="card" style="padding:16px;margin-bottom:16px;">
-        <div style="display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:12px;">
-          <input type="text" class="form-input" id="okr-title" placeholder="Objetivo">
-          <input type="text" class="form-input" id="okr-quarter" placeholder="Trimestre (ex: Q3 2026)">
-        </div>
-        <button class="btn btn-primary btn-sm" id="okr-save">Salvar</button>
-        <button class="btn btn-ghost btn-sm" id="okr-cancel">Cancelar</button>
-      </div>`;
-    document.getElementById('okr-cancel').addEventListener('click', () => { slot.innerHTML = ''; });
-    document.getElementById('okr-save').addEventListener('click', async () => {
-      const title = document.getElementById('okr-title').value.trim();
-      if (!title) {
-        window.NexusApp?.showToast('Descreva o objetivo.', 'warning');
-        return;
-      }
-      await this.db.collection('okr_objectives').add({
-        title, quarter: document.getElementById('okr-quarter').value.trim(),
-        ownerUid: this.myUid, ownerName: this.myName,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    el.querySelectorAll('.re-card').forEach(card => {
+      card.addEventListener('click', () => {
+        const it = this.items.find(x => x.id === card.dataset.id);
+        if (it) this.openItemModal(it);
       });
-      window.NexusApp?.showToast('Objetivo criado.', 'success');
-      slot.innerHTML = '';
-      await this.loadTabContent();
+    });
+
+    if (!canEdit) return;
+    let dragged = null;
+    el.querySelectorAll('.re-card').forEach(card => {
+      card.addEventListener('dragstart', () => { dragged = card.dataset.id; card.classList.add('dragging'); });
+      card.addEventListener('dragend', () => { card.classList.remove('dragging'); });
+    });
+    el.querySelectorAll('.re-col').forEach(col => {
+      col.addEventListener('dragover', e => { e.preventDefault(); col.classList.add('over'); });
+      col.addEventListener('dragleave', () => col.classList.remove('over'));
+      col.addEventListener('drop', async e => {
+        e.preventDefault(); col.classList.remove('over');
+        if (!dragged) return;
+        const status = col.dataset.status;
+        // "Atrasado" é derivado, não escolhido: soltar ali não faz sentido.
+        if (status === 'Atrasado') {
+          window.NexusApp?.showToast('"Atrasado" é calculado pelo prazo — mude o prazo, não o status.', 'warning');
+          return;
+        }
+        const patch = { status };
+        if (['Concluído', 'Entregue'].includes(status)) patch.progress = 100;
+        await this.saveItem(patch, dragged);
+        await this.loadTab();
+      });
     });
   },
 
-  // ============ 14. EXECUTIVO ============
-  // Boletim semanal: fallback determinístico (texto gerado por template a
-  // partir dos números da carteira), sem chamar IA — mesma convenção usada
-  // em Materiais/OKRs.
+  // ── 3. RISCOS ─────────────────────────────────────────────────────────────
 
-  async loadExecutiveDecisions() {
-    try {
-      const snap = await this.db.collection('executive_decisions').orderBy('createdAt', 'desc').limit(100).get();
-      this.executiveDecisions = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    } catch (e) {
-      console.warn('[ReportExecutivo] executive_decisions ainda vazio/sem acesso:', e.message);
-      this.executiveDecisions = [];
-    }
-  },
+  renderRisks(el) {
+    // Score usa a carteira COMPLETA como universo: resolver predecessora exige
+    // enxergar itens fora do filtro atual.
+    const scored = this.visibleItems()
+      .map(it => ({ it, rs: RED.riskScore(it, this.items) }))
+      .filter(x => x.rs)
+      .sort((a, b) => b.rs.score - a.rs.score);
 
-  generateWeeklyBulletinFallback() {
-    const active = this.items.filter(i => !i.archived);
-    const now = new Date();
-    const atrasados = active.filter(i => i.deadline && new Date(i.deadline) < now && (i.status || '') !== 'Concluído').length;
-    const concluidos = active.filter(i => (i.status || '') === 'Concluído').length;
-    const criticos = active.filter(i => this.computeRiskScore(i).score >= 70).length;
-    return `Carteira com ${active.length} frente(s) ativa(s): ${concluidos} concluída(s) na janela, `
-      + `${atrasados} atrasada(s) e ${criticos} em risco crítico. `
-      + (criticos > 0 ? 'Recomenda-se priorizar as frentes críticas antes de abrir novas.' : 'Carteira sob controle, sem foco crítico pendente.');
-  },
+    const bands = ['Crítico', 'Alto', 'Médio', 'Baixo'];
+    const byBand = bands.map(b => ({ band: b, n: scored.filter(x => x.rs.band === b).length }));
 
-  async renderExecutive(container) {
-    await this.loadExecutiveDecisions();
-    const canManage = ['admin', 'diretor', 'superintendente', 'gerente'].includes(this.myRoleKey);
-    const active = this.items.filter(i => !i.archived);
-    const scoredCritical = active.map(i => ({ ...i, risk: this.computeRiskScore(i) })).filter(i => i.risk.score >= 70);
-
-    container.innerHTML = `
-      <div class="admin-section">
-        <div class="card" style="padding:16px;margin-bottom:20px;">
-          <div style="font-weight:600;margin-bottom:8px;">Boletim semanal (sem IA — gerado por template)</div>
-          <p style="color:var(--text-secondary);">${this.generateWeeklyBulletinFallback()}</p>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
-          <div>
-            <div style="font-weight:600;margin-bottom:8px;">Frentes críticas (score de risco ≥ 70)</div>
-            <div class="table-wrapper">
-              <table class="data-table">
-                <thead><tr><th>Título</th><th>Responsável</th><th>Score</th></tr></thead>
-                <tbody>
-                  ${scoredCritical.length === 0 ? `<tr><td colspan="3" style="text-align:center;color:var(--text-secondary);padding:16px;">Nenhuma no momento.</td></tr>` : scoredCritical.map(i => `
-                    <tr><td>${this.escapeHtml(i.title)}</td><td>${this.escapeHtml(i.ownerName || '—')}</td><td>${i.risk.score}</td></tr>
-                  `).join('')}
-                </tbody>
-              </table>
+    el.innerHTML = `
+      <div class="re-kpis">
+        ${byBand.map(b => `
+          <div class="re-kpi ${RED.riskBandTone(b.band)}">
+            <div class="re-kpi-n">${b.n}</div><div class="re-kpi-l">${b.band}</div>
+          </div>`).join('')}
+      </div>
+      ${scored.length === 0 ? `<div class="re-empty">Nenhuma frente ativa para avaliar.</div>` : ''}
+      <div class="re-risklist">
+        ${scored.map(({ it, rs }) => {
+          const main = RED.riskMainFactor(rs);
+          return `
+          <div class="re-riskrow">
+            <div class="re-riskscore ${RED.riskBandTone(rs.band)}">
+              <div class="re-riskscore-n">${rs.score}</div>
+              <div class="re-sm">${rs.band}</div>
             </div>
-          </div>
-          <div>
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-              <div style="font-weight:600;">Decisões executivas</div>
-              ${canManage ? `<button class="btn btn-sm btn-primary" id="btn-new-decision">+ Nova</button>` : ''}
-            </div>
-            <div id="decision-form-slot"></div>
-            <div class="table-wrapper">
-              <table class="data-table">
-                <thead><tr><th>Decisão</th><th>Status</th><th>Prazo</th></tr></thead>
-                <tbody>
-                  ${(this.executiveDecisions || []).length === 0 ? `<tr><td colspan="3" style="text-align:center;color:var(--text-secondary);padding:16px;">Nenhuma decisão registrada.</td></tr>` : this.executiveDecisions.map(d => `
-                    <tr><td>${this.escapeHtml(d.title)}</td><td>${this.escapeHtml(d.status || 'aberta')}</td><td>${this.fmtDate(d.deadline)}</td></tr>
-                  `).join('')}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>`;
-
-    document.getElementById('btn-new-decision')?.addEventListener('click', () => this.showDecisionForm());
-  },
-
-  showDecisionForm() {
-    const slot = document.getElementById('decision-form-slot');
-    if (!slot) return;
-    slot.innerHTML = `
-      <div class="card" style="padding:12px;margin-bottom:12px;">
-        <input type="text" class="form-input" id="dec-title" placeholder="Descrição da decisão" style="margin-bottom:8px;">
-        <input type="date" class="form-input" id="dec-deadline" style="margin-bottom:8px;">
-        <button class="btn btn-primary btn-sm" id="dec-save">Salvar</button>
-        <button class="btn btn-ghost btn-sm" id="dec-cancel">Cancelar</button>
-      </div>`;
-    document.getElementById('dec-cancel').addEventListener('click', () => { slot.innerHTML = ''; });
-    document.getElementById('dec-save').addEventListener('click', async () => {
-      const title = document.getElementById('dec-title').value.trim();
-      if (!title) {
-        window.NexusApp?.showToast('Descreva a decisão.', 'warning');
-        return;
-      }
-      await this.db.collection('executive_decisions').add({
-        title, status: 'aberta',
-        deadline: document.getElementById('dec-deadline').value || null,
-        createdBy: this.myUid,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-      window.NexusApp?.showToast('Decisão registrada.', 'success');
-      slot.innerHTML = '';
-      await this.loadTabContent();
-    });
-  },
-
-  // ============ 15. DESENVOLVIMENTO ============
-  // PDI + 1:1 com ações de acompanhamento (aderência) completos. Perfil
-  // Vértice (avaliação situacional de 108 itens do Report) ainda NÃO tem
-  // conteúdo portado aqui: a exploração da arquitetura não achou as tabelas
-  // de persistência do banco de itens no Supabase do Report (provável fonte
-  // Drizzle separada, fora do que foi investigado) — precisa confirmar com
-  // quem mantém o Report Executivo antes de portar as 108 perguntas e o
-  // motor de scoring com fidelidade. O restante da aba (PDI, atas de 1:1)
-  // está completo e funcional.
-
-  async loadPdis() {
-    try {
-      const snap = await this.db.collection('user_pdis').where('userId', '==', this.myUid).limit(1).get();
-      this.myPdi = snap.docs[0] ? { id: snap.docs[0].id, ...snap.docs[0].data() } : null;
-    } catch (e) {
-      console.warn('[ReportExecutivo] user_pdis ainda vazio/sem acesso:', e.message);
-      this.myPdi = null;
-    }
-  },
-
-  async loadOneOnOnes() {
-    try {
-      // Sem orderBy composto (evita índice composto collaboratorUid+date) —
-      // ordena no cliente, volume por pessoa é sempre pequeno.
-      const snap = await this.db.collection('one_on_ones')
-        .where('collaboratorUid', '==', this.myUid).limit(20).get();
-      this.myOneOnOnes = snap.docs.map(d => ({ id: d.id, ...d.data() }))
-        .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
-    } catch (e) {
-      console.warn('[ReportExecutivo] one_on_ones ainda vazio/sem acesso:', e.message);
-      this.myOneOnOnes = [];
-    }
-  },
-
-  oneOnOneAdherence(oneOnOne) {
-    const actions = oneOnOne.actions || [];
-    if (actions.length === 0) return null;
-    return Math.round((actions.filter(a => a.done).length / actions.length) * 100);
-  },
-
-  async renderDevelopment(container) {
-    await this.loadPdis();
-    await this.loadOneOnOnes();
-    const goals = this.myPdi?.goals || [];
-
-    container.innerHTML = `
-      <div class="admin-section" style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
-        <div>
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-            <div style="font-weight:600;">Meu PDI</div>
-            <button class="btn btn-sm btn-primary" id="btn-add-goal">+ Meta</button>
-          </div>
-          ${goals.length === 0 ? `<p style="color:var(--text-secondary);">Nenhuma meta cadastrada ainda.</p>` : goals.map((g, idx) => `
-            <div class="card" style="padding:12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
-              <span>${this.escapeHtml(g.text)}</span>
-              <input type="checkbox" data-goal-idx="${idx}" ${g.done ? 'checked' : ''}>
-            </div>`).join('')}
-        </div>
-        <div>
-          <div style="font-weight:600;margin-bottom:12px;">Minhas atas de 1:1</div>
-          ${this.myOneOnOnes.length === 0 ? `<p style="color:var(--text-secondary);">Nenhuma ata registrada.</p>` : this.myOneOnOnes.map(o => {
-            const adh = this.oneOnOneAdherence(o);
-            return `
-            <div class="card" style="padding:12px;margin-bottom:8px;">
-              <div style="display:flex;justify-content:space-between;">
-                <strong>${this.fmtDate(o.date)}</strong>
-                ${adh !== null ? `<span style="color:${adh >= 70 ? '#22c55e' : '#f59e0b'};">${adh}% aderência</span>` : ''}
+            <div class="re-riskbody">
+              <div class="re-riskhead">
+                <button class="re-link" data-open="${it.id}">${RED.esc(RED.frontLabel(it))}</button>
+                <span class="re-muted">${RED.esc(RED.joinOwners(RED.ownersOf(it.owner)) || 'sem dono')} · ${RED.dateFmt(it.dueDate)}</span>
               </div>
-              <div style="font-size:13px;color:var(--text-secondary);margin-top:4px;">${this.escapeHtml(o.notes || '')}</div>
+              <div class="re-factors">
+                ${rs.factors.map(f => `
+                  <div class="re-factor ${f.key === main.key ? 'main' : ''}" title="${RED.esc(f.detail)}">
+                    <span class="re-factor-l">${f.label}</span>
+                    <span class="re-factor-bar"><i style="width:${f.raw}%"></i></span>
+                    <span class="re-factor-v">${Math.round(f.contribution)}</span>
+                  </div>`).join('')}
+              </div>
+              <div class="re-action">
+                <i class="fa-solid fa-lightbulb"></i> ${RED.esc(RED.riskRecommendedAction(it, rs))}
+                ${this.canEdit() ? `<button class="btn btn-ghost btn-sm" data-setnext="${it.id}">Definir como próxima ação</button>` : ''}
+              </div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>`;
+
+    el.querySelectorAll('[data-open]').forEach(b => b.addEventListener('click', () => {
+      const it = this.items.find(x => x.id === b.dataset.open);
+      if (it) this.openItemModal(it);
+    }));
+    el.querySelectorAll('[data-setnext]').forEach(b => b.addEventListener('click', async () => {
+      const it = this.items.find(x => x.id === b.dataset.setnext);
+      if (!it) return;
+      const rs = RED.riskScore(it, this.items);
+      await this.saveItem({ nextAction: RED.riskRecommendedAction(it, rs) }, it.id);
+      window.NexusApp?.showToast('Próxima ação definida.', 'success');
+      await this.loadTab();
+    }));
+  },
+
+  // ── 4. DASHBOARD ──────────────────────────────────────────────────────────
+
+  renderDashboard(el) {
+    const list = this.visibleItems();
+    const ativos = list.filter(i => !RED.isDone(i));
+    const del = RED.portfolioDeliveryIndex(list);
+    const criticos = ativos.filter(RED.isCriticalItem);
+    const comGap = ativos.filter(i => RED.dataGaps(i).length > 0);
+    const load = RED.ownerLoad(list);
+    const loadRows = Object.entries(load).sort((a, b) => b[1] - a[1]).slice(0, 10);
+    const maxLoad = Math.max(1, ...loadRows.map(r => r[1]));
+    const statusMix = RED.countsBy(ativos, i => RED.effectiveStatus(i));
+
+    const fila = list.map(it => ({ it, rs: RED.riskScore(it, this.items) }))
+      .filter(x => x.rs).sort((a, b) => b.rs.score - a.rs.score).slice(0, 5);
+
+    el.innerHTML = `
+      <div class="re-kpis">
+        <div class="re-kpi"><div class="re-kpi-n">${ativos.length}</div><div class="re-kpi-l">Ativas</div></div>
+        <div class="re-kpi ${del.lateCount ? 'tone-red' : ''}"><div class="re-kpi-n">${del.lateCount}</div><div class="re-kpi-l">Atrasadas</div></div>
+        <div class="re-kpi ${criticos.length ? 'tone-amber' : ''}"><div class="re-kpi-n">${criticos.length}</div><div class="re-kpi-l">Risco crítico</div></div>
+        <div class="re-kpi"><div class="re-kpi-n">${del.doneCount}</div><div class="re-kpi-l">Concluídas</div></div>
+        <div class="re-kpi ${comGap.length ? 'tone-amber' : ''}"><div class="re-kpi-n">${comGap.length}</div><div class="re-kpi-l">Com lacuna</div></div>
+      </div>
+
+      <div class="re-grid-2">
+        <div class="re-panel">
+          <h4>Índice de entrega</h4>
+          ${del.index === null ? `<p class="re-muted">Sem itens elegíveis.</p>` : `
+            <div class="re-bigscore">${del.index}<span class="re-sm">/100</span></div>
+            ${this.bar(del.index, del.index >= 70 ? 'tone-green' : del.index >= 40 ? 'tone-amber' : 'tone-red')}
+            <p class="re-muted re-sm">Média ponderada por esforço. Mede entrega — não preenchimento de cadastro.
+            Item ativo nunca passa de ${RED.DELIVERY_ACTIVE_CAP}%.</p>`}
+        </div>
+        <div class="re-panel">
+          <h4>Distribuição por status</h4>
+          ${Object.entries(statusMix).sort((a, b) => b[1] - a[1]).map(([s, n]) => `
+            <div class="re-mixrow">
+              <span>${this.badge(s, RED.statusTone(s))}</span>
+              <span class="re-factor-bar"><i style="width:${(n / Math.max(1, ativos.length)) * 100}%"></i></span>
+              <span>${n}</span>
+            </div>`).join('') || '<p class="re-muted">Sem dados.</p>'}
+        </div>
+      </div>
+
+      <div class="re-panel">
+        <h4>Fila de decisão</h4>
+        ${fila.length === 0 ? `<p class="re-muted">Nada exigindo decisão agora.</p>` : fila.map(({ it, rs }) => `
+          <div class="re-decrow">
+            <span class="re-badge ${RED.riskBandTone(rs.band)}">${rs.score}</span>
+            <button class="re-link" data-open="${it.id}">${RED.esc(RED.frontLabel(it))}</button>
+            <span class="re-muted re-sm">${RED.esc(RED.riskRecommendedAction(it, rs))}</span>
+          </div>`).join('')}
+      </div>
+
+      <div class="re-panel">
+        <h4>Carga por responsável <span class="re-muted re-sm">(horas restantes, rateadas entre co-responsáveis)</span></h4>
+        ${loadRows.length === 0 ? `<p class="re-muted">Sem carga atribuída.</p>` : loadRows.map(([owner, h]) => `
+          <div class="re-mixrow">
+            <span class="re-owner">${RED.esc(owner)}</span>
+            <span class="re-factor-bar"><i style="width:${(h / maxLoad) * 100}%"></i></span>
+            <span>${Math.round(h)}h</span>
+          </div>`).join('')}
+      </div>`;
+
+    el.querySelectorAll('[data-open]').forEach(b => b.addEventListener('click', () => {
+      const it = this.items.find(x => x.id === b.dataset.open);
+      if (it) this.openItemModal(it);
+    }));
+  },
+
+  // ── 5. CAPACIDADE ─────────────────────────────────────────────────────────
+
+  async loadAux(collection, cb) {
+    try {
+      const snap = await this.db.collection(collection).limit(500).get();
+      return snap.docs.map(d => Object.assign({ id: d.id }, d.data()));
+    } catch (e) {
+      console.warn(`[ReportExecutivo] ${collection} indisponível:`, e.message);
+      return [];
+    }
+  },
+
+  async renderCapacity(el) {
+    const [absences, routines, holidaysDocs] = await Promise.all([
+      this.loadAux('absences'), this.loadAux('routines'), this.loadAux('feriados')
+    ]);
+    const holidays = new Set(holidaysDocs.map(h => h.data || h.date).filter(Boolean));
+    const canManage = RED.canManagePeople(this.myRoleKey);
+
+    // Horizonte: até o prazo mais distante da carteira ativa, mínimo 4 semanas.
+    const ativos = this.items.filter(i => !i.archived && !RED.isDone(i));
+    const maxDue = ativos.map(i => RED.daysToDue(i.dueDate)).filter(d => d !== null && d > 0);
+    const horizonWeeks = Math.max(4, Math.ceil((maxDue.length ? Math.max(...maxDue) : 28) / 7));
+    const reliableHorizon = maxDue.length > 0;
+
+    const janelaIni = Date.now();
+    const janelaFim = janelaIni + horizonWeeks * 7 * 86400000;
+
+    const rows = this.activeUsers.map(u => {
+      const nome = u.nome || '';
+      const meus = ativos.filter(i => RED.ownersOf(i.owner).includes(nome));
+      const projectRemainingH = meus.reduce((s, i) => s + RED.itemRemainingEffort(i) / Math.max(1, RED.ownersOf(i.owner).length), 0);
+      const fallbackH = meus.filter(RED.isEstimatedEffort)
+        .reduce((s, i) => s + RED.itemRemainingEffort(i) / Math.max(1, RED.ownersOf(i.owner).length), 0);
+      const routineWeeklyH = routines.filter(r => r.active !== false && (r.assigneeName === nome || r.assigneeUid === u.uid))
+        .reduce((s, r) => s + RED.routineWeeklyHours(r.effort_hours ?? r.effortHours, r.recurrence), 0);
+
+      const nominal = Number(u.capacidade_semanal_horas) || 40;
+      const minhasAusencias = absences.filter(a => a.personUid === u.uid)
+        .map(a => ({ inicio: a.startDate || a.inicio, fim: a.endDate || a.fim }));
+      const capEfetiva = RED.effectiveWeeklyCapacity(nominal, janelaIni, janelaFim, minhasAusencias, holidays);
+
+      const util = RED.realUtilization(projectRemainingH, horizonWeeks, routineWeeklyH, capEfetiva);
+      const signal = {
+        pct: util.pct,
+        fallbackShare: projectRemainingH > 0 ? fallbackH / projectRemainingH : 0,
+        frontCount: meus.length,
+        reliableHorizon
+      };
+      const klass = RED.classifyUtilization(signal);
+      return { u, nome, util, capEfetiva, nominal, klass, frentes: meus.length, signal };
+    }).filter(r => r.frentes > 0 || r.util.routineWeeklyH > 0 || r.capEfetiva > 0)
+      .sort((a, b) => (b.util.pct ?? -1) - (a.util.pct ?? -1));
+
+    el.innerHTML = `
+      <div class="re-toolbar">
+        <span>Horizonte de ${horizonWeeks} semana(s)${reliableHorizon ? '' : ' <em>(padrão — sem prazos futuros na carteira)</em>'}</span>
+        ${canManage ? `<button class="btn btn-sm btn-secondary" id="re-new-abs"><i class="fa-solid fa-umbrella-beach"></i> Registrar ausência</button>` : ''}
+      </div>
+      <div id="re-abs-slot"></div>
+      <div class="table-wrapper">
+        <table class="data-table re-table">
+          <thead><tr>
+            <th>Pessoa</th><th>Frentes</th><th>Projetos (h/sem)</th><th>Rotinas (h/sem)</th>
+            <th>Total (h/sem)</th><th>Capacidade</th><th>Utilização</th><th>Leitura</th>
+          </tr></thead>
+          <tbody>
+            ${rows.length === 0 ? `<tr><td colspan="8" class="re-empty">Sem dados de carga.</td></tr>` : rows.map(r => {
+              const lbl = RED.UTILIZATION_LABELS[r.klass];
+              return `
+              <tr>
+                <td>${RED.esc(r.nome)}</td>
+                <td>${r.frentes}</td>
+                <td>${r.util.projectWeeklyH}h</td>
+                <td>${r.util.routineWeeklyH}h</td>
+                <td><strong>${r.util.totalWeeklyH}h</strong></td>
+                <td>${r.capEfetiva}h${r.capEfetiva !== r.nominal ? `<div class="re-sm re-muted">nominal ${r.nominal}h</div>` : ''}</td>
+                <td>${r.util.pct === null ? '<span class="re-muted">—</span>' : `${r.util.pct}%`}</td>
+                <td>${this.badge(lbl.label, lbl.tone)}${r.klass === 'review'
+                  ? `<div class="re-sm re-muted">estimativa grossa ou horizonte sem lastro</div>` : ''}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+      <p class="re-muted re-sm">Projetos e rotinas somados na MESMA unidade (h/semana) — é o número que decide alocação.
+      Utilização ≥${RED.UTILIZATION_THRESHOLDS.implausible}% é tratada como dado a revisar, não como sobrecarga real.</p>`;
+
+    document.getElementById('re-new-abs')?.addEventListener('click', () => this.showAbsenceForm());
+  },
+
+  showAbsenceForm() {
+    const slot = document.getElementById('re-abs-slot');
+    if (!slot) return;
+    slot.innerHTML = `
+      <div class="re-panel re-inline-form">
+        <select class="form-input" id="ab-person">
+          ${this.activeUsers.map(u => `<option value="${u.uid}" data-nome="${RED.esc(u.nome)}">${RED.esc(u.nome)}</option>`).join('')}
+        </select>
+        <input type="date" class="form-input" id="ab-ini">
+        <input type="date" class="form-input" id="ab-fim">
+        <button class="btn btn-primary btn-sm" id="ab-save">Salvar</button>
+        <button class="btn btn-ghost btn-sm" id="ab-cancel">Cancelar</button>
+      </div>`;
+    document.getElementById('ab-cancel').addEventListener('click', () => { slot.innerHTML = ''; });
+    document.getElementById('ab-save').addEventListener('click', async () => {
+      const sel = document.getElementById('ab-person');
+      const startDate = document.getElementById('ab-ini').value;
+      const endDate = document.getElementById('ab-fim').value;
+      if (!sel.value || !startDate || !endDate) {
+        window.NexusApp?.showToast('Preencha pessoa, início e fim.', 'warning'); return;
+      }
+      await this.db.collection('absences').add({
+        personUid: sel.value, personName: sel.selectedOptions[0].dataset.nome,
+        startDate, endDate, createdBy: this.myUid,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      window.NexusApp?.showToast('Ausência registrada.', 'success');
+      await this.loadTab();
+    });
+  },
+
+  // ── 6. EXECUTIVO ──────────────────────────────────────────────────────────
+
+  async renderExecutive(el) {
+    const decisions = await this.loadAux('executive_decisions');
+    const list = this.visibleItems();
+    const texto = RED.executiveLines(list, this.filters);
+    const canManage = RED.canViewStructure(this.myRoleKey) || this.myRoleKey === 'gerente';
+
+    el.innerHTML = `
+      <div class="re-panel">
+        <div class="re-panel-head">
+          <h4>Relatório executivo</h4>
+          <button class="btn btn-sm btn-secondary" id="re-copy"><i class="fa-solid fa-copy"></i> Copiar</button>
+        </div>
+        <pre class="re-report">${RED.esc(texto)}</pre>
+        <p class="re-muted re-sm">Gerado localmente a partir da carteira — determinístico, sem IA e sem custo.</p>
+      </div>
+      <div class="re-panel">
+        <div class="re-panel-head">
+          <h4>Decisões executivas</h4>
+          ${canManage ? `<button class="btn btn-sm btn-primary" id="re-new-dec">+ Nova</button>` : ''}
+        </div>
+        <div id="re-dec-slot"></div>
+        <div class="table-wrapper">
+          <table class="data-table re-table">
+            <thead><tr><th>Decisão</th><th>Status</th><th>Prazo</th>${canManage ? '<th></th>' : ''}</tr></thead>
+            <tbody>
+              ${decisions.length === 0 ? `<tr><td colspan="4" class="re-empty">Nenhuma decisão registrada.</td></tr>` : decisions.map(d => `
+                <tr>
+                  <td>${RED.esc(d.title)}</td>
+                  <td>${this.badge(d.status || 'aberta', d.status === 'resolvida' ? 'tone-green' : d.status === 'descartada' ? 'tone-gray' : 'tone-amber')}</td>
+                  <td>${RED.dateFmt(d.deadline)}</td>
+                  ${canManage ? `<td>
+                    <select class="re-select" data-dec="${d.id}">
+                      ${['aberta', 'resolvida', 'descartada'].map(s => `<option value="${s}" ${(d.status || 'aberta') === s ? 'selected' : ''}>${s}</option>`).join('')}
+                    </select></td>` : ''}
+                </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>`;
+
+    document.getElementById('re-copy')?.addEventListener('click', async () => {
+      await navigator.clipboard.writeText(texto);
+      window.NexusApp?.showToast('Relatório copiado.', 'success');
+    });
+    document.getElementById('re-new-dec')?.addEventListener('click', () => {
+      const slot = document.getElementById('re-dec-slot');
+      slot.innerHTML = `
+        <div class="re-inline-form">
+          <input type="text" class="form-input" id="dec-t" placeholder="Decisão a tomar">
+          <input type="date" class="form-input" id="dec-d">
+          <button class="btn btn-primary btn-sm" id="dec-s">Salvar</button>
+        </div>`;
+      document.getElementById('dec-s').addEventListener('click', async () => {
+        const title = document.getElementById('dec-t').value.trim();
+        if (!title) { window.NexusApp?.showToast('Descreva a decisão.', 'warning'); return; }
+        await this.db.collection('executive_decisions').add({
+          title, status: 'aberta', deadline: document.getElementById('dec-d').value || null,
+          createdBy: this.myUid, createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        await this.loadTab();
+      });
+    });
+    el.querySelectorAll('[data-dec]').forEach(sel => sel.addEventListener('change', async () => {
+      await this.db.collection('executive_decisions').doc(sel.dataset.dec).update({ status: sel.value });
+      window.NexusApp?.showToast('Decisão atualizada.', 'success');
+      await this.loadTab();
+    }));
+  },
+
+  // ── 7. RESUMO ESTRUTURA ───────────────────────────────────────────────────
+
+  renderDirectorSummary(el) {
+    const ativos = this.items.filter(i => !i.archived);
+    const gestores = this.activeUsers.filter(u => this.activeUsers.some(s => s.gestor_uid === u.uid));
+
+    const units = gestores.map(mgr => {
+      const time = [...RED.subordinateIds(this.activeUsers, mgr.uid)];
+      const nomes = this.activeUsers.filter(u => time.includes(u.uid)).map(u => u.nome).filter(Boolean);
+      const seus = ativos.filter(i => RED.ownersOf(i.owner).some(o => nomes.includes(o)));
+      const abertos = seus.filter(i => !RED.isDone(i));
+      const del = RED.portfolioDeliveryIndex(seus);
+      const criticos = abertos.filter(RED.isCriticalItem);
+      const gaps = abertos.filter(i => RED.dataGaps(i).length > 0);
+      // Fila de atenção: soma dos scores de risco — ordena por dor real, não por contagem.
+      const dor = abertos.reduce((s, i) => s + ((RED.riskScore(i, this.items) || {}).score || 0), 0);
+      return {
+        gestor: mgr.nome, tamanho: nomes.length, total: seus.length, abertos: abertos.length,
+        atrasados: del.lateCount, criticos: criticos.length, gaps: gaps.length,
+        entrega: del.index, dor
+      };
+    }).sort((a, b) => b.dor - a.dor);
+
+    el.innerHTML = `
+      <p class="re-muted">Unidades ordenadas por dor acumulada (soma dos scores de risco das frentes abertas).</p>
+      <div class="table-wrapper">
+        <table class="data-table re-table">
+          <thead><tr><th>Gestor</th><th>Time</th><th>Frentes</th><th>Abertas</th>
+            <th>Atrasadas</th><th>Críticas</th><th>Lacunas</th><th>Entrega</th></tr></thead>
+          <tbody>
+            ${units.length === 0 ? `<tr><td colspan="8" class="re-empty">Nenhuma unidade com subordinados e frentes atribuídas.</td></tr>` : units.map(u => `
+              <tr>
+                <td>${RED.esc(u.gestor)}</td>
+                <td>${u.tamanho}</td>
+                <td>${u.total}</td>
+                <td>${u.abertos}</td>
+                <td class="${u.atrasados ? 're-flag-cell' : ''}">${u.atrasados}</td>
+                <td class="${u.criticos ? 're-flag-cell' : ''}">${u.criticos}</td>
+                <td>${u.gaps}</td>
+                <td>${u.entrega === null ? '—' : `${u.entrega}% ${this.bar(u.entrega, u.entrega >= 70 ? 'tone-green' : u.entrega >= 40 ? 'tone-amber' : 'tone-red')}`}</td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>`;
+  },
+
+  // ── 8. ARQUIVADOS ─────────────────────────────────────────────────────────
+
+  renderArchived(el) {
+    const arq = this.items.filter(i => i.archived);
+    el.innerHTML = `
+      <div class="re-toolbar"><span>${arq.length} frente(s) arquivada(s).</span></div>
+      <div class="table-wrapper">
+        <table class="data-table re-table">
+          <thead><tr><th>Frente</th><th>Responsável</th><th>Status</th><th>Prazo</th><th></th></tr></thead>
+          <tbody>
+            ${arq.length === 0 ? `<tr><td colspan="5" class="re-empty">Nenhum item arquivado.</td></tr>` : arq.map(it => `
+              <tr>
+                <td>${RED.esc(RED.frontLabel(it))}</td>
+                <td>${RED.esc(RED.joinOwners(RED.ownersOf(it.owner))) || '—'}</td>
+                <td>${this.badge(it.status, RED.statusTone(it.status))}</td>
+                <td>${RED.dateFmt(it.dueDate)}</td>
+                <td>${this.canEdit() ? `<button class="btn btn-sm btn-secondary" data-restore="${it.id}"><i class="fa-solid fa-rotate-left"></i> Restaurar</button>` : ''}</td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>`;
+    el.querySelectorAll('[data-restore]').forEach(b => b.addEventListener('click', async () => {
+      await this.saveItem({ archived: false }, b.dataset.restore);
+      window.NexusApp?.showToast('Frente restaurada.', 'success');
+      await this.loadTab();
+    }));
+  },
+
+  // ── 9. AGENDA ─────────────────────────────────────────────────────────────
+
+  async renderAgenda(el) {
+    const events = (await this.loadAux('events')).sort((a, b) => String(a.date).localeCompare(String(b.date)));
+    const canEdit = RED.canEditAgenda(this.myRoleKey);
+    const hoje = RED.hojeIsoBrt();
+
+    el.innerHTML = `
+      <div class="re-toolbar">
+        <span>${events.filter(e => String(e.date) >= hoje).length} evento(s) futuro(s) de ${events.length}.</span>
+        <div>
+          <button class="btn btn-sm btn-secondary" id="re-ics"><i class="fa-solid fa-file-export"></i> Exportar ICS</button>
+          ${canEdit ? `<button class="btn btn-sm btn-primary" id="re-new-ev">+ Evento</button>` : ''}
+        </div>
+      </div>
+      <div id="re-ev-slot"></div>
+      <div class="table-wrapper">
+        <table class="data-table re-table">
+          <thead><tr><th>Data</th><th>Evento</th><th>Tipo</th><th></th></tr></thead>
+          <tbody>
+            ${events.length === 0 ? `<tr><td colspan="4" class="re-empty">Nenhum evento cadastrado.</td></tr>` : events.map(e => `
+              <tr class="${String(e.date) < hoje ? 're-past' : ''}">
+                <td>${RED.dateFmt(e.date)}</td>
+                <td>${RED.esc(e.title)}</td>
+                <td>${this.badge(e.type, RED.eventTypeTone(e.type))}</td>
+                <td>${canEdit ? `<button class="btn btn-ghost btn-sm" data-del-ev="${e.id}"><i class="fa-solid fa-trash"></i></button>` : ''}</td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>`;
+
+    document.getElementById('re-ics')?.addEventListener('click', () => this.exportIcs(events));
+    document.getElementById('re-new-ev')?.addEventListener('click', () => {
+      const slot = document.getElementById('re-ev-slot');
+      slot.innerHTML = `
+        <div class="re-inline-form">
+          <input type="text" class="form-input" id="ev-t" placeholder="Título do evento">
+          <input type="date" class="form-input" id="ev-d">
+          <select class="form-input" id="ev-ty">${RED.EVENT_TYPES.map(t => `<option value="${t}">${t}</option>`).join('')}</select>
+          <button class="btn btn-primary btn-sm" id="ev-s">Salvar</button>
+        </div>`;
+      document.getElementById('ev-s').addEventListener('click', async () => {
+        const title = document.getElementById('ev-t').value.trim();
+        const date = document.getElementById('ev-d').value;
+        if (!title || !date) { window.NexusApp?.showToast('Preencha título e data.', 'warning'); return; }
+        await this.db.collection('events').add({
+          title, date, type: document.getElementById('ev-ty').value,
+          createdBy: this.myUid, createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        await this.loadTab();
+      });
+    });
+    el.querySelectorAll('[data-del-ev]').forEach(b => b.addEventListener('click', async () => {
+      if (!confirm('Excluir este evento?')) return;
+      await this.db.collection('events').doc(b.dataset.delEv).delete();
+      await this.loadTab();
+    }));
+  },
+
+  exportIcs(events) {
+    const pad = n => String(n).padStart(2, '0');
+    const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//NEP//Report Executivo//PT-BR'];
+    for (const e of events) {
+      if (!e.date) continue;
+      const d = new Date(e.date + 'T00:00:00');
+      lines.push('BEGIN:VEVENT', `UID:${e.id}@nep`,
+        `DTSTART;VALUE=DATE:${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}`,
+        `SUMMARY:${String(e.title || '').replace(/\r?\n/g, ' ')}`,
+        `CATEGORIES:${e.type || 'Outro'}`, 'END:VEVENT');
+    }
+    lines.push('END:VCALENDAR');
+    const blob = new Blob([lines.join('\r\n')], { type: 'text/calendar' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'agenda-nep.ics'; a.click();
+    URL.revokeObjectURL(url);
+  },
+
+  // ── 10. MELHORIAS ─────────────────────────────────────────────────────────
+
+  IMPROVEMENT_STAGES: ['Solicitação', 'Triagem', 'Em execução', 'Implementado'],
+  IMPROVEMENT_WEEKLY_GOAL: 1,
+
+  async renderImprovements(el) {
+    const list = (await this.loadAux('process_improvements'))
+      .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+    const canManage = RED.canEditRoutines(this.myRoleKey);
+    const funnel = this.IMPROVEMENT_STAGES.map(s => ({ s, n: list.filter(m => (m.stage || 'Solicitação') === s).length }));
+    const implementadas = list.filter(m => m.stage === 'Implementado');
+
+    // Lead time mediano (dias) — só de quem já fechou o ciclo.
+    const leads = implementadas.map(m => {
+      const ini = m.createdAt?.seconds, fim = m.implementedAt?.seconds;
+      return ini && fim ? Math.round((fim - ini) / 86400) : null;
+    }).filter(v => v !== null).sort((a, b) => a - b);
+    const mediana = leads.length ? leads[Math.floor(leads.length / 2)] : null;
+
+    el.innerHTML = `
+      <div class="re-toolbar">
+        <span>Funil de melhoria de processo</span>
+        ${this.canEdit() ? `<button class="btn btn-sm btn-primary" id="re-new-imp">+ Solicitação</button>` : ''}
+      </div>
+      <div class="re-kpis">
+        ${funnel.map(f => `<div class="re-kpi"><div class="re-kpi-n">${f.n}</div><div class="re-kpi-l">${f.s}</div></div>`).join('')}
+        <div class="re-kpi"><div class="re-kpi-n">${mediana === null ? '—' : mediana + 'd'}</div><div class="re-kpi-l">Lead time mediano</div></div>
+      </div>
+      <div id="re-imp-slot"></div>
+      <div class="table-wrapper">
+        <table class="data-table re-table">
+          <thead><tr><th>Melhoria</th><th>Estágio</th><th>Criticidade</th><th>Solicitada</th>${canManage ? '<th>Mover</th>' : ''}</tr></thead>
+          <tbody>
+            ${list.length === 0 ? `<tr><td colspan="5" class="re-empty">Nenhuma melhoria registrada.</td></tr>` : list.map(m => `
+              <tr>
+                <td>${RED.esc(m.title)}</td>
+                <td>${this.badge(m.stage || 'Solicitação', m.stage === 'Implementado' ? 'tone-green' : 'tone-blue')}</td>
+                <td>${this.badge(m.criticality || '—', m.criticality === 'Alta' ? 'tone-red' : m.criticality === 'Média' ? 'tone-amber' : 'tone-gray')}</td>
+                <td>${m.createdAt?.seconds ? new Date(m.createdAt.seconds * 1000).toLocaleDateString('pt-BR') : '—'}</td>
+                ${canManage ? `<td><select class="re-select" data-imp="${m.id}" data-from="${RED.esc(m.stage || 'Solicitação')}" data-by="${RED.esc(m.requestedBy || '')}">
+                  ${this.IMPROVEMENT_STAGES.map(s => `<option value="${s}" ${s === (m.stage || 'Solicitação') ? 'selected' : ''}>${s}</option>`).join('')}
+                </select></td>` : ''}
+              </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>`;
+
+    document.getElementById('re-new-imp')?.addEventListener('click', () => {
+      const slot = document.getElementById('re-imp-slot');
+      slot.innerHTML = `
+        <div class="re-inline-form">
+          <input type="text" class="form-input" id="imp-t" placeholder="Melhoria proposta">
+          <select class="form-input" id="imp-c"><option>Baixa</option><option selected>Média</option><option>Alta</option></select>
+          <button class="btn btn-primary btn-sm" id="imp-s">Salvar</button>
+        </div>`;
+      document.getElementById('imp-s').addEventListener('click', async () => {
+        const title = document.getElementById('imp-t').value.trim();
+        if (!title) { window.NexusApp?.showToast('Descreva a melhoria.', 'warning'); return; }
+        await this.db.collection('process_improvements').add({
+          title, criticality: document.getElementById('imp-c').value, stage: 'Solicitação',
+          requestedBy: this.myUid, createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        await this.loadTab();
+      });
+    });
+
+    el.querySelectorAll('[data-imp]').forEach(sel => sel.addEventListener('change', async () => {
+      const id = sel.dataset.imp, novo = sel.value, anterior = sel.dataset.from;
+      const patch = { stage: novo, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
+      if (novo === 'Implementado') patch.implementedAt = firebase.firestore.FieldValue.serverTimestamp();
+      await this.db.collection('process_improvements').doc(id).update(patch);
+      await this.db.collection('improvement_movements').add({
+        improvementId: id, fromStage: anterior, toStage: novo,
+        movedBy: this.myUid, movedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      // Ponto só quando OUTRA pessoa valida a implementação — quem executa a
+      // transição nunca credita a si mesmo (mesma regra anti-fraude do NEP).
+      if (novo === 'Implementado' && sel.dataset.by && sel.dataset.by !== this.myUid) {
+        window.NexusGamification?.addPoints?.(sel.dataset.by, 20, 'melhoria_implementada', id);
+      }
+      window.NexusApp?.showToast('Estágio atualizado.', 'success');
+      await this.loadTab();
+    }));
+  },
+
+  // ── 11. MATERIAIS ─────────────────────────────────────────────────────────
+
+  MATERIAL_CRITERIA: [
+    { key: 'clareza', label: 'Clareza' },
+    { key: 'profundidade', label: 'Profundidade' },
+    { key: 'aplicabilidade', label: 'Aplicabilidade' },
+    { key: 'atualidade', label: 'Atualidade' }
+  ],
+
+  materialComposite(m) {
+    const vals = this.MATERIAL_CRITERIA.map(c => Number(m[c.key]) || 0).filter(v => v > 0);
+    if (!vals.length) return null;
+    return Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 20); // 1–5 → 0–100
+  },
+
+  async renderMaterials(el) {
+    const list = await this.loadAux('materials');
+    const canManage = ['admin', 'superintendente', 'diretor', 'gerente', 'coordenador'].includes(this.myRoleKey);
+    const scores = list.map(m => this.materialComposite(m)).filter(s => s !== null);
+    const media = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null;
+
+    el.innerHTML = `
+      <div class="re-toolbar">
+        <span>Avaliação por rubrica — nota determinística, sem IA.</span>
+        ${canManage ? `<button class="btn btn-sm btn-primary" id="re-new-mat">+ Material</button>` : ''}
+      </div>
+      <div class="re-kpis">
+        <div class="re-kpi"><div class="re-kpi-n">${list.length}</div><div class="re-kpi-l">Materiais</div></div>
+        <div class="re-kpi"><div class="re-kpi-n">${scores.length}</div><div class="re-kpi-l">Avaliados</div></div>
+        <div class="re-kpi"><div class="re-kpi-n">${media === null ? '—' : media}</div><div class="re-kpi-l">Nota média</div></div>
+      </div>
+      <div id="re-mat-slot"></div>
+      <div class="table-wrapper">
+        <table class="data-table re-table">
+          <thead><tr><th>Material</th><th>Link</th>
+            ${this.MATERIAL_CRITERIA.map(c => `<th>${c.label}</th>`).join('')}<th>Composta</th></tr></thead>
+          <tbody>
+            ${list.length === 0 ? `<tr><td colspan="7" class="re-empty">Nenhum material cadastrado.</td></tr>` : list.map(m => {
+              const s = this.materialComposite(m);
+              return `
+              <tr>
+                <td>${RED.esc(m.title)}</td>
+                <td>${m.url ? `<a href="${RED.esc(m.url)}" target="_blank" rel="noopener noreferrer">abrir</a>` : '—'}</td>
+                ${this.MATERIAL_CRITERIA.map(c => `<td>${m[c.key] || '—'}</td>`).join('')}
+                <td>${s === null ? '<span class="re-muted">sem avaliação</span>'
+                  : this.badge(`${s}/100`, s >= 80 ? 'tone-green' : s >= 60 ? 'tone-amber' : 'tone-red')}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>`;
+
+    document.getElementById('re-new-mat')?.addEventListener('click', () => {
+      const slot = document.getElementById('re-mat-slot');
+      slot.innerHTML = `
+        <div class="re-panel">
+          <div class="re-grid-2">
+            <input type="text" class="form-input" id="mat-t" placeholder="Título do material">
+            <input type="url" class="form-input" id="mat-u" placeholder="Link (opcional)">
+          </div>
+          <div class="re-grid-4">
+            ${this.MATERIAL_CRITERIA.map(c => `
+              <label class="re-sm">${c.label} (1–5)
+                <input type="number" class="form-input" id="mat-${c.key}" min="1" max="5" value="3"></label>`).join('')}
+          </div>
+          <button class="btn btn-primary btn-sm" id="mat-s">Salvar</button>
+        </div>`;
+      document.getElementById('mat-s').addEventListener('click', async () => {
+        const title = document.getElementById('mat-t').value.trim();
+        if (!title) { window.NexusApp?.showToast('Dê um título ao material.', 'warning'); return; }
+        const data = {
+          title, url: document.getElementById('mat-u').value.trim(),
+          createdBy: this.myUid, createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        this.MATERIAL_CRITERIA.forEach(c => { data[c.key] = Number(document.getElementById(`mat-${c.key}`).value) || 0; });
+        await this.db.collection('materials').add(data);
+        await this.loadTab();
+      });
+    });
+  },
+
+  // ── 12. ROTINAS + LISTA PESSOAL ───────────────────────────────────────────
+
+  async renderRoutines(el) {
+    const [routines, personal] = await Promise.all([
+      this.loadAux('routines'),
+      (async () => {
+        try {
+          const snap = await this.db.collection('personal_tasks').where('userId', '==', this.myUid).limit(60).get();
+          return snap.docs.map(d => Object.assign({ id: d.id }, d.data())).sort((a, b) => (a.order || 0) - (b.order || 0));
+        } catch (e) { return []; }
+      })()
+    ]);
+    const canManage = RED.canEditRoutines(this.myRoleKey);
+    const minhas = routines.filter(r => r.assigneeUid === this.myUid);
+    const mostrar = canManage ? routines : minhas;
+
+    el.innerHTML = `
+      <div class="re-grid-2-wide">
+        <div>
+          <div class="re-toolbar">
+            <span>Rotinas de processo ${canManage ? '(todas)' : '(suas)'}</span>
+            ${canManage ? `<button class="btn btn-sm btn-primary" id="re-new-rt">+ Rotina</button>` : ''}
+          </div>
+          <div id="re-rt-slot"></div>
+          <div class="table-wrapper">
+            <table class="data-table re-table">
+              <thead><tr><th>Rotina</th><th>Responsável</th><th>Recorrência</th><th>h/sem</th><th>Custo/ano</th></tr></thead>
+              <tbody>
+                ${mostrar.length === 0 ? `<tr><td colspan="5" class="re-empty">Nenhuma rotina cadastrada.</td></tr>` : mostrar.map(r => `
+                  <tr>
+                    <td>${RED.esc(r.title)}${r.type ? ` ${this.badge(r.type, RED.routineTypeTone(r.type))}` : ''}</td>
+                    <td>${RED.esc(r.assigneeName || '—')}</td>
+                    <td>${RED.esc(r.recurrence || '—')}</td>
+                    <td>${Math.round(RED.routineWeeklyHours(r.effort_hours ?? r.effortHours, r.recurrence) * 10) / 10}h</td>
+                    <td>${RED.manualCostHoursPerYear(r)}h</td>
+                  </tr>`).join('')}
+              </tbody>
+            </table>
+          </div>
+          <p class="re-muted re-sm">Custo/ano é a conta que justifica automatizar: esforço por execução × execuções em ${RED.BUSINESS_DAYS_PER_YEAR} dias úteis.</p>
+        </div>
+        <div>
+          <div class="re-toolbar"><span>Minha lista de hoje</span></div>
+          <div class="re-panel">
+            <p class="re-muted re-sm"><i class="fa-solid fa-lock"></i> Estritamente privada — nem gestor, nem diretor, nem admin veem esta lista.</p>
+            <div id="re-personal">
+              ${personal.length === 0 ? `<p class="re-muted">Sem itens hoje.</p>` : personal.map(t => `
+                <label class="re-task">
+                  <input type="checkbox" data-task="${t.id}" ${t.done ? 'checked' : ''}>
+                  <span class="${t.done ? 're-done' : ''}">${RED.esc(t.text)}</span>
+                </label>`).join('')}
+            </div>
+            <div class="re-inline-form">
+              <input type="text" class="form-input" id="pt-new" placeholder="Novo item">
+              <button class="btn btn-primary btn-sm" id="pt-add">+</button>
+            </div>
+          </div>
+        </div>
+      </div>`;
+
+    document.getElementById('re-new-rt')?.addEventListener('click', () => {
+      const slot = document.getElementById('re-rt-slot');
+      slot.innerHTML = `
+        <div class="re-inline-form">
+          <input type="text" class="form-input" id="rt-t" placeholder="Título da rotina">
+          <select class="form-input" id="rt-a">${this.activeUsers.map(u => `<option value="${u.uid}" data-nome="${RED.esc(u.nome)}">${RED.esc(u.nome)}</option>`).join('')}</select>
+          <select class="form-input" id="rt-r">${RED.ROUTINE_RECURRENCES.map(r => `<option value="${r}">${r}</option>`).join('')}</select>
+          <input type="number" class="form-input" id="rt-h" placeholder="h/execução" min="0" step="0.5" style="max-width:110px">
+          <button class="btn btn-primary btn-sm" id="rt-s">Salvar</button>
+        </div>`;
+      document.getElementById('rt-s').addEventListener('click', async () => {
+        const title = document.getElementById('rt-t').value.trim();
+        const sel = document.getElementById('rt-a');
+        if (!title || !sel.value) { window.NexusApp?.showToast('Preencha título e responsável.', 'warning'); return; }
+        await this.db.collection('routines').add({
+          title, assigneeUid: sel.value, assigneeName: sel.selectedOptions[0].dataset.nome,
+          recurrence: document.getElementById('rt-r').value,
+          effort_hours: Number(document.getElementById('rt-h').value) || 0,
+          active: true, createdBy: this.myUid,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        await this.loadTab();
+      });
+    });
+
+    el.querySelectorAll('[data-task]').forEach(cb => cb.addEventListener('change', async () => {
+      await this.db.collection('personal_tasks').doc(cb.dataset.task).update({
+        done: cb.checked,
+        concluida_em: cb.checked ? firebase.firestore.FieldValue.serverTimestamp() : null
+      });
+      await this.loadTab();
+    }));
+    document.getElementById('pt-add')?.addEventListener('click', async () => {
+      const input = document.getElementById('pt-new');
+      const text = input.value.trim();
+      if (!text) return;
+      await this.db.collection('personal_tasks').add({
+        userId: this.myUid, text, done: false, order: personal.length,
+        dia: RED.hojeIsoBrt(), createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      await this.loadTab();
+    });
+  },
+
+  // ── 13. OKRs ──────────────────────────────────────────────────────────────
+
+  async renderOkrs(el) {
+    const [objectives, targets, measurements] = await Promise.all([
+      this.loadAux('okr_objectives'), this.loadAux('okr_targets'), this.loadAux('okr_measurements')
+    ]);
+    const isGestao = RED.canViewStructure(this.myRoleKey) || this.myRoleKey === 'gerente';
+    const visiveis = isGestao ? objectives : objectives.filter(o => o.ownerUid === this.myUid);
+    const canEdit = this.canEdit();
+
+    // Atingimento por KR: média dos meses lançados, pela direção do indicador.
+    const atingimentoDoKr = kr => {
+      const ms = measurements.filter(m => m.targetId === kr.id && m.resultado !== null && m.resultado !== undefined);
+      if (!ms.length) return null;
+      const vals = ms.map(m => RED.calculateOkrAtingimento(Number(m.resultado), Number(kr.meta), kr.direcao))
+        .filter(v => v !== null);
+      if (!vals.length) return null;
+      return vals.reduce((a, b) => a + b, 0) / vals.length;
+    };
+
+    el.innerHTML = `
+      <div class="re-toolbar">
+        <span>${isGestao ? 'Ciclo de OKR' : 'Meus resultados-chave'}</span>
+        ${canEdit ? `<button class="btn btn-sm btn-primary" id="re-new-obj">+ Objetivo</button>` : ''}
+      </div>
+      <div id="re-okr-slot"></div>
+      ${visiveis.length === 0 ? `<div class="re-empty">Nenhum objetivo cadastrado.</div>` : visiveis.map(o => {
+        const krs = targets.filter(t => t.objectiveId === o.id);
+        const contribs = krs.map(k => RED.okrRollupContribution(atingimentoDoKr(k))).filter(v => v !== null);
+        const score = contribs.length ? Math.round((contribs.reduce((a, b) => a + b, 0) / contribs.length) * 100) : null;
+        const greenLine = Math.round(RED.okrObjectiveGreenLine(krs.map(k => ({ kind: k.kind, peso: k.peso || 1 }))) * 100);
+        const fcaLine = Math.round(RED.okrObjectiveFcaLine(krs.map(k => ({ kind: k.kind, peso: k.peso || 1 }))) * 100);
+        const precisaFca = RED.objectiveNeedsCycleFca(score, fcaLine);
+
+        return `
+        <div class="re-panel re-okr">
+          <div class="re-okr-head">
+            <div>
+              <strong>${RED.esc(o.title)}</strong>
+              <div class="re-muted re-sm">${RED.esc(o.ownerName || '')} · ${RED.esc(o.periodo || '')} · verde a partir de ${greenLine}%</div>
+            </div>
+            <div class="re-okr-score ${RED.okrScoreTone(score)}">${score === null ? '—' : score + '%'}</div>
+          </div>
+          <table class="data-table re-table">
+            <thead><tr><th>Resultado-chave</th><th>Tipo</th><th>Meta</th><th>Direção</th><th>Atingimento</th><th>Status</th>${canEdit ? '<th>Lançar</th>' : ''}</tr></thead>
+            <tbody>
+              ${krs.length === 0 ? `<tr><td colspan="7" class="re-muted">Sem resultados-chave. ${canEdit ? 'Adicione abaixo.' : ''}</td></tr>` : krs.map(k => {
+                const a = atingimentoDoKr(k);
+                const pct = a === null ? null : Math.round(a * 100);
+                const band = RED.okrAtingimentoBand(a, k.kind);
+                const st = RED.resolveOkrStatus(a, k.kind);
+                const sandbag = RED.isSandbagMeta(Number(k.meta), k.baseline_numerica, k.direcao);
+                const semBaseline = RED.okrBaselineGap({ baseline_numerica: k.baseline_numerica, direcao: k.direcao });
+                return `
+                <tr>
+                  <td>${RED.esc(k.title)}
+                    ${sandbag ? `<div class="re-flag re-sm" title="A meta não supera o ponto de partida">meta não supera o baseline</div>` : ''}
+                    ${semBaseline ? `<div class="re-muted re-sm" title="Sem baseline não é possível checar se a meta é ambiciosa">sem baseline</div>` : ''}
+                  </td>
+                  <td>${this.badge(RED.OKR_KIND_LABELS[RED.okrKind(k.kind)], RED.okrKind(k.kind) === 'aspiracional' ? 'tone-purple' : 'tone-blue')}</td>
+                  <td>${RED.formatOkrValue(Number(k.meta), k.unidade)}</td>
+                  <td class="re-sm">${RED.esc(k.direcao || '—')}</td>
+                  <td>${pct === null ? '<span class="re-muted">não medido</span>' : `
+                    <div class="re-okr-at ${band === 'verde' ? 'tone-green' : band === 'ambar' ? 'tone-amber' : 'tone-red'}">${pct}%</div>
+                    ${this.bar(Math.min(100, pct), band === 'verde' ? 'tone-green' : band === 'ambar' ? 'tone-amber' : 'tone-red')}
+                    ${RED.okrMetaLikelyLoose(pct) ? `<div class="re-muted re-sm">cravou o teto — meta pode estar frouxa</div>` : ''}`}</td>
+                  <td>${this.badge(st, RED.okrStatusTone(st))}</td>
+                  ${canEdit ? `<td>
+                    <div class="re-inline-form re-sm">
+                      <input type="number" step="any" class="form-input" style="max-width:90px" id="mv-${k.id}" placeholder="valor">
+                      <button class="btn btn-ghost btn-sm" data-measure="${k.id}">✓</button>
+                    </div></td>` : ''}
+                </tr>`;
+              }).join('')}
+            </tbody>
+          </table>
+          ${precisaFca ? `<div class="re-fca">
+            <strong>FCA de ciclo exigido</strong> — o objetivo fechou em ${score}%, abaixo da linha de ${fcaLine}%.
+            <div class="re-sm">${RED.esc(this.fcaSuggestion(krs, atingimentoDoKr))}</div>
+          </div>` : ''}
+          ${canEdit ? `<button class="btn btn-ghost btn-sm" data-newkr="${o.id}">+ Resultado-chave</button>` : ''}
+        </div>`;
+      }).join('')}`;
+
+    document.getElementById('re-new-obj')?.addEventListener('click', () => {
+      const slot = document.getElementById('re-okr-slot');
+      slot.innerHTML = `
+        <div class="re-inline-form">
+          <input type="text" class="form-input" id="ob-t" placeholder="Objetivo">
+          <input type="text" class="form-input" id="ob-p" placeholder="Período (ex: Q3 2026)" style="max-width:170px">
+          <button class="btn btn-primary btn-sm" id="ob-s">Salvar</button>
+        </div>`;
+      document.getElementById('ob-s').addEventListener('click', async () => {
+        const title = document.getElementById('ob-t').value.trim();
+        if (!title) { window.NexusApp?.showToast('Descreva o objetivo.', 'warning'); return; }
+        await this.db.collection('okr_objectives').add({
+          title, periodo: document.getElementById('ob-p').value.trim(),
+          ownerUid: this.myUid, ownerName: this.myName,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        await this.loadTab();
+      });
+    });
+
+    el.querySelectorAll('[data-newkr]').forEach(b => b.addEventListener('click', async () => {
+      const title = prompt('Resultado-chave (o que será medido):');
+      if (!title) return;
+      const meta = Number(prompt('Meta numérica:'));
+      if (!Number.isFinite(meta)) { window.NexusApp?.showToast('Meta precisa ser um número.', 'warning'); return; }
+      const direcao = prompt('Direção — 1) Maior é melhor  2) Menor é melhor  3) Igual/meta exata', '1');
+      const baseline = prompt('Ponto de partida (baseline) — deixe vazio se não souber:');
+      await this.db.collection('okr_targets').add({
+        objectiveId: b.dataset.newkr, title, meta,
+        direcao: RED.DIRECOES[Math.max(0, Math.min(2, Number(direcao) - 1))] || RED.DIRECOES[0],
+        baseline_numerica: baseline === '' || baseline === null ? null : Number(baseline),
+        kind: 'comprometido', peso: 1, unidade: '',
+        createdBy: this.myUid, createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      await this.loadTab();
+    }));
+
+    el.querySelectorAll('[data-measure]').forEach(b => b.addEventListener('click', async () => {
+      const input = document.getElementById(`mv-${b.dataset.measure}`);
+      const v = Number(input.value);
+      if (!Number.isFinite(v) || input.value === '') { window.NexusApp?.showToast('Informe o valor apurado.', 'warning'); return; }
+      await this.db.collection('okr_measurements').add({
+        targetId: b.dataset.measure, resultado: v,
+        mes: RED.ALL_OKR_MONTHS[new Date().getMonth()],
+        date: RED.hojeIsoBrt(), createdBy: this.myUid,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      window.NexusApp?.showToast('Medição lançada.', 'success');
+      await this.loadTab();
+    }));
+  },
+
+  /** Sugestão de FCA determinística (sem IA): aponta o KR com maior gap e a
+   *  alavanca correspondente. O original chama um modelo aqui; a estrutura é a
+   *  mesma, só o texto é gerado por regra. */
+  fcaSuggestion(krs, atingimentoDoKr) {
+    const comAt = krs.map(k => ({ k, a: atingimentoDoKr(k) })).filter(x => x.a !== null);
+    if (!comAt.length) return 'Sem medições suficientes para apontar causa — lance os resultados do período primeiro.';
+    const pior = comAt.sort((a, b) => a.a - b.a)[0];
+    const pct = Math.round(pior.a * 100);
+    const kind = RED.okrKind(pior.k.kind);
+    const linha = Math.round(RED.OKR_KIND_THRESHOLDS[kind].green * 100);
+    return `Maior lacuna: "${pior.k.title}" a ${pct}% (linha do verde: ${linha}%). `
+      + (pct < 50
+        ? 'Gap grande demais para recuperação no ciclo — reveja se a meta era executável ou se faltou recurso.'
+        : 'Recuperável: defina uma ação semanal com dono e prazo até fechar a diferença.');
+  },
+
+  // ── 14. DESENVOLVIMENTO ───────────────────────────────────────────────────
+
+  async renderDevelopment(el) {
+    const [pdis, oneOnOnes] = await Promise.all([
+      (async () => {
+        try {
+          const s = await this.db.collection('user_pdis').where('userId', '==', this.myUid).limit(1).get();
+          return s.docs[0] ? Object.assign({ id: s.docs[0].id }, s.docs[0].data()) : null;
+        } catch (e) { return null; }
+      })(),
+      (async () => {
+        try {
+          const s = await this.db.collection('one_on_ones').where('collaboratorUid', '==', this.myUid).limit(30).get();
+          return s.docs.map(d => Object.assign({ id: d.id }, d.data()))
+            .sort((a, b) => String(b.date).localeCompare(String(a.date)));
+        } catch (e) { return []; }
+      })()
+    ]);
+    this.myPdi = pdis;
+    const goals = (pdis && pdis.goals) || [];
+    const todasAcoes = oneOnOnes.flatMap(o => o.actions || []);
+    const adh = RED.oneOnOneAdherence(todasAcoes);
+
+    el.innerHTML = `
+      <div class="re-kpis">
+        <div class="re-kpi"><div class="re-kpi-n">${goals.length}</div><div class="re-kpi-l">Metas de PDI</div></div>
+        <div class="re-kpi"><div class="re-kpi-n">${goals.filter(g => g.done).length}</div><div class="re-kpi-l">Concluídas</div></div>
+        <div class="re-kpi ${adh.pct !== null && adh.pct < 70 ? 'tone-amber' : ''}">
+          <div class="re-kpi-n">${adh.pct === null ? '—' : adh.pct + '%'}</div><div class="re-kpi-l">Aderência 1:1</div></div>
+        <div class="re-kpi ${adh.overdue ? 'tone-red' : ''}"><div class="re-kpi-n">${adh.overdue}</div><div class="re-kpi-l">Ações vencidas</div></div>
+      </div>
+
+      <div class="re-grid-2-wide">
+        <div class="re-panel">
+          <div class="re-panel-head"><h4>Meu PDI</h4><button class="btn btn-sm btn-primary" id="re-add-goal">+ Meta</button></div>
+          ${goals.length === 0 ? `<p class="re-muted">Nenhuma meta cadastrada.</p>` : goals.map((g, i) => `
+            <label class="re-task">
+              <input type="checkbox" data-goal="${i}" ${g.done ? 'checked' : ''}>
+              <span class="${g.done ? 're-done' : ''}">${RED.esc(g.text)}</span>
+            </label>`).join('')}
+        </div>
+        <div class="re-panel">
+          <h4>Atas de 1:1</h4>
+          ${oneOnOnes.length === 0 ? `<p class="re-muted">Nenhuma ata registrada.</p>` : oneOnOnes.map(o => {
+            const a = RED.oneOnOneAdherence(o.actions || []);
+            return `
+            <div class="re-ata">
+              <div class="re-ata-head">
+                <strong>${RED.dateFmt(o.date)}</strong>
+                ${a.pct !== null ? this.badge(`${a.pct}% aderência`, a.pct >= 70 ? 'tone-green' : 'tone-amber') : ''}
+              </div>
+              ${o.notes ? `<div class="re-sm">${RED.esc(o.notes)}</div>` : ''}
+              ${(o.actions || []).map(ac => `
+                <div class="re-actionrow">
+                  ${this.badge(RED.ONE_ON_ONE_ACTION_LABELS[ac.status] || ac.status, RED.oneOnOneActionTone(ac.status))}
+                  <span>${RED.esc(ac.text)}</span>
+                  ${RED.oneOnOneActionOverdue(ac, Date.now()) ? '<span class="re-flag re-sm">vencida</span>' : ''}
+                </div>`).join('')}
             </div>`;
           }).join('')}
         </div>
-        <div style="grid-column:1/-1;">
-          <div class="alert" style="padding:12px;background:rgba(148,163,184,.1);border:1px solid rgba(148,163,184,.3);border-radius:8px;font-size:13px;color:var(--text-secondary);">
-            <strong>Perfil Vértice:</strong> avaliação situacional de 108 itens do Report Executivo ainda não portada —
-            depende do banco de perguntas original, não localizado na exploração da arquitetura. PDI e atas de 1:1 acima já
-            funcionam de ponta a ponta.
-          </div>
-        </div>
+      </div>
+      <div class="re-note">
+        <strong>Perfil Vértice</strong> — a avaliação situacional de 108 itens do Report Executivo não foi portada:
+        o banco de perguntas não está no Supabase do app irmão (provável fonte separada), então portar de memória
+        produziria um instrumento diferente com o mesmo nome. Precisa do arquivo original para ser fiel.
       </div>`;
 
-    document.getElementById('btn-add-goal')?.addEventListener('click', async () => {
-      const text = prompt('Descreva a meta de desenvolvimento:');
+    document.getElementById('re-add-goal')?.addEventListener('click', async () => {
+      const text = prompt('Meta de desenvolvimento:');
       if (!text) return;
-      const newGoals = [...goals, { text, done: false }];
-      if (this.myPdi) {
-        await this.db.collection('user_pdis').doc(this.myPdi.id).update({ goals: newGoals, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
-      } else {
-        await this.db.collection('user_pdis').add({ userId: this.myUid, goals: newGoals, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
-      }
-      window.NexusApp?.showToast('Meta adicionada.', 'success');
-      await this.loadTabContent();
+      const novas = [...goals, { text, done: false }];
+      if (this.myPdi) await this.db.collection('user_pdis').doc(this.myPdi.id).update({ goals: novas });
+      else await this.db.collection('user_pdis').add({ userId: this.myUid, goals: novas });
+      await this.loadTab();
     });
+    el.querySelectorAll('[data-goal]').forEach(cb => cb.addEventListener('change', async () => {
+      const novas = [...goals];
+      novas[Number(cb.dataset.goal)] = Object.assign({}, novas[Number(cb.dataset.goal)], { done: cb.checked });
+      await this.db.collection('user_pdis').doc(this.myPdi.id).update({ goals: novas });
+      await this.loadTab();
+    }));
+  },
 
-    container.querySelectorAll('[data-goal-idx]').forEach(cb => {
-      cb.addEventListener('change', async () => {
-        const idx = Number(cb.dataset.goalIdx);
-        const newGoals = [...goals];
-        newGoals[idx] = { ...newGoals[idx], done: cb.checked };
-        await this.db.collection('user_pdis').doc(this.myPdi.id).update({ goals: newGoals, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
-        await this.loadTabContent();
-      });
-    });
+  // ── 15. MEU SCORECARD ─────────────────────────────────────────────────────
+
+  median(nums) {
+    if (!nums.length) return null;
+    const s = [...nums].sort((a, b) => a - b);
+    const m = Math.floor(s.length / 2);
+    return s.length % 2 ? s[m] : Math.round((s[m - 1] + s[m]) / 2);
+  },
+
+  percentile(nums, p) {
+    if (!nums.length) return null;
+    const s = [...nums].sort((a, b) => a - b);
+    return s[Math.min(s.length - 1, Math.floor((p / 100) * s.length))];
+  },
+
+  /** Piso N≥5 contra reidentificação: abaixo disso o "rollup do time" viraria
+   *  a nota de uma pessoa identificável. */
+  TEAM_FLOOR: 5,
+
+  async renderScorecard(el) {
+    const [materials, improvements] = await Promise.all([
+      this.loadAux('materials'), this.loadAux('process_improvements')
+    ]);
+    const meus = materials.filter(m => m.createdBy === this.myUid);
+    const minhasNotas = meus.map(m => this.materialComposite(m)).filter(s => s !== null);
+    const minhaMediana = this.median(minhasNotas);
+
+    const semanaAtras = Date.now() / 1000 - 7 * 86400;
+    const minhasImpl = improvements.filter(m => m.requestedBy === this.myUid
+      && m.stage === 'Implementado' && (m.implementedAt?.seconds || 0) >= semanaAtras);
+    const metaPct = Math.min(100, Math.round((minhasImpl.length / this.IMPROVEMENT_WEEKLY_GOAL) * 100));
+
+    // Minhas frentes: o scorecard tem que refletir entrega, não só material.
+    const minhasFrentes = this.items.filter(i => !i.archived && RED.ownersOf(i.owner).includes(this.myName));
+    const del = RED.portfolioDeliveryIndex(minhasFrentes);
+
+    // Rollup do time (só gestor, e só acima do piso).
+    const time = [...RED.subordinateIds(this.activeUsers, this.myUid)].filter(u => u !== this.myUid);
+    const nomesTime = this.activeUsers.filter(u => time.includes(u.uid)).map(u => u.nome);
+    let rollup = null;
+    if (nomesTime.length >= this.TEAM_FLOOR) {
+      // O score do próprio líder nunca entra no rollup do time.
+      const notasTime = this.activeUsers.filter(u => time.includes(u.uid)).map(u => {
+        const suas = materials.filter(m => m.createdBy === u.uid).map(m => this.materialComposite(m)).filter(s => s !== null);
+        return this.median(suas);
+      }).filter(v => v !== null);
+      if (notasTime.length) {
+        rollup = {
+          n: notasTime.length,
+          p25: this.percentile(notasTime, 25),
+          p50: this.median(notasTime),
+          p75: this.percentile(notasTime, 75)
+        };
+      }
+    }
+
+    el.innerHTML = `
+      <div class="re-kpis">
+        <div class="re-kpi"><div class="re-kpi-n">${minhaMediana === null ? '—' : minhaMediana}</div>
+          <div class="re-kpi-l">Mediana dos meus materiais</div></div>
+        <div class="re-kpi"><div class="re-kpi-n">${metaPct}%</div>
+          <div class="re-kpi-l">Meta semanal de melhorias</div></div>
+        <div class="re-kpi"><div class="re-kpi-n">${del.index === null ? '—' : del.index}</div>
+          <div class="re-kpi-l">Entrega das minhas frentes</div></div>
+        <div class="re-kpi ${del.lateCount ? 'tone-red' : ''}"><div class="re-kpi-n">${del.lateCount}</div>
+          <div class="re-kpi-l">Minhas frentes atrasadas</div></div>
+      </div>
+      ${rollup ? `
+        <div class="re-panel">
+          <h4>Rollup do time <span class="re-muted re-sm">(N=${rollup.n} — sua nota não entra)</span></h4>
+          <div class="re-mixrow"><span>P25</span><span class="re-factor-bar"><i style="width:${rollup.p25}%"></i></span><span>${rollup.p25}</span></div>
+          <div class="re-mixrow"><span>Mediana</span><span class="re-factor-bar"><i style="width:${rollup.p50}%"></i></span><span>${rollup.p50}</span></div>
+          <div class="re-mixrow"><span>P75</span><span class="re-factor-bar"><i style="width:${rollup.p75}%"></i></span><span>${rollup.p75}</span></div>
+        </div>`
+      : nomesTime.length > 0
+        ? `<div class="re-note">Rollup do time oculto: são ${nomesTime.length} pessoa(s), abaixo do piso de ${this.TEAM_FLOOR}.
+             Com time pequeno a "mediana do time" identifica indivíduos.</div>`
+        : ''}`;
   }
 };
 
