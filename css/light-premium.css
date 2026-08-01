@@ -1,0 +1,782 @@
+/* =========================================
+   MODO CLARO — REFINAMENTO PREMIUM
+   Hierarquia por tipografia e espaço, profundidade discreta em camadas,
+   movimento curto. Princípios de UI/UX da Apple aplicados sobre a
+   identidade do NEP — a cor institucional continua sendo a do sistema.
+
+   ┌──────────────────────────────────────────────────────────────────┐
+   │ REGRA ABSOLUTA DESTE ARQUIVO                                     │
+   │ TODO seletor começa com [data-theme="light"] ou                  │
+   │ body[data-theme="light"]. O modo escuro está aprovado e não pode │
+   │ ser tocado — nenhuma regra aqui pode alcançá-lo.                 │
+   │ Há um teste que compara a assinatura computada do escuro antes e │
+   │ depois deste arquivo; se qualquer regra vazar, o hash muda.      │
+   └──────────────────────────────────────────────────────────────────┘
+
+   Carregar POR ÚLTIMO, depois de aec-identity.css.
+   ========================================= */
+
+/* =========================================
+   1. TOKENS DO MODO CLARO
+   ========================================= */
+[data-theme="light"] {
+  /* Superfícies em camadas — a profundidade vem da diferença entre elas,
+     não de borda pesada. */
+  --bg-page: #F5F5F7;
+  --bg-surface: rgba(255, 255, 255, 0.92);
+  --bg-surface-solid: #FFFFFF;
+  --bg-surface-secondary: #F8F8FA;
+  --bg-surface-sunken: #F0F0F3;
+
+  /* Tinta: três níveis bastam. Mais que isso vira ruído. */
+  --ink-1: #1D1D1F;
+  --ink-2: #6E6E73;
+  --ink-3: #86868B;
+
+  /* Hairlines — a borda é uma sugestão, não um traço. */
+  --border-light: rgba(0, 0, 0, 0.07);
+  --border-medium: rgba(0, 0, 0, 0.11);
+
+  /* Sombras difusas e baixas: elevam sem sujar. */
+  --shadow-soft: 0 8px 30px rgba(0, 0, 0, 0.06);
+  --shadow-hover: 0 14px 38px rgba(0, 0, 0, 0.10);
+  --shadow-raised: 0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 16px rgba(0, 0, 0, 0.05);
+  --shadow-overlay: 0 24px 68px rgba(0, 0, 0, 0.16), 0 4px 12px rgba(0, 0, 0, 0.06);
+
+  --radius-small: 10px;
+  --radius-medium: 16px;
+  --radius-large: 22px;
+
+  /* Curva padrão: sai rápido, chega devagar. */
+  --ease-premium: cubic-bezier(0.22, 1, 0.36, 1);
+  --transition-fast: 180ms var(--ease-premium);
+  --transition-standard: 260ms var(--ease-premium);
+  --transition-panel: 380ms var(--ease-premium);
+
+  /* ── Ponte com os tokens que o sistema já consome ──
+     Reapontar aqui aplica o refinamento em todos os módulos de uma vez,
+     sem editar componente nenhum. A cor institucional (--acento) NÃO é
+     substituída: ela segue sendo o destaque do sistema. */
+  --surface-bg: var(--bg-page);
+  --surface-card: var(--bg-surface-solid);
+  --surface-elevated: var(--bg-surface-secondary);
+  --surface-hover: rgba(0, 0, 0, 0.032);
+  --surface-border: var(--border-light);
+  --surface-border-light: var(--border-medium);
+
+  --text-primary: var(--ink-1);
+  --text-secondary: var(--ink-2);
+  --text-tertiary: var(--ink-3);
+  --text-muted: var(--ink-3);
+  --text-dim: var(--ink-3);
+
+  --tinta: var(--ink-1);
+  --tinta-2: var(--ink-2);
+  --tinta-3: var(--ink-3);
+  --tinta-4: #A1A1A6;
+
+  --fundo: var(--bg-page);
+  --superficie: var(--bg-surface-solid);
+  --superficie-2: var(--bg-surface-secondary);
+  --superficie-3: var(--bg-surface-sunken);
+  --superficie-vidro: var(--bg-surface);
+
+  --linha: var(--border-light);
+  --linha-forte: var(--border-medium);
+  --preenchimento: rgba(0, 0, 0, 0.035);
+  --preenchimento-hover: rgba(0, 0, 0, 0.055);
+  --preenchimento-ativo: rgba(0, 0, 0, 0.075);
+
+  --border-color: var(--border-light);
+  --border: var(--border-light);
+  --rule: var(--border-light);
+  --bg-primary: var(--bg-page);
+  --bg-secondary: var(--bg-surface-secondary);
+  --bg-card: var(--bg-surface-solid);
+
+  --sombra-xs: var(--shadow-raised);
+  --sombra-sm: var(--shadow-soft);
+  --sombra-md: var(--shadow-hover);
+  --sombra-lg: var(--shadow-overlay);
+  --shadow-sm: var(--shadow-raised);
+  --shadow-md: var(--shadow-soft);
+  --shadow-lg: var(--shadow-hover);
+  --shadow-xl: var(--shadow-overlay);
+  --shadow-card: var(--shadow-raised);
+
+  --r-sm: var(--radius-small);
+  --r: 14px;
+  --r-lg: var(--radius-medium);
+  --r-xl: var(--radius-large);
+  --radius-sm: var(--radius-small);
+  --radius-md: 14px;
+  --radius-lg: var(--radius-medium);
+  --radius-xl: var(--radius-large);
+
+  --t-rapido: var(--transition-fast);
+  --t-medio: var(--transition-standard);
+  --t-lento: var(--transition-panel);
+  --ease: var(--ease-premium);
+}
+
+/* =========================================
+   2. TIPOGRAFIA
+   Hierarquia por peso e espaço. Título com tracking negativo — em
+   corpo grande a letra "abre" sozinha e precisa ser fechada.
+   ========================================= */
+[data-theme="light"] body {
+  background: var(--bg-page);
+  color: var(--ink-2);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  letter-spacing: -0.003em;
+}
+
+[data-theme="light"] h1,
+[data-theme="light"] h2,
+[data-theme="light"] .page-title {
+  color: var(--ink-1);
+  font-weight: 600;
+  letter-spacing: -0.022em;
+  line-height: 1.08;
+}
+
+[data-theme="light"] h3,
+[data-theme="light"] h4,
+[data-theme="light"] .section-title,
+[data-theme="light"] .re-panel h4,
+[data-theme="light"] .dash-section h3 {
+  color: var(--ink-1);
+  font-weight: 600;
+  letter-spacing: -0.016em;
+}
+
+[data-theme="light"] .page-description,
+[data-theme="light"] .section-subtitle {
+  color: var(--ink-2);
+  letter-spacing: -0.006em;
+}
+
+/* Números grandes: tabular para a coluna não dançar, tracking bem
+   fechado porque dígito grande espaça demais. */
+[data-theme="light"] .kpi-value,
+[data-theme="light"] .stat-value,
+[data-theme="light"] .re-kpi-n,
+[data-theme="light"] .re-bigscore,
+[data-theme="light"] .metric-value {
+  color: var(--ink-1);
+  font-weight: 600;
+  letter-spacing: -0.032em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Rótulo de KPI: pequeno, discreto, sem caixa alta agressiva. */
+[data-theme="light"] .kpi-label,
+[data-theme="light"] .re-kpi-l,
+[data-theme="light"] .metric-label,
+[data-theme="light"] .stat-label {
+  color: var(--ink-2);
+  font-weight: 400;
+  letter-spacing: -0.002em;
+}
+
+/* =========================================
+   3. SIDEBAR
+   ========================================= */
+[data-theme="light"] .sidebar {
+  background: var(--bg-surface-solid);
+  border-right: 1px solid var(--border-light);
+  box-shadow: none;
+}
+
+[data-theme="light"] .sidebar-header {
+  border-bottom: 1px solid var(--border-light);
+  background: transparent;
+}
+
+[data-theme="light"] .nav-section-title {
+  color: var(--ink-3) !important;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding-bottom: 6px;
+}
+
+[data-theme="light"] .nav-item {
+  color: var(--ink-2);
+  border-radius: var(--radius-small);
+  font-weight: 400;
+  letter-spacing: -0.004em;
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+[data-theme="light"] .nav-item .nav-item-icon {
+  color: var(--ink-3);
+  transition: color var(--transition-fast), transform var(--transition-fast);
+}
+
+[data-theme="light"] .nav-item:hover {
+  background: rgba(0, 0, 0, 0.04);
+  color: var(--ink-1);
+}
+
+[data-theme="light"] .nav-item:hover .nav-item-icon {
+  color: var(--ink-1);
+  /* Escala mínima: percebe-se sem distrair. */
+  transform: scale(1.06);
+}
+
+[data-theme="light"] .nav-item:active {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+/* Item ativo: preenchimento suavíssimo + indicador lateral na cor
+   institucional. O bloco saturado some; o que marca é o acento fino. */
+[data-theme="light"] .nav-item.active {
+  background: rgba(0, 103, 177, 0.07) !important;
+  color: var(--acento-forte) !important;
+  font-weight: 590;
+}
+
+[data-theme="light"] .nav-item.active .nav-item-text {
+  color: var(--acento-forte);
+  font-weight: 590;
+}
+
+[data-theme="light"] .nav-item.active .nav-item-icon {
+  color: var(--acento);
+}
+
+[data-theme="light"] .nav-item.active::before {
+  display: block;
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 3px;
+  height: 18px;
+  border-radius: 0 3px 3px 0;
+  background: var(--acento);
+  transform: translateY(-50%);
+  transition: none;
+}
+
+/* Recolhida: o indicador lateral viraria um risco solto sem o rótulo. */
+[data-theme="light"] body.sidebar-collapsed .nav-item.active::before,
+body.sidebar-collapsed[data-theme="light"] .nav-item.active::before {
+  display: none;
+}
+
+[data-theme="light"] .sidebar-footer {
+  border-top: 1px solid var(--border-light);
+}
+
+[data-theme="light"] #btn-sidebar-collapse {
+  background: transparent;
+  border: 1px solid var(--border-light);
+  color: var(--ink-3);
+  border-radius: 8px;
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast),
+    border-color var(--transition-fast);
+}
+
+[data-theme="light"] #btn-sidebar-collapse:hover {
+  background: rgba(0, 0, 0, 0.04);
+  color: var(--ink-1);
+  border-color: var(--border-medium);
+}
+
+/* =========================================
+   4. CABEÇALHO — vidro fosco
+   ========================================= */
+[data-theme="light"] .header {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: saturate(180%) blur(18px);
+  -webkit-backdrop-filter: saturate(180%) blur(18px);
+  border-bottom: 1px solid var(--border-light);
+  box-shadow: none;
+}
+
+[data-theme="light"] .header-title {
+  color: var(--ink-1);
+  font-weight: 600;
+  letter-spacing: -0.018em;
+}
+
+[data-theme="light"] .search-input {
+  background: rgba(0, 0, 0, 0.04);
+  border: 1px solid transparent;
+  border-radius: 999px;
+  color: var(--ink-1);
+  transition: background-color var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+[data-theme="light"] .search-input:focus {
+  background: var(--bg-surface-solid);
+  border-color: rgba(0, 103, 177, 0.4);
+  box-shadow: 0 0 0 4px rgba(0, 103, 177, 0.10);
+  outline: none;
+}
+
+[data-theme="light"] .btn-icon.btn-ghost,
+[data-theme="light"] .header .btn-ghost {
+  color: var(--ink-2);
+  border-radius: 999px;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+[data-theme="light"] .header .btn-ghost:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--ink-1);
+}
+
+/* =========================================
+   5. CARTÕES
+   Fundo branco sobre página cinza-clara: a separação vem da diferença
+   de superfície, não de borda.
+   ========================================= */
+[data-theme="light"] .card,
+[data-theme="light"] .dash-section,
+[data-theme="light"] .admin-section,
+[data-theme="light"] .re-panel,
+[data-theme="light"] .re-kpi,
+[data-theme="light"] .kpi-card,
+[data-theme="light"] .permission-card {
+  background: var(--bg-surface-solid);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-medium);
+  box-shadow: var(--shadow-raised);
+  transition:
+    transform var(--transition-standard),
+    box-shadow var(--transition-standard),
+    border-color var(--transition-standard);
+}
+
+/* Elevação SÓ no que é clicável. Card informativo que sobe finge ser
+   botão e ensina o gesto errado. */
+[data-theme="light"] a > .card:hover,
+[data-theme="light"] .card[role="button"]:hover,
+[data-theme="light"] .card[onclick]:hover,
+[data-theme="light"] .re-row:hover,
+[data-theme="light"] .kpi-card[onclick]:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-hover);
+  border-color: var(--border-medium);
+}
+
+/* =========================================
+   6. BOTÕES
+   ========================================= */
+[data-theme="light"] .btn {
+  border-radius: var(--radius-small);
+  font-weight: 590;
+  letter-spacing: -0.004em;
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast),
+    transform 120ms var(--ease-premium);
+}
+
+[data-theme="light"] .btn:active {
+  transform: scale(0.97);
+}
+
+[data-theme="light"] .btn-primary {
+  background: var(--acento);
+  border-color: var(--acento);
+  color: #FFFFFF;
+  box-shadow: 0 1px 2px rgba(0, 69, 124, 0.14);
+}
+
+[data-theme="light"] .btn-primary:hover {
+  background: var(--acento-forte);
+  border-color: var(--acento-forte);
+  box-shadow: 0 4px 14px rgba(0, 103, 177, 0.22);
+}
+
+/* Secundário discreto: preenchimento neutro, sem competir com o primário. */
+[data-theme="light"] .btn-secondary {
+  background: rgba(0, 0, 0, 0.045);
+  border: 1px solid transparent;
+  color: var(--ink-1);
+  box-shadow: none;
+}
+
+[data-theme="light"] .btn-secondary:hover {
+  background: rgba(0, 0, 0, 0.07);
+  border-color: transparent;
+}
+
+[data-theme="light"] .btn-ghost {
+  background: transparent;
+  color: var(--acento);
+}
+
+[data-theme="light"] .btn-ghost:hover {
+  background: rgba(0, 103, 177, 0.07);
+}
+
+[data-theme="light"] .btn:disabled,
+[data-theme="light"] .btn[disabled] {
+  opacity: 0.42;
+  box-shadow: none;
+}
+
+/* =========================================
+   7. FORMULÁRIOS
+   ========================================= */
+[data-theme="light"] .form-input,
+[data-theme="light"] .re-select,
+[data-theme="light"] input[type="text"],
+[data-theme="light"] input[type="email"],
+[data-theme="light"] input[type="password"],
+[data-theme="light"] input[type="number"],
+[data-theme="light"] input[type="date"],
+[data-theme="light"] select,
+[data-theme="light"] textarea {
+  background: var(--bg-surface-solid);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-small);
+  color: var(--ink-1);
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast),
+    background-color var(--transition-fast);
+}
+
+[data-theme="light"] .form-input::placeholder,
+[data-theme="light"] textarea::placeholder {
+  color: var(--ink-3);
+}
+
+/* Foco: anel suave na cor institucional. Sem contorno duro. */
+[data-theme="light"] .form-input:focus,
+[data-theme="light"] .re-select:focus,
+[data-theme="light"] input:focus,
+[data-theme="light"] select:focus,
+[data-theme="light"] textarea:focus {
+  border-color: rgba(0, 103, 177, 0.55);
+  box-shadow: 0 0 0 4px rgba(0, 103, 177, 0.11);
+  outline: none;
+}
+
+[data-theme="light"] .form-label {
+  color: var(--ink-1);
+  font-weight: 500;
+  letter-spacing: -0.004em;
+}
+
+[data-theme="light"] .form-input:disabled,
+[data-theme="light"] select:disabled,
+[data-theme="light"] textarea:disabled {
+  background: var(--bg-surface-sunken);
+  color: var(--ink-3);
+}
+
+/* =========================================
+   8. TABELAS
+   Linha respirada, separador quase invisível, sem grade fechada.
+   ========================================= */
+[data-theme="light"] .data-table,
+[data-theme="light"] .re-table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+[data-theme="light"] .data-table thead th,
+[data-theme="light"] .re-table thead th {
+  background: var(--bg-surface-secondary);
+  color: var(--ink-2);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--border-light);
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+
+[data-theme="light"] .data-table tbody td,
+[data-theme="light"] .re-table tbody td {
+  border-bottom: 1px solid var(--border-light);
+  color: var(--ink-2);
+  padding-top: 13px;
+  padding-bottom: 13px;
+}
+
+[data-theme="light"] .data-table tbody tr:last-child td,
+[data-theme="light"] .re-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+[data-theme="light"] .data-table tbody tr,
+[data-theme="light"] .re-table tbody tr {
+  transition: background-color var(--transition-fast);
+}
+
+[data-theme="light"] .data-table tbody tr:hover td,
+[data-theme="light"] .re-table tbody tr:hover td {
+  background: rgba(0, 0, 0, 0.022);
+}
+
+[data-theme="light"] .table-wrapper {
+  border-radius: var(--radius-medium);
+  border: 1px solid var(--border-light);
+  background: var(--bg-surface-solid);
+  overflow: hidden;
+}
+
+/* =========================================
+   9. MODAIS E SOBREPOSIÇÕES
+   ========================================= */
+[data-theme="light"] .modal-overlay {
+  background: rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  animation: lpFade 220ms var(--ease-premium);
+}
+
+[data-theme="light"] .modal-container,
+[data-theme="light"] .re-modal {
+  background: var(--bg-surface-solid);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-large);
+  box-shadow: var(--shadow-overlay);
+  animation: lpRise 300ms var(--ease-premium);
+}
+
+[data-theme="light"] .modal-header {
+  border-bottom: 1px solid var(--border-light);
+}
+
+[data-theme="light"] .modal-header h3 {
+  color: var(--ink-1);
+  font-weight: 600;
+  letter-spacing: -0.016em;
+}
+
+[data-theme="light"] .modal-footer {
+  border-top: 1px solid var(--border-light);
+}
+
+[data-theme="light"] .modal-close {
+  color: var(--ink-3);
+  border-radius: 999px;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+[data-theme="light"] .modal-close:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: var(--ink-1);
+}
+
+[data-theme="light"] .dropdown-menu,
+[data-theme="light"] #notifications-dropdown,
+[data-theme="light"] .notifications-dropdown {
+  background: var(--bg-surface-solid);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-medium);
+  box-shadow: var(--shadow-overlay);
+  animation: lpRise 200ms var(--ease-premium);
+}
+
+@keyframes lpFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes lpRise {
+  from { opacity: 0; transform: translateY(10px) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* =========================================
+   10. ABAS, CHIPS E BADGES
+   ========================================= */
+[data-theme="light"] .re-tab,
+[data-theme="light"] .admin-tab {
+  color: var(--ink-2);
+  border-radius: 8px 8px 0 0;
+  font-weight: 500;
+  letter-spacing: -0.004em;
+  transition: color var(--transition-fast), background-color var(--transition-fast);
+}
+
+[data-theme="light"] .re-tab:hover,
+[data-theme="light"] .admin-tab:hover {
+  color: var(--ink-1);
+  background: rgba(0, 0, 0, 0.03);
+}
+
+[data-theme="light"] .re-tab.active,
+[data-theme="light"] .admin-tab.active {
+  color: var(--acento);
+  border-bottom-color: var(--acento);
+  font-weight: 590;
+}
+
+[data-theme="light"] .re-badge,
+[data-theme="light"] .re-chip,
+[data-theme="light"] .badge {
+  border-radius: 999px;
+  font-weight: 590;
+  letter-spacing: -0.002em;
+}
+
+[data-theme="light"] .re-filterbar {
+  background: var(--bg-surface-solid);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-medium);
+  box-shadow: var(--shadow-raised);
+}
+
+/* =========================================
+   11. ROLAGEM
+   Trilho invisível, indicador discreto que aparece no hover.
+   ========================================= */
+[data-theme="light"] ::-webkit-scrollbar {
+  width: 11px;
+  height: 11px;
+}
+
+[data-theme="light"] ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.16);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.28);
+  background-clip: content-box;
+}
+
+[data-theme="light"] ::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* =========================================
+   12. ENTRADA DE CONTEÚDO
+   Uma transição curta ao trocar de página. Nada de "aparecendo" em
+   cascata, que atrasa a leitura.
+   ========================================= */
+[data-theme="light"] .page-content.animate-fade-in,
+[data-theme="light"] .animate-fade-in {
+  animation: lpEnter 300ms var(--ease-premium);
+}
+
+@keyframes lpEnter {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* =========================================
+   13. FOCO POR TECLADO
+   Visível para quem navega por teclado, invisível para quem usa mouse.
+   ========================================= */
+[data-theme="light"] :focus:not(:focus-visible) {
+  outline: none;
+}
+
+[data-theme="light"] .btn:focus-visible,
+[data-theme="light"] .nav-item:focus-visible,
+[data-theme="light"] a:focus-visible,
+[data-theme="light"] button:focus-visible,
+[data-theme="light"] [tabindex]:focus-visible {
+  outline: 2px solid var(--acento);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+/* =========================================
+   14. TOOLTIP DA SIDEBAR RECOLHIDA
+   ========================================= */
+[data-theme="light"] .nep-tooltip {
+  background: rgba(29, 29, 31, 0.94);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 8px;
+  box-shadow: var(--shadow-hover);
+  font-weight: 500;
+  letter-spacing: -0.002em;
+}
+
+/* =========================================
+   15. TOAST
+   ========================================= */
+[data-theme="light"] .toast {
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-medium);
+  box-shadow: var(--shadow-overlay);
+  color: var(--ink-1);
+}
+
+/* =========================================
+   16. ACESSIBILIDADE
+   ========================================= */
+@media (prefers-reduced-motion: reduce) {
+  [data-theme="light"] *,
+  [data-theme="light"] *::before,
+  [data-theme="light"] *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  [data-theme="light"] .nav-item:hover .nav-item-icon,
+  [data-theme="light"] .card:hover,
+  [data-theme="light"] .btn:active {
+    transform: none !important;
+  }
+}
+
+@media (prefers-contrast: more) {
+  [data-theme="light"] {
+    --border-light: rgba(0, 0, 0, 0.22);
+    --border-medium: rgba(0, 0, 0, 0.34);
+    --ink-2: #4A4A4F;
+    --ink-3: #5E5E63;
+  }
+}
+
+/* =========================================
+   17. RESPONSIVO
+   ========================================= */
+@media (max-width: 900px) {
+  [data-theme="light"] .header {
+    /* backdrop-filter em tela pequena custa GPU sem ganho visual real. */
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: var(--bg-surface-solid);
+  }
+
+  [data-theme="light"] .card,
+  [data-theme="light"] .dash-section,
+  [data-theme="light"] .re-panel {
+    border-radius: var(--radius-small);
+  }
+}
+
+/* =========================================
+   18. IMPRESSÃO
+   ========================================= */
+@media print {
+  [data-theme="light"] .card,
+  [data-theme="light"] .re-panel,
+  [data-theme="light"] .dash-section {
+    box-shadow: none !important;
+    border: 1px solid rgba(0, 0, 0, 0.2) !important;
+  }
+}
