@@ -51,6 +51,35 @@ const NexusReportExecutivo = {
       this.items = [];
     }
     this.tagVocabulary = RED.buildTagVocabulary(this.items);
+    await this.loadTasks();
+  },
+
+  /** Tarefas do Kanban — a EXECUÇÃO das frentes. Mesma coleção que o módulo
+   *  Kanban usa: uma fonte só para "trabalho de uma pessoa". Sem isto a
+   *  Capacidade contava frente e ignorava a tarefa, e dizia 24% para quem
+   *  estava com a semana cheia. */
+  async loadTasks() {
+    try {
+      const snap = await this.db.collection('tasks').limit(2000).get();
+      this.tasks = snap.docs.map(d => Object.assign({ id: d.id }, d.data()))
+        .filter(t => t.status !== 'archived');
+      this.tasksByItem = RED.groupTasksByItem(this.tasks);
+    } catch (e) {
+      console.warn('[ReportExecutivo] tasks indisponível:', e.message);
+      this.tasks = [];
+      this.tasksByItem = {};
+    }
+  },
+
+  /** Rollup das tarefas de uma frente (null quando não tem tarefa vinculada). */
+  rollupOf(itemId) {
+    const t = (this.tasksByItem || {})[itemId];
+    return t ? RED.taskRollup(t) : null;
+  },
+
+  /** Progresso a exibir: apurado pelas tarefas quando houver, senão declarado. */
+  progressOf(item) {
+    return RED.effectiveProgress(item, this.rollupOf(item.id));
   },
 
   async loadActiveUsers() {
@@ -359,6 +388,7 @@ const NexusReportExecutivo = {
           <div class="form-group"><label class="form-label">Comentário executivo</label>
             <textarea class="form-input" id="f-exec" rows="2">${RED.esc(it.executiveComment)}</textarea></div>
           <div id="re-modal-diag"></div>
+          ${isNew ? '' : this.renderLinkedTasks(it)}
         </div>
         <div class="modal-footer">
           ${!isNew && this.canDelete() ? `<button class="btn btn-ghost" id="re-archive">${it.archived ? 'Restaurar' : 'Arquivar'}</button>` : ''}
@@ -422,6 +452,38 @@ const NexusReportExecutivo = {
     });
   },
 
+  /** Painel de execução dentro do modal: as tarefas do Kanban ligadas a esta
+   *  frente. É aqui que "mesma fonte" fica visível — o gestor abre a frente e
+   *  vê o trabalho real, não uma barra de progresso que alguém digitou. */
+  renderLinkedTasks(it) {
+    const tasks = (this.tasksByItem || {})[it.id] || [];
+    const rl = this.rollupOf(it.id);
+    const STATUS_LABEL = { backlog: 'Backlog', doing: 'Em execução', pending: 'Aguardando', done: 'Concluída' };
+
+    return `
+      <div class="re-exec">
+        <div class="re-exec-head">
+          <strong>Execução no Kanban</strong>
+          ${rl ? `<span class="re-muted re-sm">${rl.doneCount}/${rl.taskCount} concluídas · ${rl.remainingEffortHours}h restantes</span>` : ''}
+        </div>
+        ${tasks.length === 0 ? `
+          <p class="re-muted re-sm">Nenhuma tarefa vinculada. Enquanto não houver, o progresso desta frente
+          é o número declarado no cadastro — ninguém conferiu.</p>` : `
+          ${this.bar(rl.progress, rl.progress >= 70 ? 'tone-green' : rl.progress >= 40 ? 'tone-amber' : 'tone-red')}
+          <div class="re-exec-list">
+            ${tasks.map(t => `
+              <div class="re-exec-task">
+                ${this.badge(STATUS_LABEL[t.status] || t.status, RED.isTaskDone(t) ? 'tone-green' : 'tone-blue')}
+                <span class="${RED.isTaskDone(t) ? 're-done' : ''}">${RED.esc(t.title)}</span>
+                <span class="re-muted re-sm">${RED.esc(t.ownerName || t.owner || 'sem dono')}</span>
+                ${RED.isTaskDone(t) && t.validated === false
+                  ? '<span class="re-flag re-sm" title="Concluída mas ainda não validada pelo gestor">a validar</span>' : ''}
+              </div>`).join('')}
+          </div>`}
+        <button class="btn btn-ghost btn-sm" onclick="NexusApp.navigate('kanban')">Abrir Kanban →</button>
+      </div>`;
+  },
+
   readItemForm(base) {
     const val = id => (document.getElementById(id)?.value ?? '').trim();
     const num = id => {
@@ -475,12 +537,14 @@ const NexusReportExecutivo = {
             <table class="data-table re-table">
               <thead><tr>
                 <th>Frente</th><th>Responsável</th><th>Status</th><th>Prioridade</th>
-                <th>Prazo</th><th>Progresso</th><th>Risco</th><th>Gov.</th>
+                <th>Prazo</th><th>Progresso</th><th>Execução</th><th>Risco</th><th>Gov.</th>
               </tr></thead>
               <tbody>
                 ${rows.map(it => {
                   const rs = RED.riskScore(it, this.items);
                   const gaps = RED.dataGaps(it);
+                  const rl = this.rollupOf(it.id);
+                  const prog = this.progressOf(it);
                   return `
                   <tr data-open="${it.id}" class="re-row">
                     <td>
@@ -491,7 +555,12 @@ const NexusReportExecutivo = {
                     <td>${this.badge(RED.effectiveStatus(it), RED.statusTone(RED.effectiveStatus(it)))}</td>
                     <td>${this.badge(it.priority, RED.priorityTone(it.priority))}</td>
                     <td>${RED.dateFmt(it.dueDate)}<div class="re-muted re-sm">${RED.dueTextFor(it)}</div></td>
-                    <td style="min-width:110px">${this.bar(it.progress)}<span class="re-sm">${it.progress}%</span></td>
+                    <td style="min-width:110px">${this.bar(prog)}<span class="re-sm">${prog}%${
+                      rl ? ' <span class="re-muted" title="Apurado pelas tarefas do Kanban, não declarado">(apurado)</span>' : ''}</span></td>
+                    <td class="re-sm">${rl
+                      ? `${rl.doneCount}/${rl.taskCount} tarefas${rl.remainingEffortHours ? `<div class="re-muted">${rl.remainingEffortHours}h restantes</div>` : ''}${
+                          rl.pendingValidation ? `<div class="re-flag">${rl.pendingValidation} a validar</div>` : ''}`
+                      : '<span class="re-muted">sem tarefa</span>'}</td>
                     <td>${rs ? this.badge(`${rs.score} ${rs.band}`, RED.riskBandTone(rs.band)) : '<span class="re-muted">—</span>'}</td>
                     <td>${gaps.length ? `<span class="re-flag" title="${RED.esc(gaps.join(', '))}">${gaps.length}</span>` : `<span class="re-ok">✓</span>`}</td>
                   </tr>`;
@@ -769,12 +838,24 @@ const NexusReportExecutivo = {
     const janelaIni = Date.now();
     const janelaFim = janelaIni + horizonWeeks * 7 * 86400000;
 
+    // Carga vinda do Kanban, por nome de responsável. Inclui tarefa SEM frente
+    // — é justamente o trabalho que a carteira sozinha não enxergava.
+    const cargaKanban = RED.assigneeLoadFromTasks(this.tasks || []);
+
     const rows = this.activeUsers.map(u => {
       const nome = u.nome || '';
       const meus = ativos.filter(i => RED.ownersOf(i.owner).includes(nome));
-      const projectRemainingH = meus.reduce((s, i) => s + RED.itemRemainingEffort(i) / Math.max(1, RED.ownersOf(i.owner).length), 0);
-      const fallbackH = meus.filter(RED.isEstimatedEffort)
+      // Frente COM tarefas usa as horas das tarefas (medido); sem tarefas, cai
+      // na estimativa da frente inteira. Não somar os dois: contaria em dobro.
+      const projectRemainingH = meus.reduce((s, i) => {
+        const rl = this.rollupOf(i.id);
+        if (rl) return s; // já entra por cargaKanban
+        return s + RED.itemRemainingEffort(i) / Math.max(1, RED.ownersOf(i.owner).length);
+      }, 0) + (cargaKanban[nome] || 0);
+      const fallbackH = meus.filter(i => !this.rollupOf(i.id) && RED.isEstimatedEffort(i))
         .reduce((s, i) => s + RED.itemRemainingEffort(i) / Math.max(1, RED.ownersOf(i.owner).length), 0);
+      const tarefasAbertas = (this.tasks || []).filter(t =>
+        !RED.isTaskDone(t) && (t.ownerName === nome || t.owner === nome)).length;
       const routineWeeklyH = routines.filter(r => r.active !== false && (r.assigneeName === nome || r.assigneeUid === u.uid))
         .reduce((s, r) => s + RED.routineWeeklyHours(r.effort_hours ?? r.effortHours, r.recurrence), 0);
 
@@ -791,8 +872,8 @@ const NexusReportExecutivo = {
         reliableHorizon
       };
       const klass = RED.classifyUtilization(signal);
-      return { u, nome, util, capEfetiva, nominal, klass, frentes: meus.length, signal };
-    }).filter(r => r.frentes > 0 || r.util.routineWeeklyH > 0 || r.capEfetiva > 0)
+      return { u, nome, util, capEfetiva, nominal, klass, frentes: meus.length, tarefas: tarefasAbertas, signal };
+    }).filter(r => r.frentes > 0 || r.tarefas > 0 || r.util.routineWeeklyH > 0)
       .sort((a, b) => (b.util.pct ?? -1) - (a.util.pct ?? -1));
 
     el.innerHTML = `
@@ -804,16 +885,17 @@ const NexusReportExecutivo = {
       <div class="table-wrapper">
         <table class="data-table re-table">
           <thead><tr>
-            <th>Pessoa</th><th>Frentes</th><th>Projetos (h/sem)</th><th>Rotinas (h/sem)</th>
+            <th>Pessoa</th><th>Frentes</th><th>Tarefas</th><th>Projetos (h/sem)</th><th>Rotinas (h/sem)</th>
             <th>Total (h/sem)</th><th>Capacidade</th><th>Utilização</th><th>Leitura</th>
           </tr></thead>
           <tbody>
-            ${rows.length === 0 ? `<tr><td colspan="8" class="re-empty">Sem dados de carga.</td></tr>` : rows.map(r => {
+            ${rows.length === 0 ? `<tr><td colspan="9" class="re-empty">Sem dados de carga.</td></tr>` : rows.map(r => {
               const lbl = RED.UTILIZATION_LABELS[r.klass];
               return `
               <tr>
                 <td>${RED.esc(r.nome)}</td>
                 <td>${r.frentes}</td>
+                <td>${r.tarefas || '<span class="re-muted">—</span>'}</td>
                 <td>${r.util.projectWeeklyH}h</td>
                 <td>${r.util.routineWeeklyH}h</td>
                 <td><strong>${r.util.totalWeeklyH}h</strong></td>

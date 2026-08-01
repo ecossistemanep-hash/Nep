@@ -268,3 +268,12 @@ select.re-select[multiple] { min-height: 34px; }
   background: var(--bg-secondary); line-height: 1.6;
 }
 .re-diag div + div { margin-top: 5px; }
+
+/* ── Execução: tarefas do Kanban dentro da frente ─────────────────────── */
+.re-exec {
+  margin-top: 14px; padding: 12px 14px; border-radius: 10px;
+  background: var(--bg-secondary); border: 1px solid var(--border-color);
+}
+.re-exec-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 8px; }
+.re-exec-list { display: flex; flex-direction: column; gap: 5px; margin: 8px 0 10px; max-height: 220px; overflow-y: auto; }
+.re-exec-task { display: flex; align-items: center; gap: 8px; font-size: 12.5px; flex-wrap: wrap; }

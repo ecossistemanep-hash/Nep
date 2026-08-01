@@ -818,6 +818,76 @@ RED.itemStart = function (it) {
   return start.toISOString().slice(0, 10);
 };
 
+// ── Execução: a TAREFA do Kanban é o subitem da frente ──────────────────────
+// O original tinha uma coleção `activities` própria. Aqui a execução de uma
+// frente são as tarefas do Kanban do NEP que apontam para ela (task.itemId).
+// Uma fonte só para "trabalho de uma pessoa": a Capacidade enxerga frente E
+// tarefa, o progresso da frente sobe sozinho conforme as tarefas fecham, e a
+// pontuação/validação por gestor que o Kanban já tem continua valendo.
+
+/** Status de tarefa do Kanban que contam como encerradas. */
+RED.TASK_DONE = ['done', 'archived'];
+RED.isTaskDone = t => RED.TASK_DONE.includes(String(t.status || '').toLowerCase());
+
+/** Horas de uma tarefa. O Kanban não tem campo de esforço: sem estimativa
+ *  explícita, cada tarefa vale DEFAULT_TASK_HOURS. É premissa declarada, não
+ *  medição — quem consome deve marcar como estimado (ver isEstimatedEffort). */
+RED.DEFAULT_TASK_HOURS = 4;
+RED.taskHours = t => Number(t.estimatedHours ?? t.horasEstimadas ?? RED.DEFAULT_TASK_HOURS);
+
+/**
+ * Agrega as tarefas de uma frente (espelha o ActivityRollup do original).
+ * Progresso é razão de tarefas concluídas — número apurado, não declarado:
+ * é a diferença entre "digo que estou em 80%" e "8 das 10 tarefas fecharam".
+ */
+RED.taskRollup = function (tasks) {
+  const total = tasks.length;
+  if (total === 0) return null;
+  const feitas = tasks.filter(RED.isTaskDone);
+  const abertas = tasks.filter(t => !RED.isTaskDone(t));
+  return {
+    taskCount: total,
+    doneCount: feitas.length,
+    activeCount: abertas.length,
+    totalEffortHours: tasks.reduce((s, t) => s + RED.taskHours(t), 0),
+    remainingEffortHours: abertas.reduce((s, t) => s + RED.taskHours(t), 0),
+    progress: Math.round((feitas.length / total) * 100),
+    /** Tarefas encerradas mas ainda não validadas pelo gestor — trabalho que
+     *  não deveria contar como entregue enquanto ninguém conferiu. */
+    pendingValidation: feitas.filter(t => t.validated === false).length
+  };
+};
+
+/** Indexa tarefas por frente. Tarefa sem itemId fica de fora do rollup, mas
+ *  continua contando na carga da pessoa (ver assigneeLoadFromTasks). */
+RED.groupTasksByItem = function (tasks) {
+  const by = {};
+  for (const t of (tasks || [])) {
+    if (!t.itemId) continue;
+    (by[t.itemId] = by[t.itemId] || []).push(t);
+  }
+  return by;
+};
+
+/** Progresso EFETIVO da frente: apurado pelas tarefas quando existirem;
+ *  senão o declarado no cadastro. */
+RED.effectiveProgress = function (item, rollup) {
+  return rollup ? rollup.progress : (item.progress || 0);
+};
+
+/** Horas restantes por pessoa vindas do Kanban — inclui tarefa SEM frente,
+ *  que é justamente o trabalho que a carteira sozinha não enxergava. */
+RED.assigneeLoadFromTasks = function (tasks) {
+  const load = {};
+  for (const t of (tasks || [])) {
+    if (RED.isTaskDone(t)) continue;
+    const quem = t.ownerName || t.owner || '';
+    if (!quem) continue;
+    load[quem] = (load[quem] || 0) + RED.taskHours(t);
+  }
+  return load;
+};
+
 const ACTIVITY_DONE = ['Concluído', 'Entregue', 'Cancelado'];
 
 /** Ocupação individual: horas estimadas das atividades NÃO concluídas. */

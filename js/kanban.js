@@ -109,6 +109,45 @@ const NexusKanban = {
       console.warn('[Kanban] Erro ao carregar usuários:', e);
       this.activeUsers = [];
     }
+    await this.loadFrentes();
+  },
+
+  /** Frentes ativas da carteira, para vincular a tarefa a uma delas. Falha
+   *  silenciosa: quem não tem acesso ao Report Executivo simplesmente não vê
+   *  opção nenhuma, e o Kanban segue funcionando como sempre. */
+  async loadFrentes() {
+    this.frentes = [];
+    if (!this.db) return;
+    try {
+      const snap = await this.db.collection('items').limit(500).get();
+      this.frentes = snap.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .filter(f => !f.archived && !['Concluído', 'Entregue', 'Cancelado'].includes(f.status))
+        .sort((a, b) => `${a.project || ''}${a.demand || ''}`.localeCompare(`${b.project || ''}${b.demand || ''}`));
+    } catch (e) {
+      console.warn('[Kanban] Frentes indisponíveis:', e.message);
+    }
+  },
+
+  /** Preenche o select de frente. `selecionada` vem da tarefa em edição. */
+  fillFrenteSelect(selecionada) {
+    const sel = document.getElementById('kb-task-item');
+    if (!sel) return;
+    const rotulo = f => {
+      const p = (f.project || '').trim() || 'Sem projeto';
+      const d = (f.demand || '').trim();
+      return d ? `${p} — ${d}` : p;
+    };
+    sel.innerHTML = '<option value="">— tarefa avulsa, sem frente —</option>'
+      + (this.frentes || []).map(f =>
+        `<option value="${this.esc(f.id)}">${this.esc(rotulo(f))}</option>`).join('');
+    // Frente arquivada/concluída não está na lista: preserva o vínculo em vez
+    // de apagá-lo em silêncio ao salvar.
+    if (selecionada && !sel.querySelector(`option[value="${CSS.escape(selecionada)}"]`)) {
+      sel.insertAdjacentHTML('beforeend',
+        `<option value="${this.esc(selecionada)}">(frente encerrada ou sem acesso)</option>`);
+    }
+    sel.value = selecionada || '';
   },
 
   getMyRoleKey() {
@@ -679,6 +718,18 @@ const NexusKanban = {
               <div class="kb-form-group"><label>🏆 Pontos (automático)</label><input type="number" id="kb-task-points" readonly value="5"></div>
               <div class="kb-form-group"><label>📊 Prioridade (automática)</label><input type="text" id="kb-task-priority-display" readonly value="Baixo"></div>
             </div>
+            <!-- Vínculo com a carteira do Report Executivo: a tarefa vira a
+                 execução de uma frente. Com isso o progresso da frente passa a
+                 ser apurado (tarefas fechadas / total) em vez de declarado, e a
+                 Capacidade enxerga esta tarefa na carga da pessoa. -->
+            <div class="kb-form-row">
+              <div class="kb-form-group" style="flex:1">
+                <label>📊 Frente do Report Executivo (opcional)</label>
+                <select id="kb-task-item">
+                  <option value="">— tarefa avulsa, sem frente —</option>
+                </select>
+              </div>
+            </div>
             <div class="kb-form-row">
               <div class="kb-form-group">
                 <label>🔁 Atividade Recorrente</label>
@@ -1173,6 +1224,7 @@ const NexusKanban = {
     if (recurSel) recurSel.value = '';
     const reasonGroup = document.getElementById('kb-deadline-reason-group');
     if (reasonGroup) reasonGroup.style.display = 'none';
+    this.fillFrenteSelect('');
 
     // Clear viewers
     this.clearViewersPicker();
@@ -1205,6 +1257,7 @@ const NexusKanban = {
     document.getElementById('kb-task-deadline').value = task.deadline || '';
     document.getElementById('kb-task-type').value = task.taskType || 'Rotina';
     document.getElementById('kb-task-desc').value = task.description || '';
+    this.fillFrenteSelect(task.itemId || '');
     // Prazo e tipo definem os pontos → só gestor/admin altera após criação
     const canEditScoring = this.canEditDeadline(task);
     document.getElementById('kb-task-deadline').disabled = !canEditScoring;
@@ -1456,7 +1509,11 @@ const NexusKanban = {
       priority: this.derivePriority(deadline),
       description: document.getElementById('kb-task-desc')?.value.trim() || '',
       isRecurring: recurringVal !== '' && recurringVal !== undefined,
-      recurringDay: recurringVal !== '' ? parseInt(recurringVal) : null
+      recurringDay: recurringVal !== '' ? parseInt(recurringVal) : null,
+      // Frente da carteira a que esta tarefa pertence (Report Executivo).
+      // Vazio = tarefa avulsa: continua contando na carga da pessoa, só não
+      // rola para o progresso de nenhuma frente.
+      itemId: document.getElementById('kb-task-item')?.value || ''
     };
 
     // Capturar visualizadores selecionados do picker
