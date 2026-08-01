@@ -20,21 +20,21 @@
   cursor: pointer; border-radius: 8px 8px 0 0; white-space: nowrap;
   border-bottom: 2px solid transparent; transition: all .15s;
 }
-.re-tab:hover { color: var(--text-primary); background: var(--bg-secondary); }
+.re-tab:hover { color: var(--text-primary); background: var(--surface-elevated); }
 .re-tab.active { color: var(--primary-500); border-bottom-color: var(--primary-500); }
 .re-tab i { margin-right: 5px; opacity: .8; }
 
 /* ── Barra de filtros ─────────────────────────────────────────────────── */
 .re-filterbar {
   display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end;
-  padding: 12px; background: var(--bg-secondary); border-radius: 10px;
+  padding: 12px; background: var(--surface-elevated); border-radius: 10px;
 }
 .re-filter { display: flex; flex-direction: column; gap: 3px; min-width: 130px; }
 .re-filter-grow { flex: 1 1 220px; }
 .re-filter label { font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .03em; }
 .re-select {
   padding: 7px 9px; border: 1px solid var(--border-color); border-radius: 7px;
-  background: var(--bg-primary); color: var(--text-primary); font-size: 13px;
+  background: var(--surface-card); color: var(--text-primary); font-size: 13px;
 }
 select.re-select[multiple] { min-height: 34px; }
 .re-check { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-secondary); }
@@ -54,7 +54,7 @@ select.re-select[multiple] { min-height: 34px; }
 }
 .re-note {
   padding: 12px 14px; border-radius: 10px; font-size: 13px; line-height: 1.55;
-  color: var(--text-secondary); background: var(--bg-secondary);
+  color: var(--text-secondary); background: var(--surface-elevated);
   border-left: 3px solid var(--border-color);
 }
 .re-toolbar {
@@ -62,7 +62,7 @@ select.re-select[multiple] { min-height: 34px; }
   gap: 12px; flex-wrap: wrap; margin-bottom: 12px; font-size: 13px; color: var(--text-secondary);
 }
 .re-panel {
-  background: var(--bg-primary); border: 1px solid var(--border-color);
+  background: var(--surface-card); border: 1px solid var(--border-color);
   border-radius: 12px; padding: 16px; margin-bottom: 16px;
 }
 .re-panel h4 { margin: 0 0 12px; font-size: 14px; }
@@ -102,7 +102,7 @@ select.re-select[multiple] { min-height: 34px; }
 .re-badge.tone-purple { background: rgba(168, 85, 247, .13); color: #9333ea; }
 .re-badge.tone-teal { background: rgba(20, 184, 166, .13); color: #0d9488; }
 .re-badge.tone-indigo { background: rgba(99, 102, 241, .13); color: #4f46e5; }
-.re-badge.tone-gray { background: var(--bg-secondary); color: var(--text-secondary); }
+.re-badge.tone-gray { background: var(--surface-elevated); color: var(--text-secondary); }
 .re-badge.solid.tone-red { background: #ef4444; color: #fff; }
 .re-badge.solid.tone-amber { background: #f59e0b; color: #fff; }
 .re-badge.solid.tone-green { background: #22c55e; color: #fff; }
@@ -110,7 +110,7 @@ select.re-select[multiple] { min-height: 34px; }
 .re-badge.solid.tone-gray { background: var(--border-color); color: var(--text-primary); }
 
 .re-bar {
-  height: 6px; border-radius: 999px; background: var(--bg-secondary);
+  height: 6px; border-radius: 999px; background: var(--surface-elevated);
   overflow: hidden; margin: 3px 0;
 }
 .re-bar-fill { height: 100%; background: var(--primary-500); transition: width .25s; }
@@ -127,7 +127,7 @@ select.re-select[multiple] { min-height: 34px; }
 .re-chip.tone-green { background: rgba(34, 197, 94, .13); color: #16a34a; }
 .re-chip.tone-amber { background: rgba(245, 158, 11, .14); color: #d97706; }
 .re-chip.tone-red { background: rgba(239, 68, 68, .13); color: #ef4444; }
-.re-chip.tone-gray { background: var(--bg-secondary); color: var(--text-secondary); }
+.re-chip.tone-gray { background: var(--surface-elevated); color: var(--text-secondary); }
 .re-tags { margin-top: 3px; }
 
 /* ── KPIs ─────────────────────────────────────────────────────────────── */
@@ -136,7 +136,7 @@ select.re-select[multiple] { min-height: 34px; }
   gap: 10px; margin-bottom: 16px;
 }
 .re-kpi {
-  background: var(--bg-primary); border: 1px solid var(--border-color);
+  background: var(--surface-card); border: 1px solid var(--border-color);
   border-radius: 10px; padding: 14px; text-align: center;
 }
 .re-kpi-n { font-size: 26px; font-weight: 700; line-height: 1.1; }
@@ -148,7 +148,7 @@ select.re-select[multiple] { min-height: 34px; }
 .re-table th { font-size: 11px; text-transform: uppercase; letter-spacing: .03em; white-space: nowrap; }
 .re-table td { vertical-align: top; padding: 9px 10px; }
 .re-row { cursor: pointer; }
-.re-row:hover { background: var(--bg-secondary); }
+.re-row:hover { background: var(--surface-elevated); }
 .re-front { font-weight: 600; }
 .re-past { opacity: .55; }
 .table-wrapper { overflow-x: auto; }
@@ -164,13 +164,13 @@ select.re-select[multiple] { min-height: 34px; }
   display: grid; grid-auto-flow: column; grid-auto-columns: minmax(230px, 1fr);
   gap: 12px; overflow-x: auto; padding-bottom: 8px; align-items: start;
 }
-.re-col { background: var(--bg-secondary); border-radius: 12px; padding: 10px; min-height: 140px; }
+.re-col { background: var(--surface-elevated); border-radius: 12px; padding: 10px; min-height: 140px; }
 .re-col.over { outline: 2px dashed var(--primary-500); outline-offset: -3px; }
 .re-col-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 9px; font-size: 12px; }
 .re-col-body { display: flex; flex-direction: column; gap: 7px; }
 .re-col-empty { text-align: center; color: var(--text-secondary); font-size: 12px; padding: 10px; }
 .re-card {
-  background: var(--bg-primary); border: 1px solid var(--border-color);
+  background: var(--surface-card); border: 1px solid var(--border-color);
   border-radius: 9px; padding: 10px; cursor: pointer; transition: box-shadow .15s;
 }
 .re-card:hover { box-shadow: 0 2px 8px rgba(0, 0, 0, .1); }
@@ -186,7 +186,7 @@ select.re-select[multiple] { min-height: 34px; }
 /* ── Riscos ───────────────────────────────────────────────────────────── */
 .re-risklist { display: flex; flex-direction: column; gap: 10px; }
 .re-riskrow {
-  display: flex; gap: 14px; background: var(--bg-primary);
+  display: flex; gap: 14px; background: var(--surface-card);
   border: 1px solid var(--border-color); border-radius: 12px; padding: 14px;
 }
 .re-riskscore {
@@ -206,14 +206,14 @@ select.re-select[multiple] { min-height: 34px; }
 .re-factor-l { flex: 0 0 110px; color: var(--text-secondary); }
 .re-factor.main .re-factor-l { color: var(--text-primary); }
 .re-factor-bar {
-  flex: 1; height: 5px; background: var(--bg-secondary);
+  flex: 1; height: 5px; background: var(--surface-elevated);
   border-radius: 999px; overflow: hidden; min-width: 60px;
 }
 .re-factor-bar i { display: block; height: 100%; background: var(--primary-500); }
 .re-factor-v { flex: 0 0 26px; text-align: right; }
 .re-action {
   font-size: 12px; padding: 8px 10px; border-radius: 8px;
-  background: var(--bg-secondary); display: flex; align-items: center;
+  background: var(--surface-elevated); display: flex; align-items: center;
   gap: 8px; flex-wrap: wrap; line-height: 1.5;
 }
 .re-action i { color: #f59e0b; }
@@ -231,7 +231,7 @@ select.re-select[multiple] { min-height: 34px; }
 /* ── Executivo ────────────────────────────────────────────────────────── */
 .re-report {
   white-space: pre-wrap; font-family: var(--font-mono, ui-monospace, monospace);
-  font-size: 12.5px; line-height: 1.65; background: var(--bg-secondary);
+  font-size: 12.5px; line-height: 1.65; background: var(--surface-elevated);
   padding: 14px; border-radius: 9px; margin: 0; overflow-x: auto;
 }
 
@@ -265,14 +265,14 @@ select.re-select[multiple] { min-height: 34px; }
 .re-modal-body { max-height: 70vh; overflow-y: auto; }
 .re-diag {
   margin-top: 12px; padding: 11px 13px; border-radius: 9px; font-size: 12.5px;
-  background: var(--bg-secondary); line-height: 1.6;
+  background: var(--surface-elevated); line-height: 1.6;
 }
 .re-diag div + div { margin-top: 5px; }
 
 /* ── Execução: tarefas do Kanban dentro da frente ─────────────────────── */
 .re-exec {
   margin-top: 14px; padding: 12px 14px; border-radius: 10px;
-  background: var(--bg-secondary); border: 1px solid var(--border-color);
+  background: var(--surface-elevated); border: 1px solid var(--border-color);
 }
 .re-exec-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 8px; }
 .re-exec-list { display: flex; flex-direction: column; gap: 5px; margin: 8px 0 10px; max-height: 220px; overflow-y: auto; }

@@ -1,0 +1,1082 @@
+/* =========================================
+   IDENTIDADE VISUAL AeC — NEP
+   Camada de identidade conforme a spec "Design System DocOps (AeC)".
+
+   ESTRATÉGIA: este arquivo NÃO reescreve componentes nem renomeia nada.
+   Ele remapeia os tokens que o sistema já usa para a paleta institucional
+   e corrige contraste. Nenhuma classe, id, rota ou seletor consumido por
+   script é tocado.
+
+   ESPECIFICIDADE: vários módulos injetam <style> por JavaScript, que entra
+   no documento DEPOIS deste arquivo e vence no empate. Por isso as
+   correções de componente usam `body[data-theme=...]` como prefixo — não é
+   preciosismo, é o que faz a regra valer.
+
+   Carregar POR ÚLTIMO.
+   ========================================= */
+
+/* =========================================
+   1. TOKENS — COR
+   ========================================= */
+:root {
+  /* Paleta institucional (fixa) */
+  --azul-escuro: #003F70;
+  --azul-aec: #0067B1;
+  --ciano: #00BFE7;
+  --azul-marinho: #00345D;
+  --branco: #FFFFFF;
+  --fundo-gelo: #F3F8FB;
+  --cinza-texto: #617487;
+  --borda: #DBE8F0;
+
+  /* Superfícies */
+  --fundo: #F4F7FA;
+  --superficie: #FFFFFF;
+  --superficie-2: #F7FAFC;
+  --superficie-3: #EEF3F7;
+  --superficie-vidro: rgba(255, 255, 255, .72);
+
+  /* Tinta */
+  --tinta: #16212B;
+  --tinta-2: #4A5866;
+  --tinta-3: #7C8A98;
+  --tinta-4: #A3AEB9;
+  --tinta-invertida: #FFFFFF;
+
+  /* Acento */
+  --acento: #0067B1;
+  --acento-forte: #00457C;
+  --acento-suave: rgba(0, 103, 177, .08);
+  --acento-medio: rgba(0, 103, 177, .14);
+
+  /* Hairlines e preenchimentos neutros */
+  --linha: rgba(0, 52, 93, .10);
+  --linha-forte: rgba(0, 52, 93, .16);
+  --preenchimento: rgba(0, 52, 93, .05);
+  --preenchimento-hover: rgba(0, 52, 93, .09);
+  --preenchimento-ativo: rgba(0, 52, 93, .13);
+
+  /* Estados */
+  --sucesso: #12805C;  --sucesso-bg: rgba(18, 128, 92, .10);
+  --atencao: #9A6A00;  --atencao-bg: rgba(154, 106, 0, .10);
+  --alerta: #C0392B;   --alerta-bg: rgba(192, 57, 43, .09);
+
+  /* Séries de gráfico, na ordem de uso */
+  --serie-1: #0067B1;  --serie-2: #00BFE7;
+  --serie-3: #12805C;  --serie-4: #9A6A00;
+
+  /* Tipografia */
+  --fonte: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI",
+    Inter, Roboto, Calibri, Arial, sans-serif;
+  --fonte-mono: "SF Mono", "Cascadia Mono", Consolas, ui-monospace, monospace;
+
+  --fs-2xs: 11px;  --fs-xs: 12px;  --fs-sm: 13px;  --fs-base: 14.5px;
+  --fs-md: 16px;   --fs-lg: 20px;  --fs-xl: 26px;  --fs-2xl: 32px;  --fs-3xl: 40px;
+
+  --lh-apertada: 1.2;  --lh-padrao: 1.55;  --lh-leitura: 1.7;
+  --peso-normal: 400;  --peso-medio: 500;  --peso-forte: 600;
+  --tracking-titulo: -.021em;  --tracking-texto: -.003em;
+
+  /* Espaçamento (base 4px) */
+  --e-1: 4px;   --e-2: 8px;   --e-3: 12px;  --e-4: 16px;  --e-5: 20px;
+  --e-6: 24px;  --e-7: 32px;  --e-8: 40px;  --e-9: 56px;  --e-10: 72px;
+
+  /* Forma e profundidade */
+  --r-xs: 6px;  --r-sm: 8px;  --r: 12px;  --r-lg: 16px;  --r-xl: 22px;  --r-pill: 999px;
+
+  --sombra-xs: 0 1px 2px rgba(16, 33, 43, .05);
+  --sombra-sm: 0 2px 6px rgba(16, 33, 43, .06), 0 1px 2px rgba(16, 33, 43, .04);
+  --sombra-md: 0 10px 30px rgba(16, 33, 43, .09), 0 2px 6px rgba(16, 33, 43, .04);
+  --sombra-lg: 0 24px 60px rgba(16, 33, 43, .16), 0 4px 12px rgba(16, 33, 43, .06);
+  --anel-foco: 0 0 0 4px var(--acento-suave);
+
+  /* Movimento — nada acima de 300ms, nada decorativo */
+  --ease: cubic-bezier(.32, .72, 0, 1);
+  --t-rapido: .15s var(--ease);
+  --t-medio: .24s var(--ease);
+  --t-lento: .3s var(--ease);
+
+  /* Layout */
+  --sidebar-w: 256px;
+  --sidebar-w-min: 72px;
+  --topbar-h: 62px;
+  --faixa-h: 3px;
+  --pagina-max: 1340px;
+
+  --z-conteudo: 1;   --z-topbar: 30;  --z-cortina: 35;  --z-sidebar: 40;
+  --z-menu: 70;      --z-faixa: 90;   --z-modal: 150;   --z-toast: 200;
+  --z-tooltip: 250;  --z-abertura: 500;
+}
+
+/* =========================================
+   2. PONTE COM OS TOKENS LEGADOS DO NEP
+   O sistema tem ~290 usos de --surface-border, 217 de --text-primary etc.
+   Reapontar aqui aplica a identidade em todos os módulos de uma vez, sem
+   editar componente nenhum.
+   ========================================= */
+:root,
+[data-theme="light"] {
+  --surface-bg: var(--fundo);
+  --surface-card: var(--superficie);
+  --surface-elevated: var(--superficie-2);
+  --surface-hover: var(--preenchimento);
+  --surface-border: var(--linha);
+  --surface-border-light: var(--linha-forte);
+
+  --text-primary: var(--tinta);
+  --text-secondary: var(--tinta-2);
+  --text-tertiary: var(--tinta-3);
+  --text-disabled: var(--tinta-4);
+  --text-inverse: var(--tinta-invertida);
+  --text-muted: var(--tinta-3);
+  --text-dim: var(--tinta-4);
+
+  --primary-50: #F2F8FC;
+  --primary-100: #E3F0F9;
+  --primary-200: #C2DDF0;
+  --primary-300: #7FB3D9;
+  --primary-400: #1A7BC0;
+  --primary-500: var(--acento);
+  --primary-600: var(--acento-forte);
+  --primary-700: var(--azul-marinho);
+  --primary-800: #002B4B;
+  --primary-900: #001F36;
+  --primary: var(--acento);
+
+  --accent-50: #EAFAFE;
+  --accent-100: #D3F4FC;
+  --accent-200: #A7E9F9;
+  --accent-300: var(--ciano);
+  /* Ciano puro dá ~1,9:1 sobre branco: como TEXTO precisa escurecer. O tom
+     cheio segue disponível em --ciano para preenchimento e série. */
+  --accent-400: #067A93;
+  --accent-500: #056880;
+  --accent-600: #045366;
+  --accent-700: #03414F;
+  --accent-800: #023039;
+  --accent-900: var(--azul-marinho);
+
+  --success-50: var(--sucesso-bg);
+  --success-100: rgba(18, 128, 92, .16);
+  --success-500: var(--sucesso);
+  --success-600: #0E6A4C;
+  --success-700: #0A543C;
+
+  --warning-50: var(--atencao-bg);
+  --warning-100: rgba(154, 106, 0, .16);
+  --warning-500: var(--atencao);
+  --warning-600: #7E5700;
+  --warning-700: #644500;
+
+  --error-50: var(--alerta-bg);
+  --error-100: rgba(192, 57, 43, .16);
+  --error-400: #D14436;
+  --error-500: var(--alerta);
+  --error-600: #A32F23;
+  --error-700: #86271D;
+
+  --neutral-50: var(--superficie-2);
+  --neutral-100: var(--fundo);
+  --neutral-200: var(--superficie-3);
+  --neutral-300: var(--borda);
+  --neutral-400: var(--tinta-4);
+  --neutral-500: var(--tinta-3);
+  --neutral-600: var(--cinza-texto);
+  --neutral-700: var(--tinta-2);
+  --neutral-800: #2A3844;
+  --neutral-900: var(--tinta);
+
+  /* Gradiente só na faixa de identidade e em cabeçalho institucional. */
+  --gradient-primary: linear-gradient(90deg, var(--azul-marinho), var(--acento) 55%, var(--ciano));
+  --gradient-accent: linear-gradient(90deg, var(--acento), var(--ciano));
+  --gradient-success: linear-gradient(90deg, var(--sucesso), #16A374);
+  --gradient-warning: linear-gradient(90deg, var(--atencao), #C08600);
+  --gradient-error: linear-gradient(90deg, var(--alerta), #D14436);
+  --gradient-glass: linear-gradient(180deg, rgba(255, 255, 255, .9), rgba(255, 255, 255, .7));
+  --gradient-mesh: none;
+
+  --shadow-sm: var(--sombra-xs);
+  --shadow-md: var(--sombra-sm);
+  --shadow-lg: var(--sombra-md);
+  --shadow-xl: var(--sombra-lg);
+  --shadow-2xl: var(--sombra-lg);
+  --shadow-glow: var(--sombra-sm);
+  --shadow-glow-primary: var(--sombra-sm);
+  --shadow-card: var(--sombra-xs);
+  --shadow: var(--sombra-sm);
+  --highlight-inset: none;
+
+  --focus-ring: var(--anel-foco);
+  --focus-ring-primary: var(--anel-foco);
+
+  /* Aliases que o sistema usava mas nunca definiu — renderizavam
+     transparente. --border-color sozinho aparece 18× no Report Executivo. */
+  --border-color: var(--linha);
+  --border: var(--linha);
+  --border-dim: var(--preenchimento);
+  --rule: var(--linha);
+  --bg-primary: var(--fundo);
+  --bg-secondary: var(--superficie-2);
+  --bg-card: var(--superficie);
+  --bg-hover: var(--preenchimento);
+  --surface-2: var(--superficie-2);
+  --surface-ground: var(--fundo);
+  --surface-items-hover: var(--preenchimento);
+  --ink-3: var(--tinta-3);
+  --quality-card-bg: var(--superficie);
+  --quality-card-border: var(--linha);
+  --radius: var(--r);
+  --transition-normal: var(--t-medio);
+  --mono: var(--fonte-mono);
+
+  --radius-sm: var(--r-sm);
+  --radius-md: var(--r);
+  --radius-lg: var(--r-lg);
+  --radius-xl: var(--r-lg);
+  --radius-2xl: var(--r-xl);
+
+  --transition-fast: var(--t-rapido);
+  --transition-base: var(--t-medio);
+  --transition-slow: var(--t-lento);
+  --transition-spring: var(--t-medio);
+
+  --font-family: var(--fonte);
+  --font-mono: var(--fonte-mono);
+}
+
+/* =========================================
+   3. BASE TIPOGRÁFICA
+   Hierarquia por tipografia e espaço, não por borda. Título com peso 600 e
+   tracking negativo — 700+ engrossa e deixa a peça pesada.
+   ========================================= */
+body {
+  font-family: var(--fonte);
+  font-size: var(--fs-base);
+  line-height: var(--lh-padrao);
+  letter-spacing: var(--tracking-texto);
+  color: var(--tinta-2);
+  background: var(--fundo);
+  -webkit-font-smoothing: antialiased;
+}
+
+button, input, select, textarea, .btn, .form-input {
+  font-family: var(--fonte);
+}
+
+h1, h2, h3, h4, h5, h6,
+.page-title, .header-title, .section-title {
+  color: var(--tinta);
+  font-weight: var(--peso-forte);
+  letter-spacing: var(--tracking-titulo);
+  line-height: var(--lh-apertada);
+}
+
+h1, .page-title { font-size: var(--fs-2xl); }
+h2 { font-size: var(--fs-xl); }
+h3 { font-size: var(--fs-lg); }
+h4 { font-size: var(--fs-md); }
+
+/* Número sempre tabular: sem isso a coluna dança na vertical. */
+.kpi-value, .stat-value, .re-kpi-n, .re-bigscore,
+.data-table td, .re-table td, .metric-value {
+  font-variant-numeric: tabular-nums;
+}
+
+.kpi-value, .re-kpi-n, .re-bigscore, .stat-value {
+  font-weight: var(--peso-forte);
+  letter-spacing: -.03em;
+  color: var(--tinta);
+}
+
+/* =========================================
+   4. FAIXA DE IDENTIDADE (3px no topo)
+   ========================================= */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: var(--faixa-h);
+  background: var(--gradient-primary);
+  z-index: var(--z-faixa);
+  pointer-events: none;
+}
+
+/* =========================================
+   5. SIDEBAR
+   ========================================= */
+.sidebar {
+  /* min-width: 0 + overflow hidden: sem isso o conteúdo (logo + textos)
+     impede a faixa de encolher de verdade ao recolher. */
+  min-width: 0;
+  overflow: hidden;
+  background: var(--superficie);
+  border-right: 1px solid var(--linha);
+  padding-top: var(--faixa-h);
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e-3);
+  min-height: var(--topbar-h);
+  padding: 0 var(--e-4);
+  border-bottom: 1px solid var(--linha);
+  flex: none;
+}
+
+.sidebar-logo.brand-logo {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  justify-content: center;
+}
+
+/* Logo oficial, sem redesenho, recorte ou sombra. */
+.sidebar-logo.brand-logo::before {
+  content: "";
+  display: block;
+  width: 96px;
+  height: 30px;
+  background: url("../assets/aec/logo-aec-color.png") left center / contain no-repeat;
+  flex: none;
+}
+
+.brand-logo-text {
+  font-size: var(--fs-xs);
+  font-weight: var(--peso-forte);
+  letter-spacing: .06em;
+  color: var(--tinta-2);
+  background: none;
+  -webkit-background-clip: initial;
+  -webkit-text-fill-color: currentColor;
+  background-clip: initial;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.brand-logo-sub {
+  font-size: 9px;
+  font-weight: var(--peso-normal);
+  letter-spacing: .1em;
+  color: var(--tinta-4);
+  text-transform: uppercase;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.sidebar-nav {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: var(--e-2) var(--e-3) var(--e-3);
+}
+
+.nav-section { margin-bottom: var(--e-4); }
+
+.nav-section-title {
+  font-size: var(--fs-2xs);
+  font-weight: var(--peso-forte);
+  letter-spacing: .05em;
+  /* --tinta-4 daria ~2,6:1 em 11px. Um degrau mais escuro passa em AA sem
+     perder o papel de rótulo discreto. */
+  color: var(--tinta-3);
+  text-transform: uppercase;
+  padding: var(--e-2) var(--e-3) var(--e-1);
+  margin-bottom: 0;
+  white-space: nowrap;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: var(--e-3);
+  width: 100%;
+  min-height: 38px;
+  padding: var(--e-2) var(--e-3);
+  margin-bottom: 2px;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--tinta-2);
+  font-size: var(--fs-base);
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background var(--t-rapido), color var(--t-rapido);
+}
+
+.nav-item:hover { background: var(--preenchimento); color: var(--tinta); }
+.nav-item:active { background: var(--preenchimento-ativo); transform: none; }
+
+.nav-item .nav-item-icon { color: var(--tinta-3); flex: none; transition: color var(--t-rapido); }
+.nav-item .nav-item-text { overflow: hidden; text-overflow: ellipsis; }
+
+/* Ativo: acento suave, não preenchimento dominante. */
+.nav-item.active,
+[data-theme="light"] .nav-item.active {
+  background: var(--acento-suave);
+  color: var(--acento-forte);
+  font-weight: var(--peso-forte);
+}
+
+.nav-item.active .nav-item-icon { color: var(--acento); }
+
+/* Barrinha lateral removida: com fundo de acento vira ruído. */
+.nav-item::before { display: none; }
+
+/* =========================================
+   6. CABEÇALHO
+   ========================================= */
+.header {
+  min-height: var(--topbar-h);
+  background: var(--superficie-vidro);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 1px solid var(--linha);
+}
+
+.header-title { font-size: var(--fs-lg); color: var(--tinta); }
+
+/* =========================================
+   7. COMPONENTES
+   ========================================= */
+.btn {
+  min-height: 36px;
+  border-radius: var(--r-sm);
+  font-size: var(--fs-sm);
+  font-weight: var(--peso-forte);
+  letter-spacing: var(--tracking-texto);
+  transition: background var(--t-rapido), border-color var(--t-rapido),
+    box-shadow var(--t-rapido), transform var(--t-rapido);
+}
+
+.btn:active { transform: scale(.97); }
+
+.btn-primary {
+  background: var(--acento);
+  border-color: var(--acento);
+  color: var(--tinta-invertida);
+}
+
+.btn-primary:hover { background: var(--acento-forte); border-color: var(--acento-forte); }
+
+.btn-secondary {
+  background: var(--preenchimento);
+  border: 1px solid var(--linha);
+  color: var(--tinta);
+}
+
+.btn-secondary:hover { background: var(--preenchimento-hover); border-color: var(--linha-forte); }
+
+.btn-ghost { color: var(--acento); background: transparent; }
+.btn-ghost:hover { background: var(--acento-suave); }
+
+.btn:disabled, .btn[disabled] { opacity: .45; pointer-events: none; }
+
+/* Cartões: hairline + sombra discreta, nunca borda pesada. */
+.card, .dash-section, .admin-section, .re-panel, .re-kpi, .kpi-card {
+  background: var(--superficie);
+  border: 1px solid var(--linha);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sombra-xs);
+}
+
+.card:hover, .kpi-card:hover {
+  box-shadow: var(--sombra-md);
+  border-color: var(--linha-forte);
+}
+
+/* Tabelas: cabeçalho em superfície-2 e fixo na rolagem. */
+.data-table thead th,
+.re-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--superficie-2);
+  color: var(--tinta-2);
+  font-size: var(--fs-xs);
+  font-weight: var(--peso-forte);
+  letter-spacing: .03em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--linha);
+}
+
+.data-table tbody td, .re-table tbody td {
+  border-bottom: 1px solid var(--linha);
+  color: var(--tinta-2);
+}
+
+.data-table tbody tr:hover td,
+.re-table tbody tr:hover td,
+.re-row:hover { background: var(--preenchimento); }
+
+.form-input, .re-select {
+  min-height: 38px;
+  border: 1px solid var(--linha);
+  border-radius: var(--r-sm);
+  background: var(--superficie-2);
+  color: var(--tinta);
+  font-size: var(--fs-sm);
+  transition: border-color var(--t-rapido), box-shadow var(--t-rapido);
+}
+
+.form-input:focus, .re-select:focus {
+  border-color: var(--acento);
+  box-shadow: var(--anel-foco);
+  outline: none;
+  background: var(--superficie);
+}
+
+/* :focus-visible sempre visível; :focus sem contorno para mouse. */
+:focus:not(:focus-visible) { outline: none; }
+
+.btn:focus-visible, .nav-item:focus-visible, a:focus-visible,
+button:focus-visible, [tabindex]:focus-visible {
+  outline: 2px solid var(--acento);
+  outline-offset: 2px;
+}
+
+/* =========================================
+   8. SEMÂNTICA DE STATUS
+   Fundo suave + texto legível. A cor nunca comunica sozinha: o rótulo
+   textual do componente continua sendo a informação.
+   ========================================= */
+.re-badge, .re-chip {
+  border-radius: var(--r-pill);
+  font-weight: var(--peso-forte);
+  letter-spacing: var(--tracking-texto);
+}
+
+.re-badge.tone-blue, .re-chip.tone-blue { background: var(--acento-suave); color: var(--acento-forte); }
+.re-badge.tone-teal, .re-badge.tone-indigo,
+.re-badge.tone-purple, .re-chip.tone-purple { background: #E6F7FC; color: #056880; }
+.re-badge.tone-green, .re-chip.tone-green, .re-kpi.tone-green { background: var(--sucesso-bg); color: var(--sucesso); }
+.re-badge.tone-amber, .re-chip.tone-amber, .re-kpi.tone-amber { background: var(--atencao-bg); color: var(--atencao); }
+.re-badge.tone-red, .re-chip.tone-red, .re-kpi.tone-red { background: var(--alerta-bg); color: var(--alerta); }
+.re-badge.tone-gray, .re-chip.tone-gray { background: var(--preenchimento); color: var(--tinta-2); }
+
+.re-badge.solid.tone-blue { background: var(--acento); color: var(--tinta-invertida); }
+.re-badge.solid.tone-green { background: var(--sucesso); color: var(--tinta-invertida); }
+.re-badge.solid.tone-amber { background: var(--atencao); color: var(--tinta-invertida); }
+.re-badge.solid.tone-red { background: var(--alerta); color: var(--tinta-invertida); }
+.re-badge.solid.tone-gray { background: var(--preenchimento-ativo); color: var(--tinta); }
+
+.re-bar { background: var(--preenchimento); }
+.re-bar-fill { background: var(--serie-1); }
+.re-bar-fill.tone-green { background: var(--sucesso); }
+.re-bar-fill.tone-amber { background: var(--atencao); }
+.re-bar-fill.tone-red { background: var(--alerta); }
+
+.re-factor-bar { background: var(--preenchimento); }
+.re-factor-bar i { background: var(--serie-1); }
+
+.re-ok { color: var(--sucesso); }
+.re-flag, .re-flag-cell { color: var(--alerta); }
+.re-link { color: var(--acento); font-weight: var(--peso-medio); }
+.re-scope { background: var(--acento); opacity: 1; border-radius: var(--r-pill); }
+.re-error { background: var(--alerta-bg); border-color: rgba(192, 57, 43, .25); color: var(--alerta); }
+.re-fca { background: var(--alerta-bg); border-color: rgba(192, 57, 43, .25); }
+.re-tab.active { color: var(--acento); border-bottom-color: var(--acento); font-weight: var(--peso-forte); }
+.re-filterbar { background: var(--superficie-2); border: 1px solid var(--linha); }
+
+/* =========================================
+   9. CORREÇÕES DE CONTRASTE
+   Achados medindo AA de verdade (compondo transparência) em 8 páginas.
+   Todos vinham de cor fixa em módulo escrito para o tema escuro: com o
+   claro como padrão viraram texto ilegível ou invisível.
+
+   O prefixo body[data-theme] existe porque essas regras nascem de <style>
+   injetado por JS, que entra depois deste arquivo e venceria no empate.
+   ========================================= */
+body[data-theme="light"] .stat-value,
+body[data-theme="light"] .rank-name,
+body[data-theme="light"] .rank-points,
+body[data-theme="light"] .challenge-title,
+body[data-theme="light"] .metric-value {
+  color: var(--tinta);
+}
+
+body[data-theme="light"] .stat-label,
+body[data-theme="light"] .challenge-desc,
+body[data-theme="light"] .metric-label {
+  color: var(--tinta-2);
+}
+
+body[data-theme="light"] .section-link,
+body[data-theme="light"] .dash-link {
+  color: var(--acento);
+  font-weight: var(--peso-forte);
+}
+
+/* Selos de nível/liga: texto branco sobre gradiente âmbar dava ~1,9:1. */
+body[data-theme="light"] .level-badge,
+body[data-theme="light"] .league-badge {
+  color: var(--tinta);
+  font-weight: var(--peso-forte);
+}
+
+body[data-theme="light"] .tkt-tab.active {
+  color: var(--acento);
+  font-weight: var(--peso-forte);
+}
+
+/* --- Contraste no tema escuro ---
+   Mesma origem do bloco anterior: cor fixa em módulo, agora com o fundo
+   escuro novo. Medido em 10 páginas compondo transparência. */
+body[data-theme="dark"] .ann-filter,
+body[data-theme="dark"] .period-tab,
+body[data-theme="dark"] .progress-text {
+  color: var(--tinta-2);
+}
+
+body[data-theme="dark"] .ann-filter.active,
+body[data-theme="dark"] .period-tab.active {
+  color: var(--acento);
+  font-weight: var(--peso-forte);
+}
+
+body[data-theme="dark"] .level-badge,
+body[data-theme="dark"] .league-badge {
+  color: var(--tinta-invertida);
+  font-weight: var(--peso-forte);
+}
+
+body[data-theme="dark"] .streak-label,
+body[data-theme="dark"] .kpi-label,
+body[data-theme="dark"] .level-progress-xp,
+body[data-theme="dark"] .empty-state-small,
+body[data-theme="dark"] .dash-date,
+body[data-theme="dark"] .brand-logo-sub {
+  color: var(--tinta-3);
+}
+
+/* Rótulos de 11px pedem um degrau a mais de contraste que o texto normal. */
+body[data-theme="light"] .streak-label,
+body[data-theme="light"] .kpi-label,
+body[data-theme="light"] .level-progress-xp,
+body[data-theme="light"] .empty-state-small,
+body[data-theme="light"] .dash-date,
+body[data-theme="light"] .progress-text,
+body[data-theme="light"] .period-tab,
+body[data-theme="light"] .ann-filter {
+  color: var(--tinta-2);
+}
+
+body[data-theme="light"] .ann-filter.active,
+body[data-theme="light"] .period-tab.active {
+  color: var(--acento);
+  font-weight: var(--peso-forte);
+}
+
+.brand-logo-sub { color: var(--tinta-3); }
+
+/* --- Texto SOBRE o acento ---
+   No tema escuro o acento é claro (#38BDF8). Os componentes escrevem
+   branco sobre ele por padrão, o que dá ~2:1. Sobre acento claro o texto
+   tem que ser escuro — é o mesmo princípio da coluna "texto recomendado"
+   da paleta: a cor de fundo é que decide a cor do texto, não o hábito. */
+body[data-theme="dark"] .ann-filter.active,
+body[data-theme="dark"] .period-tab.active,
+body[data-theme="dark"] .btn-primary,
+body[data-theme="dark"] .re-badge.solid.tone-blue,
+body[data-theme="dark"] .re-scope,
+body[data-theme="dark"] .chip.active,
+body[data-theme="dark"] .filter-chip.active {
+  color: var(--tinta-invertida);
+  font-weight: var(--peso-forte);
+}
+
+/* Selo de nível/liga: gradiente âmbar claro pede texto escuro nos dois temas. */
+.level-badge,
+.league-badge {
+  color: #16212B;
+  font-weight: 600;
+}
+
+/* Aba ativa de chamados NÃO tem fundo preenchido — é só texto sublinhado.
+   Tratá-la como "texto sobre acento" pintava escuro sobre escuro. */
+body[data-theme="dark"] .tkt-tab.active {
+  color: var(--acento);
+  font-weight: var(--peso-forte);
+}
+
+/* .streak-label vive sobre um gradiente laranja cheio: pede texto branco,
+   não o cinza de apoio. Cor de fundo é que decide a cor do texto. */
+.streak-badge .streak-label,
+.streak-badge .streak-value,
+body[data-theme="dark"] .streak-badge .streak-label,
+body[data-theme="light"] .streak-badge .streak-label {
+  color: #FFFFFF;
+}
+
+/* =========================================
+   10. TEMA ESCURO
+   Azuis escuros do NEP original preservados por decisão do dono do
+   produto; o que muda é o acento, que passa ao azul/ciano institucional.
+   ========================================= */
+[data-theme="dark"] {
+  --superficie: #0F1729;
+  --superficie-2: #141D33;
+  --superficie-3: #1A2440;
+  --superficie-vidro: rgba(15, 23, 41, .78);
+  --fundo: #0A0F1E;
+
+  --tinta: #F1F5F9;
+  --tinta-2: #CBD5E1;
+  --tinta-3: #94A3B8;
+  --tinta-4: #64748B;
+  --tinta-invertida: #0A0F1E;
+
+  --acento: #38BDF8;
+  --acento-forte: #7DD3FC;
+  --acento-suave: rgba(56, 189, 248, .12);
+  --acento-medio: rgba(56, 189, 248, .2);
+
+  --linha: rgba(148, 163, 184, .16);
+  --linha-forte: rgba(148, 163, 184, .28);
+  --preenchimento: rgba(148, 163, 184, .08);
+  --preenchimento-hover: rgba(148, 163, 184, .14);
+  --preenchimento-ativo: rgba(148, 163, 184, .2);
+
+  --sucesso: #4ADE80;  --sucesso-bg: rgba(74, 222, 128, .14);
+  --atencao: #FBBF24;  --atencao-bg: rgba(251, 191, 36, .14);
+  --alerta: #F87171;   --alerta-bg: rgba(248, 113, 113, .14);
+
+  --serie-1: #38BDF8;  --serie-2: #00BFE7;
+  --serie-3: #4ADE80;  --serie-4: #FBBF24;
+
+  --surface-bg: var(--fundo);
+  --surface-card: var(--superficie);
+  --surface-elevated: var(--superficie-2);
+  --surface-hover: var(--preenchimento);
+  --surface-border: var(--linha);
+  --surface-border-light: var(--linha-forte);
+
+  --text-primary: var(--tinta);
+  --text-secondary: var(--tinta-2);
+  --text-tertiary: var(--tinta-3);
+  --text-muted: var(--tinta-3);
+  --text-dim: var(--tinta-4);
+  --text-inverse: var(--tinta-invertida);
+
+  --primary-400: #7DD3FC;
+  --primary-500: var(--acento);
+  --accent-400: var(--acento);
+  --accent-500: var(--acento);
+  --primary: var(--acento);
+
+  --success-500: var(--sucesso);
+  --warning-500: var(--atencao);
+  --error-500: var(--alerta);
+
+  --border-color: var(--linha);
+  --border: var(--linha);
+  --border-dim: var(--preenchimento);
+  --rule: var(--linha);
+  --bg-primary: var(--fundo);
+  --bg-secondary: var(--superficie-2);
+  --bg-card: var(--superficie);
+  --bg-hover: var(--preenchimento);
+  --quality-card-bg: var(--superficie);
+  --quality-card-border: var(--linha);
+  --surface-2: var(--superficie-2);
+  --surface-ground: var(--fundo);
+  --surface-items-hover: var(--preenchimento);
+  --ink-3: var(--tinta-3);
+
+  --sombra-xs: 0 1px 2px rgba(0, 0, 0, .35);
+  --sombra-sm: 0 2px 6px rgba(0, 0, 0, .35);
+  --sombra-md: 0 10px 30px rgba(0, 0, 0, .45);
+  --sombra-lg: 0 24px 60px rgba(0, 0, 0, .55);
+  --shadow-card: var(--sombra-xs);
+  --gradient-mesh: none;
+}
+
+body[data-theme="dark"] { background: var(--fundo); color: var(--tinta-2); }
+
+[data-theme="dark"] .sidebar,
+[data-theme="dark"] .sidebar-header { background: var(--superficie); }
+
+/* Logo branco sobre fundo escuro — a outra regra de aplicação da marca. */
+[data-theme="dark"] .sidebar-logo.brand-logo::before {
+  background-image: url("../assets/aec/logo-aec-white.png");
+}
+
+[data-theme="dark"] .brand-logo-text { color: var(--tinta-2); }
+[data-theme="dark"] .brand-logo-sub { color: var(--tinta-4); }
+
+[data-theme="dark"] .data-table thead th,
+[data-theme="dark"] .re-table thead th { background: var(--superficie-2); }
+
+[data-theme="dark"] .card,
+[data-theme="dark"] .dash-section,
+[data-theme="dark"] .admin-section,
+[data-theme="dark"] .re-panel,
+[data-theme="dark"] .re-kpi,
+[data-theme="dark"] .form-input,
+[data-theme="dark"] .re-select { background: var(--superficie); border-color: var(--linha); }
+
+/* =========================================
+   11. SIDEBAR RECOLHÍVEL
+   Estado numa classe do <body>; a largura muda pelo token --sidebar-width,
+   que .main-content já consome em margin-left — nenhum módulo precisa
+   saber que a barra encolheu.
+   ========================================= */
+:root { --sidebar-width: var(--sidebar-w); }
+body.sidebar-collapsed { --sidebar-width: var(--sidebar-w-min); }
+
+/* Esconde só o RÓTULO. Os elementos seguem no DOM e clicáveis: o seletor
+   [data-page] dos scripts continua funcionando igual. */
+body.sidebar-collapsed .nav-item-text,
+body.sidebar-collapsed .nav-section-title,
+body.sidebar-collapsed .brand-logo-text,
+body.sidebar-collapsed .brand-logo-sub,
+body.sidebar-collapsed .sidebar-user-info {
+  display: none;
+}
+
+body.sidebar-collapsed .sidebar-header {
+  flex-direction: column;
+  gap: var(--e-2);
+  padding: var(--e-3) var(--e-2);
+  justify-content: center;
+}
+
+body.sidebar-collapsed .sidebar-logo.brand-logo { align-items: center; }
+
+/* Abaixo de 96px o logo completo não cabe: usa-se a marca reduzida
+   oficial, nunca o logo cheio espremido. */
+body.sidebar-collapsed .sidebar-logo.brand-logo::before {
+  width: 40px;
+  height: 28px;
+  background-image: url("../assets/aec/logo-aec-color-small.png");
+  background-position: center;
+}
+
+body.sidebar-collapsed[data-theme="dark"] .sidebar-logo.brand-logo::before,
+[data-theme="dark"] body.sidebar-collapsed .sidebar-logo.brand-logo::before {
+  background-image: url("../assets/aec/logo-aec-white.png");
+}
+
+body.sidebar-collapsed .sidebar-nav { padding: var(--e-2); }
+
+body.sidebar-collapsed .nav-item {
+  justify-content: center;
+  padding: var(--e-2) 0;
+  gap: 0;
+}
+
+/* Divisória no lugar do título da seção, para não perder o agrupamento. */
+body.sidebar-collapsed .nav-section + .nav-section {
+  border-top: 1px solid var(--linha);
+  padding-top: var(--e-2);
+}
+
+body.sidebar-collapsed .nav-section { margin-bottom: var(--e-2); }
+body.sidebar-collapsed .sidebar-footer { padding: var(--e-2); }
+body.sidebar-collapsed .sidebar-user { justify-content: center; }
+
+#btn-sidebar-collapse {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid var(--linha);
+  border-radius: var(--r-sm);
+  background: var(--superficie);
+  color: var(--tinta-3);
+  cursor: pointer;
+  transition: background var(--t-rapido), color var(--t-rapido), border-color var(--t-rapido);
+  flex: none;
+}
+
+#btn-sidebar-collapse:hover {
+  background: var(--preenchimento);
+  color: var(--acento);
+  border-color: var(--linha-forte);
+}
+
+#btn-sidebar-collapse svg { width: 16px; height: 16px; transition: transform var(--t-medio); }
+body.sidebar-collapsed #btn-sidebar-collapse svg { transform: rotate(180deg); }
+
+/* Tooltip próprio (elemento único reaproveitado), não o title nativo:
+   aparece em hover E em foco, some em blur e clique. */
+.nep-tooltip {
+  position: fixed;
+  z-index: var(--z-tooltip);
+  max-width: 260px;
+  padding: var(--e-2) var(--e-3);
+  border-radius: var(--r-xs);
+  background: rgba(22, 33, 43, .94);
+  color: #FFFFFF;
+  font-size: var(--fs-xs);
+  font-weight: var(--peso-medio);
+  line-height: 1.4;
+  pointer-events: none;
+  box-shadow: var(--sombra-md);
+  opacity: 0;
+  transform: translateY(3px);
+  transition: opacity var(--t-rapido), transform var(--t-rapido);
+}
+
+.nep-tooltip.visivel { opacity: 1; transform: none; }
+
+/* Em tela pequena a sidebar já é gaveta; recolher não se aplica. */
+@media (max-width: 900px) {
+  #btn-sidebar-collapse { display: none; }
+  body.sidebar-collapsed { --sidebar-width: var(--sidebar-w); }
+  body.sidebar-collapsed .nav-item-text,
+  body.sidebar-collapsed .nav-section-title,
+  body.sidebar-collapsed .brand-logo-text,
+  body.sidebar-collapsed .brand-logo-sub { display: revert; }
+  body.sidebar-collapsed .nav-item { justify-content: flex-start; padding: var(--e-2) var(--e-3); gap: var(--e-3); }
+  body.sidebar-collapsed .sidebar-header { flex-direction: row; padding: 0 var(--e-4); }
+  .nav-item { min-height: 44px; }
+}
+
+/* =========================================
+   12. ACESSIBILIDADE E IMPRESSÃO
+   ========================================= */
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --linha: rgba(0, 52, 93, .28);
+    --linha-forte: rgba(0, 52, 93, .42);
+    --tinta-2: #2C3844;
+    --tinta-3: #4A5866;
+    --tinta-4: #617487;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition-duration: .01ms !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media print {
+  body::before,
+  .sidebar, .header, .re-filterbar,
+  .toast-container, #btn-sidebar-collapse, .nep-tooltip { display: none !important; }
+
+  .main-content { margin-left: 0 !important; }
+
+  .card, .re-panel, .dash-section {
+    box-shadow: none !important;
+    break-inside: avoid;
+  }
+}
+
+/* =========================================
+   13. AJUSTES FINAIS DE CONTRASTE
+   Ficam no fim do arquivo de propósito: são correções pontuais que
+   precisam vencer as regras genéricas acima, e ordem é mais previsível
+   que empilhar especificidade.
+   ========================================= */
+
+/* A aba ativa de chamados não tem fundo preenchido — é texto + sublinhado.
+   Incluí-la na regra de "texto sobre acento" pintava escuro sobre escuro. */
+body[data-theme="dark"] .tkt-tab.active {
+  color: var(--acento);
+}
+
+/* O selo de streak é um gradiente laranja cheio: texto branco, não o
+   cinza de apoio. Quem manda na cor do texto é o fundo. */
+.streak-badge,
+.streak-badge * {
+  color: #FFFFFF;
+}
+
+/* Estado vazio: 4,01:1 em texto pequeno, pouco abaixo do mínimo. */
+body[data-theme="dark"] .empty-state,
+body[data-theme="dark"] .empty-state * {
+  color: var(--tinta-2);
+}
+
+/* .ann-filter.active tem fundo PREENCHIDO de acento nos dois temas. Pintar
+   o texto também de acento (como eu fiz na primeira passada) dava acento
+   sobre acento — ratio 1, texto invisível. A regra de ouro vale sempre:
+   quem decide a cor do texto é o fundo em que ele está. */
+body[data-theme="light"] .ann-filter.active {
+  color: #FFFFFF;
+}
+
+body[data-theme="dark"] .ann-filter.active {
+  color: var(--tinta-invertida);
+}
+
+/* Item de menu ativo — conforme a spec: acento SUAVE, não preenchimento
+   dominante. Precisa de !important porque light-mode-fixes.css:332 crava
+   `background: var(--primary-500) !important` (azul cheio) e a linha 412
+   força TODO span a texto escuro, anulando o branco herdado. O resultado
+   era texto escuro sobre azul cheio: 2,78:1, o item ativo do menu ficava
+   ilegível em toda página. */
+body[data-theme="light"] .nav-item.active {
+  background: var(--acento-suave) !important;
+  color: var(--acento-forte) !important;
+}
+
+body[data-theme="light"] .nav-item.active .nav-item-text,
+body[data-theme="light"] .nav-item.active .nav-item-icon {
+  color: var(--acento-forte);
+}
+
+/* Aba de período do ranking: mesmo caso, fundo de acento com texto escuro. */
+body[data-theme="light"] .period-tab.active,
+body[data-theme="light"] .period-tab.active * {
+  color: #FFFFFF;
+}
+
+/* Rótulo de seção do menu: --tinta-3 (#7C8A98) dá 3,53:1 e o texto tem
+   11px, que exige 4,5. light-mode-fixes.css:337 crava esse tom com
+   !important, então a correção precisa de !important também. Um degrau
+   mais escuro mantém o papel de rótulo discreto e passa em AA. */
+body[data-theme="light"] .nav-section-title {
+  color: var(--tinta-2) !important;
+}
+
+/* Selo de liga (bronze/prata/ouro) sobre fundo do próprio tom: 2,75:1.
+   São cores de medalha, fora da paleta institucional — escurece o texto
+   mantendo o fundo, que é o que identifica a liga. */
+body[data-theme="light"] .league-badge {
+  color: var(--tinta) !important;
+}
+
+/* Cargo do usuário no rodapé da sidebar e textos de apoio pequenos:
+   3,53:1 com --tinta-3. Abaixo de 14px o mínimo é 4,5. */
+body[data-theme="light"] .sidebar-user-role,
+body[data-theme="light"] .form-hint,
+body[data-theme="light"] .field-hint,
+body[data-theme="light"] small {
+  color: var(--tinta-2) !important;
+}
+
+/* Últimos textos de apoio abaixo do mínimo (3,53–4,2:1). Todos são texto
+   pequeno em cinza claro herdado do tema escuro. */
+body[data-theme="light"] .kpi-insight,
+body[data-theme="light"] .alert-link,
+body[data-theme="light"] .upload-hint,
+body[data-theme="light"] .hint {
+  color: var(--tinta-2) !important;
+}
+
+body[data-theme="light"] .alert-link {
+  color: var(--acento) !important;
+  font-weight: var(--peso-forte);
+}

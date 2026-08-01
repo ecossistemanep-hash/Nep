@@ -29,6 +29,7 @@ const NepApp = {
     this.setupMobileMenu();
     this.setupKeyboardShortcuts();
     this.setupTheme();
+    this.setupSidebarCollapse();
     this.setupNotifications();
     this.renderSidebar();
 
@@ -120,16 +121,113 @@ const NepApp = {
     const btn = document.getElementById('btn-theme-toggle');
     const saved = localStorage.getItem('nep_theme');
 
-    if (saved === 'light') {
-      document.body.setAttribute('data-theme', 'light');
-      if (btn) btn.innerHTML = '<i class="fa-solid fa-moon"></i>';
+    // Claro é o padrão da identidade AeC: só entra no escuro quem
+    // escolheu explicitamente. Antes o padrão era escuro e o claro era a
+    // exceção — invertido em relação ao guia da marca.
+    const tema = saved === 'dark' ? 'dark' : 'light';
+    document.body.setAttribute('data-theme', tema);
+    if (btn) {
+      btn.innerHTML = tema === 'light'
+        ? '<i class="fa-solid fa-moon"></i>'
+        : '<i class="fa-solid fa-sun"></i>';
     }
 
     btn?.addEventListener('click', () => {
       const isLight = document.body.getAttribute('data-theme') === 'light';
-      document.body.setAttribute('data-theme', isLight ? 'dark' : 'light');
-      btn.innerHTML = isLight ? '<i class="fa-solid fa-sun"></i>' : '<i class="fa-solid fa-moon"></i>';
-      localStorage.setItem('nep_theme', isLight ? 'dark' : 'light');
+      const novo = isLight ? 'dark' : 'light';
+      document.body.setAttribute('data-theme', novo);
+      btn.innerHTML = novo === 'light'
+        ? '<i class="fa-solid fa-moon"></i>'
+        : '<i class="fa-solid fa-sun"></i>';
+      localStorage.setItem('nep_theme', novo);
+    });
+  },
+
+  /**
+   * Recolher a sidebar para ganhar área de leitura (~200 px).
+   *
+   * O estado é uma classe no <body>; a largura muda pelo token
+   * --sidebar-width, que o .main-content já consome em margin-left. Assim
+   * nenhum módulo precisa saber que a barra encolheu.
+   */
+  setupSidebarCollapse() {
+    const btn = document.getElementById('btn-sidebar-collapse');
+    if (!btn) return;
+
+    // Sem o rótulo visível, o ícone sozinho não diz o que é. O tooltip do
+    // estado recolhido lê deste atributo (CSS content: attr(data-tooltip)).
+    document.querySelectorAll('.nav-item[data-page]').forEach(item => {
+      const rotulo = item.querySelector('.nav-item-text')?.textContent?.trim();
+      if (rotulo) {
+        item.setAttribute('data-tooltip', rotulo);
+        // title serve de reforço para quem navega por teclado/leitor.
+        if (!item.getAttribute('title')) item.setAttribute('title', rotulo);
+      }
+    });
+
+    // Tooltip PRÓPRIO, não o `title` nativo: o nativo demora ~1s para
+    // aparecer, não segue foco de teclado e não é estilizável. Um único
+    // elemento reaproveitado, em position:fixed, para não ser recortado
+    // pelo overflow:hidden da sidebar.
+    const dica = document.createElement('div');
+    dica.className = 'nep-tooltip';
+    dica.setAttribute('role', 'tooltip');
+    dica.hidden = true;
+    document.body.appendChild(dica);
+
+    // Só vale com o menu recolhido E acima de 900px: abaixo disso a
+    // sidebar vira gaveta com os rótulos visíveis, e a dica seria ruído.
+    const dicaAtiva = () =>
+      document.body.classList.contains('sidebar-collapsed')
+      && window.matchMedia('(min-width: 901px)').matches;
+
+    const mostrarDica = alvo => {
+      if (!dicaAtiva()) return;
+      const texto = alvo.getAttribute('data-tooltip');
+      if (!texto) return;
+      dica.textContent = texto;
+      dica.hidden = false;
+      const r = alvo.getBoundingClientRect();
+      dica.style.left = `${r.right + 10}px`;
+      dica.style.top = `${r.top + r.height / 2 - dica.offsetHeight / 2}px`;
+      dica.classList.add('visivel');
+    };
+
+    const esconderDica = () => {
+      dica.classList.remove('visivel');
+      dica.hidden = true;
+    };
+
+    document.querySelectorAll('.nav-item[data-page]').forEach(item => {
+      item.addEventListener('mouseenter', () => mostrarDica(item));
+      item.addEventListener('focus', () => mostrarDica(item));
+      item.addEventListener('mouseleave', esconderDica);
+      item.addEventListener('blur', esconderDica);
+      item.addEventListener('click', esconderDica);
+    });
+    window.addEventListener('resize', esconderDica);
+
+    const aplicar = (recolhida, persistir) => {
+      document.body.classList.toggle('sidebar-collapsed', recolhida);
+      btn.setAttribute('aria-expanded', String(!recolhida));
+      btn.setAttribute('title', recolhida ? 'Expandir menu (Ctrl+B)' : 'Recolher menu (Ctrl+B)');
+      const sr = btn.querySelector('.sr-only');
+      if (sr) sr.textContent = recolhida ? 'Expandir menu lateral' : 'Recolher menu lateral';
+      esconderDica();
+      if (persistir) localStorage.setItem('nep_sidebar_collapsed', recolhida ? '1' : '0');
+    };
+
+    aplicar(localStorage.getItem('nep_sidebar_collapsed') === '1', false);
+
+    btn.addEventListener('click', () => {
+      aplicar(!document.body.classList.contains('sidebar-collapsed'), true);
+    });
+
+    document.addEventListener('keydown', e => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
+        e.preventDefault();
+        aplicar(!document.body.classList.contains('sidebar-collapsed'), true);
+      }
     });
   },
 
