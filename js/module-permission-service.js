@@ -42,6 +42,26 @@ const ModulePermissionService = {
     // Cargos disponíveis
     ROLES: ['ADMIN', 'DIRETOR', 'SUPERINTENDENTE', 'GERENTE', 'CONSULTOR', 'LIDER', 'COORDENADOR', 'ANALISTA', 'MONITOR', 'VIEWER', 'CONVIDADO'],
 
+    // Cargos que já existiam antes da integração do Report Executivo. Serve de
+    // linha de base para o backfill: documento de módulo gravado sem o campo
+    // `known_roles` foi configurado quando só existiam estes — logo, um cargo
+    // fora desta lista nunca foi desmarcado de propósito por um admin, apenas
+    // não existia.
+    LEGACY_ROLES: ['ADMIN', 'DIRETOR', 'SUPERINTENDENTE', 'GERENTE', 'CONSULTOR', 'COORDENADOR', 'ANALISTA', 'MONITOR'],
+
+    // Acesso PADRÃO dos cargos novos, aplicado só no backfill (o admin pode
+    // mudar tudo depois na tela de Permissões).
+    //  · LIDER é cargo interno de linha: herda o que COORDENADOR já tem, que é
+    //    a posição imediatamente vizinha na hierarquia.
+    //  · VIEWER e CONVIDADO são acessos externos/somente-leitura. Liberar tudo
+    //    por padrão seria o oposto do que esses cargos existem para fazer, então
+    //    entram só no mínimo — o resto é decisão consciente do admin.
+    NEW_ROLE_DEFAULTS: {
+        LIDER: { mirror: 'COORDENADOR' },
+        VIEWER: { modules: ['dashboard', 'profile', 'reportExecutivo'] },
+        CONVIDADO: { modules: ['dashboard', 'profile', 'reportExecutivo'] }
+    },
+
     // Helper para obter timestamp (compatível com módulos ES6)
     _getTimestamp() {
         // Tenta usar firebase compat se disponível, senão usa Date
@@ -61,27 +81,17 @@ const ModulePermissionService = {
                 return;
             }
 
-            for (const module of this.MODULES) {
-                const docRef = window.db.collection(this.COLLECTION).doc(module.id);
-                const docSnap = await docRef.get();
+            // Só admin escreve em module_permissions (Firestore rules). Rodar
+            // isto para todo mundo só gerava permission-denied no console a
+            // cada carga de página — e escondia erro de verdade no meio do
+            // ruído. A manutenção do catálogo (criar módulo novo, liberar
+            // cargo novo) acontece quando um admin abre o sistema.
+            const isAdmin = localStorage.getItem('nep_is_admin') === 'true'
+                || (localStorage.getItem('nep_cargo') || '').toUpperCase() === 'ADMIN';
+            if (!isAdmin) return;
 
-                if (!docSnap.exists) {
-                    await docRef.set({
-                        module_id: module.id,
-                        module_name: module.name,
-                        icon: module.icon,
-                        category: module.category,
-                        enabled: true,
-                        disabled_for_all: false,
-                        allowed_roles: module.id === 'admin' ? ['ADMIN'] : [...this.ROLES],
-                        created_at: this._getTimestamp(),
-                        updated_at: this._getTimestamp(),
-                        updated_by: 'SISTEMA'
-                    });
-                    console.log(`[MIME] Permissão criada para: ${module.id}`);
-                }
-            }
-            console.log('[MIME] Permissões inicializadas com sucesso');
+            const r = await this.syncModules();
+            console.log('[MIME] Catálogo de módulos em dia.', r);
         } catch (error) {
             console.error('[MIME] Erro ao inicializar permissões:', error);
         }
@@ -285,9 +295,42 @@ const ModulePermissionService = {
     /**
      * Sincronizar módulos (Forçar verificação de novos módulos)
      */
+    /**
+     * Cargos que devem ser acrescentados a um módulo JÁ existente porque não
+     * existiam quando ele foi configurado.
+     *
+     * Sem isto, criar um cargo novo no código o tranca fora de todo módulo
+     * antigo: checkAccess compara contra o `allowed_roles` GRAVADO, e o
+     * documento antigo não conhece o cargo novo — o usuário vê "Módulo
+     * Indisponível" em tudo. Foi exatamente o que aconteceu ao adicionar
+     * LIDER/VIEWER/CONVIDADO junto com o Report Executivo.
+     *
+     * O backfill é conservador de propósito: só entra cargo que o admin nunca
+     * teve a chance de desmarcar. Cargo que ele desmarcou continua fora.
+     */
+    _rolesToBackfill(moduleId, data) {
+        const known = Array.isArray(data.known_roles) ? data.known_roles : this.LEGACY_ROLES;
+        const allowed = Array.isArray(data.allowed_roles) ? data.allowed_roles : [];
+        const novos = this.ROLES.filter(r => !known.includes(r));
+        if (novos.length === 0) return [];
+
+        // 'admin' é o único módulo que nasce restrito — nenhum cargo novo entra
+        // nele automaticamente.
+        if (moduleId === 'admin') return [];
+
+        return novos.filter(role => {
+            const regra = this.NEW_ROLE_DEFAULTS[role];
+            if (!regra) return true; // cargo novo sem regra: segue o padrão (liberado)
+            if (regra.mirror) return allowed.includes(regra.mirror);
+            if (regra.modules) return regra.modules.includes(moduleId);
+            return false;
+        });
+    },
+
     async syncModules() {
         console.log('[MIME] Sincronizando módulos...');
         let added = 0;
+        let backfilled = 0;
 
         if (!window.db) {
             throw new Error('Banco de dados não disponível');
@@ -307,18 +350,40 @@ const ModulePermissionService = {
                         enabled: true,
                         disabled_for_all: false,
                         allowed_roles: module.id === 'admin' ? ['ADMIN'] : [...this.ROLES],
+                        known_roles: [...this.ROLES],
                         created_at: this._getTimestamp(),
                         updated_at: this._getTimestamp(),
                         updated_by: 'SYNC'
                     });
                     added++;
                     console.log(`[MIME] Novo módulo registrado: ${module.id}`);
+                    continue;
+                }
+
+                // Módulo já existe: acrescenta apenas os cargos criados DEPOIS
+                // da última configuração dele.
+                const data = docSnap.data() || {};
+                const faltando = this._rolesToBackfill(module.id, data);
+                const jaConhece = Array.isArray(data.known_roles)
+                    && this.ROLES.every(r => data.known_roles.includes(r));
+
+                if (faltando.length > 0 || !jaConhece) {
+                    const allowed = Array.isArray(data.allowed_roles) ? data.allowed_roles : [];
+                    await docRef.update({
+                        allowed_roles: [...new Set([...allowed, ...faltando])],
+                        known_roles: [...this.ROLES],
+                        updated_at: this._getTimestamp()
+                    });
+                    if (faltando.length > 0) {
+                        backfilled++;
+                        console.log(`[MIME] ${module.id}: cargos acrescentados → ${faltando.join(', ')}`);
+                    }
                 }
             }
             // Limpar cache
             this.permissionsCache = null;
-            console.log(`[MIME] Sincronização concluída. ${added} módulos adicionados.`);
-            return { success: true, added };
+            console.log(`[MIME] Sincronização concluída. ${added} módulo(s) novo(s), ${backfilled} atualizado(s) com cargos novos.`);
+            return { success: true, added, backfilled };
         } catch (error) {
             console.error('[MIME] Erro na sincronização:', error);
             throw error;

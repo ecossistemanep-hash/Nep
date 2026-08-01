@@ -214,6 +214,10 @@ const NepDashboard = {
             </div>
         </div>
 
+        <!-- Carteira executiva (Report Executivo) — preenchido async, some se
+             o usuário não tem acesso ao módulo ou se a carteira está vazia -->
+        <div id="dash-report-executivo"></div>
+
         <!-- Main Content Grid -->
         <div class="dash-grid-3">
           <!-- Status Chart -->
@@ -317,8 +321,101 @@ const NepDashboard = {
 
     requestAnimationFrame(() => this.refreshDashboardData(tasks));
 
+    // Carteira executiva — assíncrono e tolerante a falha: o dashboard não
+    // pode quebrar porque o módulo novo não carregou ou o usuário não tem
+    // acesso a ele.
+    this.renderReportExecutivoResumo();
+
     // 🔄 Subscribe to real-time task updates for KPIs
     this.subscribeToTaskUpdates();
+  },
+
+  /**
+   * Resumo da carteira do Report Executivo no dashboard.
+   *
+   * Some por completo (não mostra bloco vazio nem "sem acesso") quando:
+   *  · o motor de regras não carregou;
+   *  · o cargo não tem permissão no módulo — o dashboard não é lugar de
+   *    vazar número de módulo bloqueado;
+   *  · a carteira está vazia — bloco de zeros só ocupa espaço.
+   */
+  async renderReportExecutivoResumo() {
+    const slot = document.getElementById('dash-report-executivo');
+    if (!slot || !window.RED || !window.db) return;
+
+    try {
+      const cargo = (localStorage.getItem('nep_cargo') || 'MONITOR').toUpperCase();
+      const isAdmin = localStorage.getItem('nep_is_admin') === 'true';
+      if (!isAdmin && window.ModulePermissionService) {
+        const ok = await window.ModulePermissionService.checkAccess('reportExecutivo', cargo);
+        if (!ok) return;
+      }
+
+      const snap = await window.db.collection('items').limit(1000).get();
+      const items = snap.docs.map(d => RED.normalizeItem(Object.assign({ id: d.id }, d.data())));
+      const vivos = items.filter(i => !i.archived);
+      if (vivos.length === 0) return;
+
+      const ativos = vivos.filter(i => !RED.isDone(i));
+      const del = RED.portfolioDeliveryIndex(vivos);
+      const criticos = ativos.filter(RED.isCriticalItem);
+      const comGap = ativos.filter(i => RED.dataGaps(i).length > 0);
+
+      const fila = vivos
+        .map(it => ({ it, rs: RED.riskScore(it, items) }))
+        .filter(x => x.rs)
+        .sort((a, b) => b.rs.score - a.rs.score)
+        .slice(0, 3);
+
+      const corEntrega = del.index === null ? '#94a3b8'
+        : del.index >= 70 ? '#10b981' : del.index >= 40 ? '#f59e0b' : '#ef4444';
+
+      slot.innerHTML = `
+        <div class="section-divider">
+          <h3>📊 Carteira Executiva</h3>
+        </div>
+        <div class="kpi-grid-3" style="margin-bottom:16px;">
+          <div class="kpi-card" style="border-left:3px solid #3b82f6;">
+            <div class="kpi-icon icon-blue"><i class="fa-solid fa-layer-group"></i></div>
+            <div class="kpi-data"><span class="kpi-value">${ativos.length}</span>
+              <span class="kpi-label">Frentes ativas</span></div>
+          </div>
+          <div class="kpi-card" style="border-left:3px solid ${del.lateCount ? '#ef4444' : '#10b981'};">
+            <div class="kpi-icon ${del.lateCount ? 'icon-red' : 'icon-green'}"><i class="fa-solid fa-clock"></i></div>
+            <div class="kpi-data"><span class="kpi-value">${del.lateCount}</span>
+              <span class="kpi-label">Com prazo estourado</span></div>
+          </div>
+          <div class="kpi-card" style="border-left:3px solid ${corEntrega};">
+            <div class="kpi-icon icon-blue"><i class="fa-solid fa-gauge-high"></i></div>
+            <div class="kpi-data"><span class="kpi-value">${del.index === null ? '—' : del.index + '%'}</span>
+              <span class="kpi-label">Índice de entrega</span></div>
+          </div>
+        </div>
+        ${fila.length ? `
+        <div class="dash-section full-width" style="margin-bottom:20px;">
+          <div class="section-header">
+            <h3>🎯 O que decidir primeiro</h3>
+            <button class="btn btn-ghost btn-sm" onclick="NexusApp.navigate('reportExecutivo')">Abrir carteira →</button>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            ${fila.map(({ it, rs }) => `
+              <div style="display:flex;align-items:flex-start;gap:12px;padding:10px;background:rgba(255,255,255,0.02);border-radius:10px;border-left:3px solid ${
+                rs.band === 'Crítico' ? '#ef4444' : rs.band === 'Alto' ? '#f59e0b' : '#64748b'};">
+                <span style="font-weight:700;font-size:15px;min-width:30px;">${rs.score}</span>
+                <div style="flex:1;min-width:0;">
+                  <div style="font-weight:600;font-size:13px;">${RED.esc(RED.frontLabel(it))}</div>
+                  <div style="font-size:12px;color:var(--text-secondary);line-height:1.45;margin-top:2px;">
+                    ${RED.esc(RED.riskRecommendedAction(it, rs))}</div>
+                </div>
+              </div>`).join('')}
+          </div>
+          ${comGap.length ? `<p style="font-size:12px;color:var(--text-secondary);margin-top:10px;">
+            ${comGap.length} frente(s) ativa(s) com lacuna de cadastro — o número acima não enxerga o que não foi preenchido.</p>` : ''}
+        </div>` : ''}`;
+    } catch (e) {
+      // Silencioso de propósito: falha aqui não pode derrubar o dashboard.
+      console.warn('[Dashboard] Resumo da carteira indisponível:', e.message);
+    }
   },
 
   refreshDashboardData(baseTasks) {
