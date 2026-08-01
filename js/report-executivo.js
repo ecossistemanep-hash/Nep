@@ -135,7 +135,7 @@ const NexusReportExecutivo = {
       { id: 'routines', icon: 'fa-list-check', label: 'Rotinas' },
       { id: 'development', icon: 'fa-seedling', label: 'Desenvolvimento' },
       { id: 'executive', icon: 'fa-briefcase', label: 'Executivo' },
-      { id: 'okrs', icon: 'fa-bullseye', label: RED.canViewStructure(role) || role === 'gerente' ? 'OKRs' : 'Meu OKR' },
+      { id: 'okrs', icon: 'fa-bullseye', label: RED.isLeadership(role) ? 'OKRs' : 'Meu OKR' },
       { id: 'director-summary', icon: 'fa-sitemap', label: 'Resumo Estrutura', restricted: true },
       { id: 'agenda', icon: 'fa-calendar-days', label: 'Agenda' },
       { id: 'improvements', icon: 'fa-arrow-trend-up', label: 'Melhorias' },
@@ -869,7 +869,7 @@ const NexusReportExecutivo = {
     const decisions = await this.loadAux('executive_decisions');
     const list = this.visibleItems();
     const texto = RED.executiveLines(list, this.filters);
-    const canManage = RED.canViewStructure(this.myRoleKey) || this.myRoleKey === 'gerente';
+    const canManage = RED.isLeadership(this.myRoleKey);
 
     el.innerHTML = `
       <div class="re-panel">
@@ -1188,7 +1188,9 @@ const NexusReportExecutivo = {
 
   async renderMaterials(el) {
     const list = await this.loadAux('materials');
-    const canManage = ['admin', 'superintendente', 'diretor', 'gerente', 'coordenador'].includes(this.myRoleKey);
+    // Cadastrar/avaliar material é alçada de gestão — mesmo corte do
+    // isManager() das regras, não uma lista à parte.
+    const canManage = RED.isManager(this.myRoleKey);
     const scores = list.map(m => this.materialComposite(m)).filter(s => s !== null);
     const media = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null;
 
@@ -1362,7 +1364,7 @@ const NexusReportExecutivo = {
     const [objectives, targets, measurements] = await Promise.all([
       this.loadAux('okr_objectives'), this.loadAux('okr_targets'), this.loadAux('okr_measurements')
     ]);
-    const isGestao = RED.canViewStructure(this.myRoleKey) || this.myRoleKey === 'gerente';
+    const isGestao = RED.isLeadership(this.myRoleKey);
     const visiveis = isGestao ? objectives : objectives.filter(o => o.ownerUid === this.myUid);
     const canEdit = this.canEdit();
 

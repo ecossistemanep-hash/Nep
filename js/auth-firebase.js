@@ -36,8 +36,13 @@ const NexusAuthService = {
         'SUPERINTENDENTE': { level: 5, label: 'SUPERINTENDENTE', canManageUsers: false },
         'GERENTE': { level: 4, label: 'GERENTE', canManageUsers: false },
         'CONSULTOR': { level: 3, label: 'CONSULTOR', canManageUsers: false },
-        'LIDER': { level: 2.5, label: 'LÍDER', canManageUsers: false },
         'COORDENADOR': { level: 2, label: 'COORDENADOR', canManageUsers: false },
+        // LÍDER fica ABAIXO de coordenador, espelhando cargoLevel() em
+        // firestore.rules (LIDER 40 < COORDENADOR 50). Nasceu em 2.5 aqui —
+        // acima de coordenador — e as regras diziam o oposto: o front liberava
+        // o que o banco negava. A regra é a fronteira real, então quem se
+        // ajusta é o front.
+        'LIDER': { level: 1.5, label: 'LÍDER', canManageUsers: false },
         'ANALISTA': { level: 1, label: 'ANALISTA', canManageUsers: false },
         'MONITOR': { level: 0, label: 'MONITOR', canManageUsers: false },
         // Papéis portados do Report Executivo (ver docs/MODELO-DE-ACESSO.md

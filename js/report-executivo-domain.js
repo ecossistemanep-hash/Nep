@@ -39,21 +39,57 @@ RED.ROLE_LABELS = {
  *  tratam como lacuna — nunca deve pontuar como produto real. */
 RED.NO_PRODUCT = 'Sem produto';
 
-// ── Papéis / alçadas (espelham as RLS do original) ───────────────────────────
+// ── Papéis / alçadas — HIERARQUIA DO NEP ─────────────────────────────────────
+// O original tinha estas funções como listas de nomes copiadas do modelo dele
+// (ex.: canDelete incluía 'lider' mas não 'consultor'). Aqui elas passam a ser
+// DERIVADAS da hierarquia do próprio NEP, para o módulo obedecer as mesmas
+// regras do resto do sistema em vez de trazer uma segunda hierarquia junto.
 
-RED.canEdit = r => ['admin', 'superintendente', 'gerente', 'coordenador', 'consultor', 'lider', 'analista', 'monitor'].includes(r);
-RED.canDelete = r => ['admin', 'superintendente', 'gerente', 'coordenador', 'lider'].includes(r);
-RED.canManageUsers = r => ['admin', 'superintendente', 'diretor', 'gerente'].includes(r || '');
-/** Só direção gere o roster global de capacidade: `people` não é escopada por
- *  hierarquia, então gerente/coordenador editavam pessoas de QUALQUER time. */
-RED.canManagePeople = r => ['admin', 'superintendente'].includes(r || '');
-RED.canViewStructure = r => ['admin', 'superintendente', 'diretor'].includes(r || '');
-RED.canEditRoutines = r => ['admin', 'superintendente', 'gerente', 'coordenador'].includes(r || '');
-RED.canDeleteRoutines = r => ['admin', 'superintendente', 'gerente', 'coordenador'].includes(r || '');
-/** Agenda: qualquer não-viewer, exceto diretor (leitura global). */
-RED.canEditAgenda = r => { const x = r || ''; return x !== '' && x !== 'viewer' && x !== 'diretor'; };
-RED.isAdmin = r => r === 'admin';
-RED.isDirector = r => r === 'diretor';
+/** Espelha cargoLevel() em firestore.rules. Os números têm que bater com a
+ *  regra: se o front achar que um cargo manda mais do que a regra acha, ele
+ *  libera botão que o banco nega. */
+RED.ROLE_LEVEL = {
+  admin: 100, diretor: 95, superintendente: 90, gerente: 70, consultor: 60,
+  coordenador: 50, lider: 40, analista: 30, monitor: 10, viewer: 5, convidado: 1
+};
+RED.roleLevel = r => RED.ROLE_LEVEL[String(r || '').toLowerCase()] ?? 0;
+
+/** Espelha isManager() em firestore.rules — e é um CONJUNTO NOMEADO, não um
+ *  limiar: consultor (60) está acima de coordenador (50) na escala, mas não é
+ *  gestor. Tratar isto como "nível >= 50" daria alçada de gestão ao consultor. */
+RED.NEP_MANAGER_ROLES = ['admin', 'diretor', 'superintendente', 'gerente', 'coordenador'];
+RED.isManager = r => RED.NEP_MANAGER_ROLES.includes(String(r || '').toLowerCase());
+
+/** Direção — quem enxerga a estrutura inteira (nível de superintendente p/ cima). */
+RED.isDirection = r => RED.roleLevel(r) >= RED.ROLE_LEVEL.superintendente;
+
+RED.isAdmin = r => String(r || '').toLowerCase() === 'admin';
+RED.isDirector = r => String(r || '').toLowerCase() === 'diretor';
+
+/** Operacional: do monitor para cima. Exclui viewer/convidado, que existem
+ *  justamente para ser leitura. */
+RED.canEdit = r => RED.roleLevel(r) >= RED.ROLE_LEVEL.monitor;
+
+/** Excluir frente é alçada de gestão — mesmo corte do isManager das regras. */
+RED.canDelete = r => RED.isManager(r);
+
+/** Liderança: gerente para cima (direção + gerência de linha). Consultor (60)
+ *  e coordenador (50) ficam de fora. É o corte de quem responde por resultado
+ *  de área — decisão executiva, ciclo de OKR, gestão de usuários. */
+RED.isLeadership = r => RED.roleLevel(r) >= RED.ROLE_LEVEL.gerente;
+
+RED.canManageUsers = r => RED.isLeadership(r);
+
+/** Roster global de capacidade: `people` não é escopada por hierarquia, então
+ *  quem edita mexe em pessoa de QUALQUER time — fica só na direção. */
+RED.canManagePeople = r => RED.isDirection(r);
+
+RED.canViewStructure = r => RED.isDirection(r);
+RED.canEditRoutines = r => RED.isManager(r);
+RED.canDeleteRoutines = r => RED.isManager(r);
+
+/** Agenda: qualquer papel operacional. */
+RED.canEditAgenda = r => RED.canEdit(r);
 
 /** Abas escondidas de acessos read-only/externos. Aba que abre vazia por
  *  permissão é pior que aba ausente — UI e banco dizem a mesma coisa. */
